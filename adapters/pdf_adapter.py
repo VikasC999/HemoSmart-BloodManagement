@@ -49,8 +49,8 @@ class PDFReportAdapter(BaseAdapter):
         self.llm_client = llm_client
 
     def extract_text(self, pdf_path: str) -> str:
-        import fitz  # PyMuPDF
-        doc = fitz.open(pdf_path)
+        import pymupdf
+        doc = pymupdf.open(pdf_path)
         text = "".join(page.get_text() for page in doc)
         doc.close()
         if not text.strip():
@@ -59,6 +59,32 @@ class PDFReportAdapter(BaseAdapter):
                 "image. Fall back to ManualEntryAdapter or add OCR."
             )
         return text
+
+    @staticmethod
+    def _extract_json(raw_response: str) -> dict:
+        """
+        LLMs frequently ignore "return ONLY JSON" instructions and wrap
+        the output in markdown code fences (```json ... ```) or add a
+        stray sentence before/after. Strip that instead of trusting the
+        instruction was followed literally -- same lesson as the
+        threshold-checking fix in rag/explain.py: don't trust an LLM to
+        do something exactly when code can guarantee it instead.
+        """
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.strip("`")
+            if cleaned.lower().startswith("json"):
+                cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+
+        # If there's still leading/trailing text, extract the {...} block
+        start = cleaned.find("{")
+        end = cleaned.rfind("}")
+        if start == -1 or end == -1 or end < start:
+            raise json.JSONDecodeError("No JSON object found", cleaned, 0)
+        cleaned = cleaned[start:end + 1]
+
+        return json.loads(cleaned)
 
     def parse(self, raw_input: str) -> List[PatientRecord]:
         """raw_input: path to the uploaded PDF file."""
@@ -73,7 +99,7 @@ class PDFReportAdapter(BaseAdapter):
         response_text = self.llm_client.generate(prompt)
 
         try:
-            fields = json.loads(response_text)
+            fields = self._extract_json(response_text)
         except json.JSONDecodeError as exc:
             raise ValueError(
                 f"LLM did not return valid JSON: {exc}. "
