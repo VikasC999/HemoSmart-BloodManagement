@@ -503,6 +503,27 @@ def run_full_pipeline(pdf_path):
     # Regardless of what the agent REPORTED, what actually happened is
     # tracked in alerted_set by the guarded tool itself -- this is the
     # authoritative record of real donor contact.
+    #
+    # GUARANTEED DISPATCH: testing showed the Action Agent can report a
+    # structurally correct-looking answer (even one that matches the
+    # verified list exactly) WITHOUT ever actually calling the tool --
+    # no real alert gets sent, but the report looks fine. Validating
+    # and logging that gap is not sufficient on its own: the actual
+    # point of this agent is a real-world side effect, and a donor who
+    # genuinely needed contacting must not silently go uncontacted just
+    # because the agent's own reasoning skipped the tool call. Any
+    # verified low-stock type NOT already covered by a real dispatch is
+    # therefore alerted directly here. The agent still gets the first,
+    # genuine attempt every run; this only fills in what it missed.
+    missing_dispatch = set(ground_truth_low) - alerted_set
+    if missing_dispatch:
+        print(f"[VALIDATION] Action: agent did not actually dispatch for {sorted(missing_dispatch)}. "
+              f"Dispatching directly to guarantee real donor contact.")
+        for bt in sorted(missing_dispatch):
+            units = ground_truth_inventory["low_stock_types"].get(bt, 0)
+            send_donor_alert(bt, units if units else None)
+            alerted_set.add(bt)
+
     action_ok = (sorted(alerted_set) == ground_truth_low)
     print(f"[VALIDATION] Action (real dispatch): {'matches' if action_ok else 'DIFFERS FROM'} verified low-stock list.")
     print(f"[VALIDATION] Blood types that actually received a real alert this run: {sorted(alerted_set)}")

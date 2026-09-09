@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pickle
 import json
+import subprocess
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
 
@@ -127,7 +128,105 @@ def extract_from_pdf(pdf_path: str, llm_provider: str = "ollama"):
 
 
 
-def send_donor_alert(blood_type: str, units_needed: int = None) -> str:
+DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
+LSTM_SEQ_LENGTH = 30  # must match the sequence length used in models/train_lstm_colab.py
+
+# Path to the Python interpreter INSIDE the separate LSTM venv (see
+# agents/lstm_forecast_standalone.py's setup instructions). Override
+# with the HEMOSMART_LSTM_PYTHON environment variable if your venv
+# lives somewhere else.
+LSTM_VENV_PYTHON = os.environ.get(
+    "HEMOSMART_LSTM_PYTHON",
+    os.path.join(os.path.dirname(MODEL_DIR), "lstm_env", "Scripts", "python.exe"),
+)
+LSTM_STANDALONE_SCRIPT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "lstm_forecast_standalone.py"
+)
+
+
+def _forecast_with_lstm(days: int):
+    """
+    Runs LSTM inference in a SEPARATE, isolated Python environment via
+    subprocess, rather than importing TensorFlow directly in this
+    process. This exists because TensorFlow's installed build requires
+    an older NumPy/protobuf combination than CrewAI's dependencies
+    require -- both cannot be reliably satisfied in one environment.
+    Isolating them via a subprocess boundary removes the conflict
+    entirely: this process never imports TensorFlow at all.
+
+    Returns None (triggering fallback to Prophet) if the LSTM venv
+    doesn't exist yet, or if the subprocess call fails for any reason.
+    See agents/lstm_forecast_standalone.py's docstring for one-time
+    setup instructions (create the venv, install tensorflow there).
+    """
+    if not os.path.exists(LSTM_VENV_PYTHON):
+        print(
+            f"[FORECAST] LSTM venv not found at {LSTM_VENV_PYTHON}. "
+            f"Falling back to Prophet. (See agents/lstm_forecast_standalone.py "
+            f"for one-time setup instructions to enable LSTM.)"
+        )
+        return None
+
+    try:
+        result = subprocess.run(
+            [LSTM_VENV_PYTHON, LSTM_STANDALONE_SCRIPT, "--days", str(days)],
+            capture_output=True, text=True, timeout=60,
+        )
+        output = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
+        parsed = json.loads(output)
+        if "error" in parsed:
+            print(f"[FORECAST] LSTM subprocess reported an error: {parsed['error']}. Falling back to Prophet.")
+            return None
+        return parsed
+    except Exception as exc:
+        print(f"[FORECAST] LSTM subprocess call failed ({exc.__class__.__name__}: {exc}). Falling back to Prophet.")
+        return None
+
+
+def get_blood_demand_forecast(days: int = 7) -> dict:
+    """
+    Forecasting Module (matches the report's Level 2 DFD, block 3C:
+    "Forecasting Module (LSTM / Prophet)"). Tries the LSTM model first
+    since it was empirically shown to outperform Prophet after tuning
+    (MAE 3.35 vs 3.48 -- see models/train_lstm_colab.py comparison).
+    Falls back to Prophet if the LSTM model/scaler files aren't
+    present (e.g. LSTM was trained on Colab but files weren't copied
+    down yet), and returns a clear error if neither is available.
+    """
+    lstm_result = _forecast_with_lstm(days)
+    if lstm_result is not None:
+        return lstm_result
+
+    prophet_path = os.path.join(MODEL_DIR, "prophet_model.pkl")
+    if not os.path.exists(prophet_path):
+        return {
+            "error": (
+                "No trained forecasting model found. Either place "
+                "lstm_model.h5 + lstm_scaler.pkl (from Colab) or "
+                "prophet_model.pkl (from models/train_prophet.py) "
+                "in the models/ folder."
+            )
+        }
+
+    with open(prophet_path, "rb") as f:
+        model = pickle.load(f)
+
+    future = model.make_future_dataframe(periods=days)
+    forecast = model.predict(future)
+    result = forecast[["ds", "yhat"]].tail(days)
+
+    return {
+        "forecast_days": days,
+        "model_used": "Prophet",
+        "predicted_units_per_day": [
+            {"date": str(row.ds.date()), "predicted_units": round(row.yhat, 1)}
+            for row in result.itertuples()
+        ],
+        "average_daily_demand": round(float(result["yhat"].mean()), 1),
+    }
+
+
+
     """
     Sends personalized alerts to the top eligible, most-likely-to-respond
     donors, selected via a Multi-Armed Bandit (Thompson Sampling) -- see
