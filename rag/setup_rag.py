@@ -37,8 +37,9 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from guideline_reference import TRANSFUSION_GUIDELINES
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-INDEX_PATH = "rag/faiss_index"
-GUIDELINE_PDF_PATH = "rag/who_guidelines.pdf"
+RAG_DIR = os.path.dirname(os.path.abspath(__file__))
+INDEX_PATH = os.path.join(RAG_DIR, "faiss_index")
+GUIDELINE_PDF_PATH = os.path.join(RAG_DIR, "who_guidelines.pdf")
 
 # Real documents are much longer and denser than the placeholder text,
 # so chunks need to be bigger to hold a complete clinical point, with

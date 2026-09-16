@@ -10,11 +10,13 @@ Run after setup_rag.py:
     python rag/query_rag.py
 """
 
+import os
+
 from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-INDEX_PATH = "rag/faiss_index"
+INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "faiss_index")
 
 # A few realistic test queries mirroring what the Prediction Agent
 # would actually send -- covering the main clinical scenarios.

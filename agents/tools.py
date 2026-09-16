@@ -37,18 +37,34 @@ LOW_STOCK_THRESHOLD = 15  # units; below this, a blood type is "low"
 # ----------------------------------------------------------------------
 # Prediction Agent's tool
 # ----------------------------------------------------------------------
+_xgb_model = None
+_label_encoder = None
+
+
+def _load_xgb_model():
+    """
+    Loads the trained XGBoost model + label encoder once and caches them
+    at module level. predict_transfusion() used to pickle.load() both
+    files on every single call, which is fine for a CLI script but adds
+    real latency to every API request once this is wrapped by FastAPI.
+    """
+    global _xgb_model, _label_encoder
+    if _xgb_model is None or _label_encoder is None:
+        xgb_path = os.path.join(MODEL_DIR, "xgb_model.pkl")
+        le_path = os.path.join(MODEL_DIR, "label_encoder.pkl")
+        with open(xgb_path, "rb") as f:
+            _xgb_model = pickle.load(f)
+        with open(le_path, "rb") as f:
+            _label_encoder = pickle.load(f)
+    return _xgb_model, _label_encoder
+
+
 def predict_transfusion(patient_record) -> dict:
     """
     patient_record: a PatientRecord instance (schema.patient_schema)
     Returns: {"transfusion_needed": bool, "confidence": float}
     """
-    xgb_path = os.path.join(MODEL_DIR, "xgb_model.pkl")
-    le_path = os.path.join(MODEL_DIR, "label_encoder.pkl")
-
-    with open(xgb_path, "rb") as f:
-        model = pickle.load(f)
-    with open(le_path, "rb") as f:
-        le = pickle.load(f)
+    model, le = _load_xgb_model()
 
     features = patient_record.to_model_features(le)
     prediction = bool(model.predict([features])[0])
@@ -60,7 +76,10 @@ def predict_transfusion(patient_record) -> dict:
 # ----------------------------------------------------------------------
 # Explanation Agent's tool
 # ----------------------------------------------------------------------
-def generate_explanation(patient_record, prediction: bool, llm_provider: str = "ollama") -> str:
+def generate_explanation(
+    patient_record, prediction: bool,
+    llm_provider: str = os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"),
+) -> str:
     """
     Wraps rag.explain.ExplanationGenerator -- retrieves WHO guideline
     context via FAISS, checks thresholds deterministically, and asks
@@ -79,6 +98,11 @@ def _load_inventory() -> dict:
         with open(INVENTORY_FILE, "r") as f:
             return json.load(f)
     return dict(DEFAULT_INVENTORY)
+
+
+def _save_inventory(inventory: dict) -> None:
+    with open(INVENTORY_FILE, "w") as f:
+        json.dump(inventory, f, indent=2)
 
 
 def check_inventory(blood_type: str = None) -> dict:
@@ -111,7 +135,10 @@ def check_inventory(blood_type: str = None) -> dict:
 # ----------------------------------------------------------------------
 # Extraction Agent's tool
 # ----------------------------------------------------------------------
-def extract_from_pdf(pdf_path: str, llm_provider: str = "ollama"):
+def extract_from_pdf(
+    pdf_path: str,
+    llm_provider: str = os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"),
+):
     """
     Wraps adapters.pdf_adapter.PDFReportAdapter -- extracts CBC report
     text, converts it to structured fields via the LLM, and returns a
@@ -226,7 +253,10 @@ def get_blood_demand_forecast(days: int = 7) -> dict:
     }
 
 
-
+# ----------------------------------------------------------------------
+# Donor Alert Agent's tool
+# ----------------------------------------------------------------------
+def send_donor_alert(blood_type: str) -> str:
     """
     Sends personalized alerts to the top eligible, most-likely-to-respond
     donors, selected via a Multi-Armed Bandit (Thompson Sampling) -- see

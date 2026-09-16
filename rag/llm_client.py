@@ -39,7 +39,7 @@ class OllamaClient(BaseLLMClient):
 class GroqClient(BaseLLMClient):
     """Cloud LLM via Groq's free tier. Requires GROQ_API_KEY env variable."""
 
-    def __init__(self, model: str = "llama3-8b-8192"):
+    def __init__(self, model: str = "openai/gpt-oss-20b"):
         from groq import Groq
         api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:

@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from llm_client import get_llm_client
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-INDEX_PATH = "rag/faiss_index"
+INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "faiss_index")
 
 EXPLANATION_PROMPT_TEMPLATE = """
 You are assisting a clinician by explaining an AI transfusion prediction.
@@ -95,7 +95,11 @@ def check_thresholds(patient_record) -> str:
 
 
 class ExplanationGenerator:
-    def __init__(self, llm_provider: str = "ollama", top_k: int = 5):
+    def __init__(
+        self,
+        llm_provider: str = os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"),
+        top_k: int = 5,
+    ):
         self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         self.vectorstore = FAISS.load_local(
             INDEX_PATH, self.embeddings, allow_dangerous_deserialization=True

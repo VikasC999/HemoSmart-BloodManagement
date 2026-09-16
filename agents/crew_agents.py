@@ -71,7 +71,10 @@ from agents.tools import (
     extract_from_pdf,
 )
 
-agent_llm = LLM(model="ollama/llama3.1:8b", base_url="http://localhost:11434")
+agent_llm = LLM(
+    model=os.environ.get("HEMOSMART_CREW_LLM_MODEL", "groq/openai/gpt-oss-20b"),
+    api_key=os.environ.get("GROQ_API_KEY"),
+)
 
 
 # ----------------------------------------------------------------------

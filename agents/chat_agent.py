@@ -61,7 +61,8 @@ class ChatSession:
     doesn't require the user to repeat all the lab values again.
     """
 
-    def __init__(self, llm_provider="ollama"):
+    def __init__(self, llm_provider=None):
+        llm_provider = llm_provider or os.environ.get("HEMOSMART_LLM_PROVIDER", "groq")
         self.llm = get_llm_client(provider=llm_provider)
         self.last_patient: PatientRecord = None
         self.last_prediction: bool = None
@@ -174,7 +175,20 @@ class ChatSession:
         elif intent == "inventory":
             bt_match = next((bt for bt in VALID_BLOOD_TYPES if bt.lower() in message.lower()), None)
             result = check_inventory(bt_match)
-            return str(result)
+
+            if bt_match:
+                status = "LOW STOCK" if result["low_stock"] else "OK"
+                return f"{result['blood_type']}: {result['units']} units ({status})"
+
+            lines = "\n".join(
+                f"  {bt}: {units} units" + (" (LOW)" if bt in result["low_stock_types"] else "")
+                for bt, units in result["inventory"].items()
+            )
+            shortage_note = (
+                f"Shortage alert: {', '.join(result['low_stock_types'].keys())} running low."
+                if result["any_shortage"] else "All blood types are adequately stocked."
+            )
+            return f"Current blood inventory:\n{lines}\n{shortage_note}"
 
         elif intent == "forecast":
             days_match = re.search(r"(\d+)\s*-?\s*day", message, re.I)
@@ -209,7 +223,7 @@ class ChatSession:
 def run_chat():
     print("HemoSmart Assistant (type 'quit' to exit)")
     print("-" * 50)
-    session = ChatSession(llm_provider="ollama")
+    session = ChatSession()
 
     while True:
         message = input("\nYou: ").strip()
