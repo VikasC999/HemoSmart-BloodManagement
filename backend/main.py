@@ -21,9 +21,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents.tools import _load_xgb_model
+from db.database import init_db
 from rag.explain import ExplanationGenerator
 
-from backend.routes import chat, donors, explain, forecast, inventory, predict
+from backend.routes import chat, donors, explain, forecast, inventory, patients, predict
 
 
 @asynccontextmanager
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
     # Load the XGBoost model/label encoder and build the FAISS-backed
     # explanation generator ONCE at startup, not per-request -- both
     # are expensive to construct (see agents/tools.py, rag/explain.py).
+    init_db()  # idempotent; also runs at db/database.py import time
     _load_xgb_model()
     app.state.explanation_generator = ExplanationGenerator()
     yield
@@ -51,6 +53,7 @@ app.include_router(forecast.router)
 app.include_router(chat.router)
 app.include_router(donors.router)
 app.include_router(inventory.router)
+app.include_router(patients.router)
 
 
 @app.get("/api/health")

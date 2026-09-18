@@ -19,12 +19,10 @@ import pickle
 import json
 import subprocess
 
-MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
+from db.database import SessionLocal
+from db.models import InventoryItem
 
-# In a real deployment, this reads from PostgreSQL (Person C's database).
-# Until that's wired up, a local JSON file stands in as the inventory
-# store so the Inventory Agent has something real to check against.
-INVENTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inventory.json")
+MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
 
 DEFAULT_INVENTORY = {
     "A+": 45, "A-": 12, "B+": 38, "B-": 8,
@@ -94,15 +92,29 @@ def generate_explanation(
 # Inventory Agent's tool
 # ----------------------------------------------------------------------
 def _load_inventory() -> dict:
-    if os.path.exists(INVENTORY_FILE):
-        with open(INVENTORY_FILE, "r") as f:
-            return json.load(f)
-    return dict(DEFAULT_INVENTORY)
+    """Reads stock levels from Postgres, seeding from DEFAULT_INVENTORY
+    the first time the table is empty (was previously agents/inventory.json)."""
+    with SessionLocal() as session:
+        rows = session.query(InventoryItem).all()
+        if rows:
+            return {r.blood_type: r.units for r in rows}
+
+        for blood_type, units in DEFAULT_INVENTORY.items():
+            session.add(InventoryItem(blood_type=blood_type, units=units))
+        session.commit()
+        return dict(DEFAULT_INVENTORY)
 
 
 def _save_inventory(inventory: dict) -> None:
-    with open(INVENTORY_FILE, "w") as f:
-        json.dump(inventory, f, indent=2)
+    with SessionLocal() as session:
+        existing = {r.blood_type: r for r in session.query(InventoryItem).all()}
+        for blood_type, units in inventory.items():
+            row = existing.get(blood_type)
+            if row is None:
+                session.add(InventoryItem(blood_type=blood_type, units=units))
+            else:
+                row.units = units
+        session.commit()
 
 
 def check_inventory(blood_type: str = None) -> dict:

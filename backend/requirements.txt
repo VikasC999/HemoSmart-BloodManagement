@@ -3,6 +3,8 @@ uvicorn[standard]
 pydantic>=2
 python-multipart
 python-dotenv
+sqlalchemy>=2
+psycopg[binary]
 
 xgboost
 scikit-learn

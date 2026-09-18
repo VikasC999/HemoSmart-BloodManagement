@@ -45,12 +45,15 @@ WHAT'S SIMULATED VS REAL:
     bandit -- exactly as this module is designed to support.
 """
 
-import json
 import os
 import random
-from datetime import datetime, timedelta
+import sys
+from datetime import date, datetime, timedelta
 
-DONOR_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "donors.json")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from db.database import SessionLocal
+from db.models import Donor as DonorRow
+
 MIN_DONATION_INTERVAL_DAYS = 90  # standard eligibility gap between donations
 BLOOD_TYPES = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
 
@@ -66,7 +69,7 @@ def simulate_donors(n=50, seed=42):
     """
     random.seed(seed)
     donors = []
-    today = datetime(2026, 8, 29)
+    today = datetime.now()
 
     for i in range(n):
         blood_type = random.choice(BLOOD_TYPES)
@@ -95,18 +98,57 @@ def simulate_donors(n=50, seed=42):
     return donors
 
 
+def _row_to_dict(row: DonorRow) -> dict:
+    return {
+        "donor_id": row.donor_id,
+        "name": row.name,
+        "phone": row.phone,
+        "blood_type": row.blood_type,
+        "last_donation_date": row.last_donation_date.strftime("%Y-%m-%d"),
+        "alerts_sent": row.alerts_sent,
+        "alerts_responded": row.alerts_responded,
+    }
+
+
 def load_donors():
-    if os.path.exists(DONOR_FILE):
-        with open(DONOR_FILE, "r") as f:
-            return json.load(f)
-    donors = simulate_donors()
-    save_donors(donors)
-    return donors
+    """Reads the donor pool from Postgres, seeding it from simulate_donors()
+    the first time the table is empty (was previously agents/donors.json)."""
+    with SessionLocal() as session:
+        rows = session.query(DonorRow).all()
+        if rows:
+            return [_row_to_dict(r) for r in rows]
+
+        donors = simulate_donors()
+        for d in donors:
+            session.add(DonorRow(
+                donor_id=d["donor_id"],
+                name=d["name"],
+                phone=d["phone"],
+                blood_type=d["blood_type"],
+                last_donation_date=datetime.strptime(d["last_donation_date"], "%Y-%m-%d").date(),
+                alerts_sent=d["alerts_sent"],
+                alerts_responded=d["alerts_responded"],
+            ))
+        session.commit()
+        return donors
 
 
 def save_donors(donors):
-    with open(DONOR_FILE, "w") as f:
-        json.dump(donors, f, indent=2)
+    """Upserts the (possibly-updated) donor list back to Postgres."""
+    with SessionLocal() as session:
+        existing = {r.donor_id: r for r in session.query(DonorRow).all()}
+        for d in donors:
+            row = existing.get(d["donor_id"])
+            if row is None:
+                row = DonorRow(donor_id=d["donor_id"])
+                session.add(row)
+            row.name = d["name"]
+            row.phone = d["phone"]
+            row.blood_type = d["blood_type"]
+            row.last_donation_date = datetime.strptime(d["last_donation_date"], "%Y-%m-%d").date()
+            row.alerts_sent = d["alerts_sent"]
+            row.alerts_responded = d["alerts_responded"]
+        session.commit()
 
 
 # ----------------------------------------------------------------------
@@ -116,7 +158,7 @@ def is_eligible(donor: dict, blood_type: str, today: datetime = None) -> bool:
     """A donor is eligible if their blood type matches and enough time
     has passed since their last donation."""
     if today is None:
-        today = datetime(2026, 8, 29)
+        today = datetime.now()
 
     if donor["blood_type"] != blood_type:
         return False
@@ -210,6 +252,7 @@ def send_intelligent_donor_alerts(blood_type: str, k: int = 3) -> dict:
         })
 
     save_donors(donors)
+    _log_alerts(blood_type, alerted)
 
     return {
         "blood_type": blood_type,
@@ -217,3 +260,17 @@ def send_intelligent_donor_alerts(blood_type: str, k: int = 3) -> dict:
         "alerted_donors": alerted,
         "message": f"Alerted {len(alerted)} donor(s) for blood type {blood_type}.",
     }
+
+
+def _log_alerts(blood_type: str, alerted: list) -> None:
+    """Records each alert in donor_alerts, so alert history survives
+    beyond the donor's own alerts_sent/alerts_responded counters."""
+    from db.models import DonorAlert
+    with SessionLocal() as session:
+        for donor in alerted:
+            session.add(DonorAlert(
+                donor_id=donor["donor_id"],
+                blood_type=blood_type,
+                method="log",
+            ))
+        session.commit()
