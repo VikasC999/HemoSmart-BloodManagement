@@ -101,8 +101,15 @@ input, select {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+input[type="file"] {
+  max-width: 100%;
+  font-size: 0.8rem;
 }
 
 button {
@@ -181,4 +188,120 @@ th, td {
 
 .chat-msg.assistant {
   background: #f3f4f6;
+}
+
+.stock-alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+.stock-alert p {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+}
+
+.stock-ok {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.inline-edit-input {
+  width: 70px;
+  padding: 3px 6px;
+}
+
+.history-row {
+  background: #f9fafb;
+  font-size: 0.84rem;
+}
+
+.history-row ul {
+  margin: 4px 0;
+  padding-left: 18px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.details-cell {
+  font-family: monospace;
+  font-size: 0.75rem;
+  max-width: 260px;
+  overflow-wrap: break-word;
+}
+
+.alerts-panel .alerts-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.alerts-panel h4 {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.alert-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.alert-list-item {
+  font-size: 0.84rem;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #f3f4f6;
+}
+
+.alert-list-item.low {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.pill-cached {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.chart-wrap {
+  margin-top: 8px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: white;
+  color: #444;
+  border: 1px solid #ddd;
+}
+
+.tab.active {
+  background: #b91c1c;
+  color: white;
+  border-color: #b91c1c;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin: -6px 0 10px;
 }

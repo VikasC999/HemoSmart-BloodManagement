@@ -48,7 +48,9 @@ def _resolve_user_id(request: Request) -> Optional[int]:
 
 class AuditLogMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        if not request.url.path.startswith("/api/"):
+        # OPTIONS is the browser's CORS preflight, not an application
+        # action -- logging it just adds noise with no useful signal.
+        if not request.url.path.startswith("/api/") or request.method == "OPTIONS":
             return await call_next(request)
 
         response = await call_next(request)

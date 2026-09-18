@@ -83,4 +83,21 @@ export const api = {
 
   inventory: (bloodType) =>
     request(`/api/inventory${bloodType ? `?blood_type=${bloodType}` : ""}`),
+
+  updateInventory: (bloodType, units) =>
+    request("/api/inventory", {
+      method: "PATCH",
+      body: JSON.stringify({ blood_type: bloodType, units }),
+    }),
+
+  patients: (limit = 20) => request(`/api/patients?limit=${limit}`),
+
+  patientHistory: (id) => request(`/api/patients/${id}/predictions`),
+
+  donors: (bloodType) =>
+    request(`/api/donors${bloodType ? `?blood_type=${bloodType}` : ""}`),
+
+  recentDonorAlerts: (limit = 10) => request(`/api/donors/alerts/recent?limit=${limit}`),
+
+  auditLog: (limit = 50) => request(`/api/audit-log?limit=${limit}`),
 };
