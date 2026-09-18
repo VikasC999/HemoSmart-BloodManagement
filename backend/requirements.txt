@@ -8,6 +8,7 @@ psycopg[binary]
 python-jose[cryptography]
 bcrypt
 email-validator
+redis
 
 xgboost
 scikit-learn

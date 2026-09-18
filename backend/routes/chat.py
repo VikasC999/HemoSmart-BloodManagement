@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend.dependencies.rbac import require_role
 from backend.schemas.requests import ChatRequest
-from backend.services.session_store import get_or_create_session
+from backend.services.session_store import get_or_create_session, save_session
 
 router = APIRouter()
 
@@ -17,4 +17,5 @@ def chat(payload: ChatRequest):
             status_code=502,
             detail=f"Chat agent failed ({exc.__class__.__name__}): {exc}",
         )
+    save_session(session_id, session)
     return {"session_id": session_id, "reply": reply}

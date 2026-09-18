@@ -1,0 +1,27 @@
+# Python virtual environments -- rebuilt fresh inside the image
+.venv/
+venv/
+lstm_env/
+__pycache__/
+*.py[cod]
+
+# Frontend -- deployed separately to Vercel, not part of this image
+frontend/node_modules/
+frontend/dist/
+
+# Secrets -- never bake these into an image layer; env vars come from
+# the container runtime instead
+.env
+backend/.env
+frontend/.env.local
+frontend/.env.production.local
+
+# VCS / editor / OS cruft
+.git/
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Local Postgres data (not part of the repo, but guard anyway)
+*.pgdata/
