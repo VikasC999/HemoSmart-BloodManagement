@@ -4,10 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from backend.dependencies.rbac import require_role
 from db.database import get_db
 from db.models import Patient, Prediction
 
 router = APIRouter()
+allowed_roles = require_role("Hospital Staff", "Blood Bank Manager", "Auditor")
 
 
 class PredictionOut(BaseModel):
@@ -36,7 +38,7 @@ class PatientOut(BaseModel):
         from_attributes = True
 
 
-@router.get("/api/patients", response_model=List[PatientOut])
+@router.get("/api/patients", response_model=List[PatientOut], dependencies=[Depends(allowed_roles)])
 def list_patients(limit: int = 50, db: Session = Depends(get_db)):
     """Most recent patients first -- backs the Day 6 case-list view so
     predictions persist across page reloads instead of vanishing."""
@@ -72,7 +74,11 @@ def list_patients(limit: int = 50, db: Session = Depends(get_db)):
     return out
 
 
-@router.get("/api/patients/{patient_id}/predictions", response_model=List[PredictionOut])
+@router.get(
+    "/api/patients/{patient_id}/predictions",
+    response_model=List[PredictionOut],
+    dependencies=[Depends(allowed_roles)],
+)
 def patient_predictions(patient_id: int, db: Session = Depends(get_db)):
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if patient is None:

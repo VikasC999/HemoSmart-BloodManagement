@@ -1,8 +1,57 @@
-import { useState } from "react";
-import { api } from "./api";
+import { useEffect, useState } from "react";
+import { api, auth } from "./api";
 
 const SURGERY_TYPES = ["Cardiac", "Orthopedic", "General", "Emergency"];
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"];
+
+// Minimal login -- functional, not the polished role-based dashboard
+// planned for Day 6. Just enough to get a token so the app stays usable
+// now that the backend enforces RBAC.
+function LoginScreen({ onLoggedIn }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await auth.login(email, password);
+      onLoggedIn();
+    } catch (err) {
+      setError("Login failed -- check your email and password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="app login-screen">
+      <header>
+        <h1>HemoSmart</h1>
+        <p>Sign in to continue</p>
+      </header>
+      <form className="card login-card" onSubmit={submit}>
+        <label>
+          Email
+          <input type="email" value={email} required
+                 onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label>
+          Password
+          <input type="password" value={password} required
+                 onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        <div className="actions">
+          <button type="submit" disabled={loading}>Sign In</button>
+        </div>
+        {error && <p className="error">{error}</p>}
+      </form>
+    </div>
+  );
+}
 
 function PredictionCard() {
   const [form, setForm] = useState({
@@ -263,11 +312,36 @@ function DonorAlertCard() {
 }
 
 export default function App() {
+  const [loggedIn, setLoggedIn] = useState(auth.isLoggedIn());
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (loggedIn) {
+      auth.me().then(setUser).catch(() => {});
+    }
+  }, [loggedIn]);
+
+  if (!loggedIn) {
+    return <LoginScreen onLoggedIn={() => setLoggedIn(true)} />;
+  }
+
+  const logout = () => {
+    auth.logout();
+    setLoggedIn(false);
+    setUser(null);
+  };
+
   return (
     <div className="app">
-      <header>
-        <h1>HemoSmart</h1>
-        <p>AI-assisted blood transfusion prediction &amp; supply coordination</p>
+      <header className="header-row">
+        <div>
+          <h1>HemoSmart</h1>
+          <p>AI-assisted blood transfusion prediction &amp; supply coordination</p>
+        </div>
+        <div className="account">
+          {user && <span className="account-info">{user.email} · {user.role}</span>}
+          <button onClick={logout}>Sign Out</button>
+        </div>
       </header>
       <main className="grid">
         <PredictionCard />

@@ -1,12 +1,13 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from backend.dependencies.rbac import require_role
 from backend.schemas.requests import ChatRequest
 from backend.services.session_store import get_or_create_session
 
 router = APIRouter()
 
 
-@router.post("/api/chat")
+@router.post("/api/chat", dependencies=[Depends(require_role("Hospital Staff"))])
 def chat(payload: ChatRequest):
     session_id, session = get_or_create_session(payload.session_id)
     try:

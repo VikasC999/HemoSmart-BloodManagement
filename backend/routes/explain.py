@@ -1,13 +1,14 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from adapters.manual_adapter import ManualEntryAdapter
+from backend.dependencies.rbac import require_role
 from backend.schemas.requests import ExplainRequest
 from rag.explain import check_thresholds
 
 router = APIRouter()
 
 
-@router.post("/api/explain")
+@router.post("/api/explain", dependencies=[Depends(require_role("Hospital Staff", "Blood Bank Manager"))])
 def explain(payload: ExplainRequest, request: Request):
     adapter = ManualEntryAdapter()
     records = adapter.safe_parse(payload.patient.model_dump())

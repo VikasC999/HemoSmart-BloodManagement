@@ -21,10 +21,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from agents.tools import _load_xgb_model
+from backend.services.bootstrap import ensure_admin_user
 from db.database import init_db
 from rag.explain import ExplanationGenerator
 
-from backend.routes import chat, donors, explain, forecast, inventory, patients, predict
+from backend.routes import auth, chat, donors, explain, forecast, inventory, patients, predict
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ async def lifespan(app: FastAPI):
     # explanation generator ONCE at startup, not per-request -- both
     # are expensive to construct (see agents/tools.py, rag/explain.py).
     init_db()  # idempotent; also runs at db/database.py import time
+    ensure_admin_user()
     _load_xgb_model()
     app.state.explanation_generator = ExplanationGenerator()
     yield
@@ -47,6 +49,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(predict.router)
 app.include_router(explain.router)
 app.include_router(forecast.router)

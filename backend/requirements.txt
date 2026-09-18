@@ -5,6 +5,9 @@ python-multipart
 python-dotenv
 sqlalchemy>=2
 psycopg[binary]
+python-jose[cryptography]
+bcrypt
+email-validator
 
 xgboost
 scikit-learn
