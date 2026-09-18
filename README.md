@@ -6,7 +6,9 @@ AI-assisted blood transfusion prediction, guideline-grounded explanation, demand
 
 - `agents/`, `rag/`, `adapters/`, `schema/`, `models/`, `data/` — the ML/RAG/multi-agent core (XGBoost transfusion prediction, RAG explanation over WHO guidelines via FAISS, Prophet/LSTM demand forecasting, PDF/CSV/manual intake adapters, CrewAI 6-agent pipeline, Thompson-Sampling donor selection).
 - `db/` — SQLAlchemy models and session, shared by the backend and the standalone agent scripts.
-- `backend/` — FastAPI layer wrapping the above as HTTP endpoints, with JWT auth + role-based access control.
+- `backend/` — FastAPI layer wrapping the above as HTTP endpoints, with JWT auth, role-based access control, and audit logging.
+- `mcp_server/` — a real Model Context Protocol server exposing HemoSmart's own tools (predict, explain, check inventory, alert donors) to any MCP-compatible AI client (Claude Desktop, Claude Code, etc.) — see **MCP server** below.
+- `integrations/mcp/` — a plain adapter interface for external hospital systems (named for continuity with the project report, not related to the Model Context Protocol above — see that module's docstring for why those are different things).
 - `frontend/` — React (Vite) dashboard for prediction, explanation, forecasting, chat, inventory, and donor alerts, behind a login screen.
 - `Dockerfile` — single-container backend image (see **Docker** below).
 
@@ -53,12 +55,24 @@ Single container, no LSTM sidecar (see below). Built and verified locally via [C
 
 The image installs a CPU-only build of `torch` before the rest of `backend/requirements.txt` — `sentence-transformers` and `crewai`'s dependency tree both pull in `torch`, and pip's default wheel is the CUDA/GPU build (several GB of unused `nvidia-*` packages, since every model in this project runs CPU inference). This cuts the image from ~4GB to ~1.3GB.
 
+## MCP server
+
+HemoSmart exposes its own tools — `predict_transfusion`, `explain_prediction`, `check_inventory`, `alert_donors` — as a real [Model Context Protocol](https://modelcontextprotocol.io) server, so any MCP-compatible AI client can connect and use them directly, not just the REST API or the built-in chat agent.
+
+- **Remote (HTTP)**: mounted into the FastAPI app at `/mcp` — reachable at `http://localhost:8000/mcp` locally, or the deployed URL in production. Verified with the real `mcp` client SDK (session initialize → list tools → call tool), not just written and assumed to work.
+- **Local (stdio)**: `python -m mcp_server.stdio_main`, for a client that launches it as a subprocess (see the docstring in `mcp_server/stdio_main.py` for a Claude Desktop config example).
+
+No auth on the `/mcp` path today — a known simplification, same as the rest of this project names what's simplified rather than hiding it.
+
+This is the correct use of MCP here: the protocol connects LLM clients to tools. It's deliberately *not* used to represent an external hospital system — `integrations/mcp/` (a plain adapter interface) is the right pattern for that kind of system-to-system integration, which MCP was never designed for. `POST /api/mcp/sync/{hospital_id}` demonstrates that adapter boundary against a fixture-backed mock hospital (`integrations/mcp/mock_hospital.py`).
+
 ## What's simulated vs. real
 
 - **LLM provider**: Groq (cloud, free tier) is used throughout, not Ollama — a free-tier host can't run a local Ollama server. Set `GROQ_API_KEY` (console.groq.com).
 - **Forecasting**: LSTM is the better-performing model (MAE 3.35 vs Prophet's 3.48) but requires a separate TensorFlow virtual environment (see `agents/lstm_forecast_standalone.py`) due to a dependency conflict with CrewAI's requirements. It runs via an isolated subprocess when `HEMOSMART_LSTM_PYTHON` points at that venv; otherwise the system automatically and silently falls back to Prophet. The containerized/deployed version intentionally does not set up the LSTM sidecar (not worth it for a free-tier single-service host) and always serves Prophet forecasts — this is a scoped decision, not a bug.
 - **Donor alerts**: donor selection (Thompson Sampling / Multi-Armed Bandit) is fully real. Actually dispatching an SMS/WhatsApp alert is a print/log stub — real dispatch would need a paid API (Twilio, WhatsApp Business).
-- **Storage**: donor and inventory state live in Postgres (`db/models.py`), replacing the Day 1 JSON files — auto-seeded with the same simulated data on first run. `audit_log` and `forecasts` tables exist already but aren't written to until audit logging (Day 5) lands.
+- **Storage**: donor and inventory state live in Postgres (`db/models.py`), replacing the Day 1 JSON files — auto-seeded with the same simulated data on first run. `forecasts` exists in the schema but isn't written to yet.
+- **Audit logging**: every `/api/*` request logs to `audit_log` (method/path/status/user/timestamp); prediction creation, donor alerts, and inventory changes additionally log structured detail (e.g. previous vs. new stock level). Read via `GET /api/audit-log` (Auditor/Admin only) — no viewer UI yet (Day 6).
 - **Auth**: JWT + 5-role RBAC is enforced on every route. The frontend's login screen is intentionally minimal (functional, not the role-based dashboards planned for Day 6) — everyone sees the same panels today; the backend is what actually restricts what each role can do.
 - **Caching**: chat session state and forecast responses are cached in Redis; both degrade gracefully (logged warning, no error) if Redis is unreachable — it's a performance layer, not a dependency.
 - **File upload predictions**: `POST /api/predict/pdf` (one patient per report) and `POST /api/predict/csv` (batch, one prediction per row) are wired up and persist to Postgres; there's no upload UI in the frontend yet (planned for Day 6) — use `curl -F file=@report.pdf ...` or the FastAPI docs at `/docs` in the meantime.

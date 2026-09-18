@@ -2,7 +2,7 @@ import os
 import tempfile
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from adapters.csv_adapter import CSVExportAdapter
@@ -11,46 +11,21 @@ from adapters.pdf_adapter import PDFReportAdapter
 from agents.tools import predict_transfusion
 from backend.dependencies.rbac import require_role
 from backend.schemas.requests import ManualPatientInput
+from backend.services.persistence import persist_prediction as _persist
 from db.database import get_db
-from db.models import Patient, Prediction, User
+from db.models import User
 from rag.llm_client import get_llm_client
-from schema.patient_schema import PatientRecord, PredictionResult
+from schema.patient_schema import PredictionResult
 
 router = APIRouter()
 allowed_roles = require_role("Hospital Staff", "Blood Bank Manager")
 
 
-def _persist(db: Session, record: PatientRecord, result: dict, created_by: int = None) -> None:
-    """Saves the patient + prediction so it survives past this request
-    (Day 1's predictions vanished on restart -- there was nowhere to put
-    them). Failures here are logged, not raised -- a DB hiccup shouldn't
-    block a clinician from getting their prediction back."""
-    try:
-        patient_row = Patient(
-            hemoglobin=record.hemoglobin,
-            platelets=record.platelets,
-            inr=record.INR,
-            age=record.age,
-            surgery_type=record.surgery_type,
-            source_format=record.source_format,
-            source_hospital=record.source_hospital,
-            created_by=created_by,
-        )
-        db.add(patient_row)
-        db.flush()  # assigns patient_row.id without committing yet
-        db.add(Prediction(
-            patient_id=patient_row.id,
-            transfusion_needed=result["transfusion_needed"],
-            confidence=result["confidence"],
-        ))
-        db.commit()
-    except Exception as exc:
-        db.rollback()
-        print(f"[predict] Failed to persist patient/prediction: {exc}")
-
-
 @router.post("/api/predict", response_model=PredictionResult)
-def predict(payload: ManualPatientInput, db: Session = Depends(get_db), user: User = Depends(allowed_roles)):
+def predict(
+    payload: ManualPatientInput, request: Request,
+    db: Session = Depends(get_db), user: User = Depends(allowed_roles),
+):
     adapter = ManualEntryAdapter()
     records = adapter.safe_parse(payload.model_dump())
     if not records:
@@ -59,6 +34,15 @@ def predict(payload: ManualPatientInput, db: Session = Depends(get_db), user: Us
     record = records[0]
     result = predict_transfusion(record)
     _persist(db, record, result, created_by=user.id)
+
+    request.state.audit_action = "prediction_created"
+    request.state.audit_resource_type = "prediction"
+    request.state.audit_details = {
+        "surgery_type": record.surgery_type,
+        "source_format": record.source_format,
+        "transfusion_needed": result["transfusion_needed"],
+        "confidence": result["confidence"],
+    }
 
     return PredictionResult(
         transfusion_needed=result["transfusion_needed"],
@@ -69,7 +53,8 @@ def predict(payload: ManualPatientInput, db: Session = Depends(get_db), user: Us
 
 @router.post("/api/predict/pdf", response_model=PredictionResult)
 async def predict_from_pdf(
-    file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(allowed_roles),
+    request: Request, file: UploadFile = File(...),
+    db: Session = Depends(get_db), user: User = Depends(allowed_roles),
 ):
     """Upload a CBC lab report PDF -- extracted via PyMuPDF + LLM into a
     validated PatientRecord, then predicted exactly like manual entry."""
@@ -94,6 +79,15 @@ async def predict_from_pdf(
     result = predict_transfusion(record)
     _persist(db, record, result, created_by=user.id)
 
+    request.state.audit_action = "prediction_created"
+    request.state.audit_resource_type = "prediction"
+    request.state.audit_details = {
+        "surgery_type": record.surgery_type,
+        "source_format": record.source_format,
+        "transfusion_needed": result["transfusion_needed"],
+        "confidence": result["confidence"],
+    }
+
     return PredictionResult(
         transfusion_needed=result["transfusion_needed"],
         confidence=result["confidence"],
@@ -103,7 +97,8 @@ async def predict_from_pdf(
 
 @router.post("/api/predict/csv", response_model=List[PredictionResult])
 async def predict_from_csv(
-    file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(allowed_roles),
+    request: Request, file: UploadFile = File(...),
+    db: Session = Depends(get_db), user: User = Depends(allowed_roles),
 ):
     """Upload a hospital's bulk CSV export -- one prediction per row,
     since a CSV export is naturally a batch of patients (unlike a PDF,
@@ -133,4 +128,13 @@ async def predict_from_csv(
             confidence=result["confidence"],
             source_format=record.source_format,
         ))
+
+    request.state.audit_action = "prediction_created_batch"
+    request.state.audit_resource_type = "prediction"
+    request.state.audit_details = {
+        "source_format": "csv",
+        "count": len(results),
+        "transfusion_needed_count": sum(1 for r in results if r.transfusion_needed),
+    }
+
     return results
