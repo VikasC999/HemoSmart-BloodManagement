@@ -48,9 +48,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="HemoSmart API", lifespan=lifespan)
 
+# Comma-separated list of allowed frontend origins, e.g.
+# "https://hemosmart.vercel.app". Unset means "*", which is fine for
+# local dev but should always be set in production.
+_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten to the deployed frontend origin later
+    allow_origins=_cors_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )

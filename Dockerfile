@@ -27,7 +27,20 @@ COPY backend/requirements.txt backend/requirements.txt
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
-COPY . .
+# Hugging Face Spaces runs containers as uid 1000 (and other hosts are
+# better off not running as root either), so create that user and give
+# it a writable HOME.
+RUN useradd -m -u 1000 user
+ENV HOME=/home/user \
+    HF_HOME=/home/user/.cache/huggingface
+USER user
+
+# Bake the RAG embedding model (rag/explain.py's EMBEDDING_MODEL) into
+# the image. Otherwise the first request after every cold start would
+# download it from the Hub -- slow, and it needs a writable cache dir.
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+
+COPY --chown=user . .
 
 EXPOSE 8000
 
