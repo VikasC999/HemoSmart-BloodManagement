@@ -64,8 +64,8 @@ export default function PatientListCard() {
           <h2 id="patients-title">Recent patients</h2>
           {patients && <p className="card-sub">The 20 most recent, newest first</p>}
         </div>
-        <button className="secondary" onClick={load} disabled={loading}>
-          <RotateCw size={15} aria-hidden="true" /> Refresh
+        <button className="tool" onClick={load} disabled={loading}>
+          <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
         </button>
       </div>
       {error && <ErrorState what="Couldn't load patients." error={error} onRetry={load} />}

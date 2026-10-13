@@ -52,8 +52,8 @@ export default function DonorResponsesCard() {
           <h2 id="responses-title">Awaiting a reply</h2>
           {pending && <p className="card-sub">{pending.length} alert{pending.length === 1 ? "" : "s"} · oldest replies expire after 48 h</p>}
         </div>
-        <button className="secondary" onClick={load} disabled={loading}>
-          <RotateCw size={15} aria-hidden="true" /> Refresh
+        <button className="tool" onClick={load} disabled={loading}>
+          <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
         </button>
       </div>
       {error && <ErrorState what={error.what} error={error.error} onRetry={load} />}

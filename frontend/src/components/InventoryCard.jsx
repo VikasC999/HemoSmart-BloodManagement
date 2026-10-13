@@ -39,7 +39,7 @@ export default function InventoryCard({ editable = false }) {
     try {
       const collected = new Date(Date.now() - receive.daysOld * 86400000).toISOString();
       const res = await api.receiveUnits(receive.group, receive.component, receive.count, collected);
-      setMessage(`Received ${res.received.length} ${receive.group} ${receive.component} unit(s).`);
+      setMessage(`Added ${res.received.length} ${receive.group} ${receive.component} unit${res.received.length === 1 ? "" : "s"} to stock.`);
       await load();
     } catch (e) {
       setError({ what: "Units weren't received.", error: e });
@@ -60,8 +60,8 @@ export default function InventoryCard({ editable = false }) {
             </p>
           )}
         </div>
-        <button className="secondary" onClick={load} disabled={loading}>
-          <RotateCw size={15} aria-hidden="true" /> Refresh
+        <button className="tool" onClick={load} disabled={loading}>
+          <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
         </button>
       </div>
       {error && <ErrorState what={error.what} error={error.error} onRetry={load} />}
@@ -104,16 +104,17 @@ export default function InventoryCard({ editable = false }) {
         </div>
       )}
       <ul className="legend" aria-label="Legend">
+        <li className="muted">Against par:</li>
         <li><span className="stock-cell sufficient legend-key">Sufficient</span></li>
         <li><span className="stock-cell low legend-key"><TriangleAlert size={13} aria-hidden="true" /> Low stock</span></li>
         <li><span className="stock-cell critical legend-key"><OctagonAlert size={13} aria-hidden="true" /> Critical</span></li>
-        <li className="muted">against par level ·</li>
-        <li className="muted legend-near"><Hourglass size={12} aria-hidden="true" /> units near expiry</li>
+        <li className="muted legend-near"><Hourglass size={12} aria-hidden="true" /> = units near expiry</li>
       </ul>
 
       {editable && (
         <form className="receive" onSubmit={(e) => { e.preventDefault(); submitReceive(); }}>
           <h3 className="section-title">Receive units</h3>
+          <p className="hint">Log a delivery. Units enter stock now; their expiry dates count from collection.</p>
           <div className="receive-grid">
             <label>
               Blood group
@@ -133,14 +134,14 @@ export default function InventoryCard({ editable = false }) {
                      onChange={(e) => setReceive({ ...receive, count: parseInt(e.target.value, 10) || 1 })} />
             </label>
             <label>
-              Collected (days ago)
+              Days since collection
               <input type="number" min={0} value={receive.daysOld}
                      onChange={(e) => setReceive({ ...receive, daysOld: parseFloat(e.target.value) || 0 })} />
             </label>
           </div>
           <div className="actions">
             <button type="submit" disabled={saving}>
-              <PackagePlus size={16} aria-hidden="true" /> {saving ? "Receiving…" : "Receive units"}
+              <PackagePlus size={16} aria-hidden="true" /> {saving ? "Adding…" : "Add to stock"}
             </button>
           </div>
           {message && <p className="state empty" role="status">{message}</p>}

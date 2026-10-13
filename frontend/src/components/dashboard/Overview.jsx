@@ -6,7 +6,7 @@ import { PageHeader } from "../layout/AppShell";
 import {
   AIPanel, EmptyState, ErrorState, SeverityBadge, Skeleton, SkeletonLines, UpdatedAt, stockSeverity,
 } from "../ui";
-import { formatAgo } from "../ui/format";
+import { TRIGGER_LABEL, formatAgo } from "../ui/format";
 
 // One loader per block, so a failed forecast doesn't blank the inventory.
 function useLoad(fn) {
@@ -38,7 +38,8 @@ function attentionItems(inventory, outlook) {
     if (s.status === "Critical") {
       items.push({
         level: "critical", key: `crit-${s.blood_group}-${s.component}`,
-        text: `${s.blood_group} ${s.component}: ${s.available} unit${s.available === 1 ? "" : "s"} in stock against a par of ${Math.round(s.par)}.`,
+        subject: `${s.blood_group} ${s.component}`,
+        text: `${s.available} unit${s.available === 1 ? "" : "s"} left against a par of ${Math.round(s.par)}.`,
         action: { href: "#donorOutreach", label: "Alert donors" },
       });
     }
@@ -46,7 +47,8 @@ function attentionItems(inventory, outlook) {
   for (const s of outlook?.shortages || []) {
     items.push({
       level: "high", key: `short-${s.blood_group}-${s.component}`,
-      text: `${s.blood_group} ${s.component}: forecast ${s.projected_shortage} unit${s.projected_shortage === 1 ? "" : "s"} short from ${s.first_shortage_date}.`,
+      subject: `${s.blood_group} ${s.component}`,
+      text: `Forecast to run ${s.projected_shortage} unit${s.projected_shortage === 1 ? "" : "s"} short from ${s.first_shortage_date}.`,
       action: { href: "#donorOutreach", label: "Alert donors" },
     });
   }
@@ -54,16 +56,18 @@ function attentionItems(inventory, outlook) {
     if (s.status === "Low") {
       items.push({
         level: "moderate", key: `low-${s.blood_group}-${s.component}`,
-        text: `${s.blood_group} ${s.component} below par: ${s.available} of ${Math.round(s.par)} units.`,
-        action: { href: "#inventory", label: "View inventory" },
+        subject: `${s.blood_group} ${s.component}`,
+        text: `Below par: ${s.available} of ${Math.round(s.par)} units.`,
+        action: { href: "#inventory", label: "Inventory" },
       });
     }
   }
   for (const w of outlook?.wastage_risks || []) {
     items.push({
       level: "moderate", key: `waste-${w.blood_group}-${w.component}`,
-      text: `${w.blood_group} ${w.component}: ${w.projected_wastage} unit${w.projected_wastage === 1 ? "" : "s"} may expire unused within 7 days.`,
-      action: { href: "#inventory", label: "View inventory" },
+      subject: `${w.blood_group} ${w.component}`,
+      text: `${w.projected_wastage} unit${w.projected_wastage === 1 ? "" : "s"} may expire unused within 7 days.`,
+      action: { href: "#inventory", label: "Inventory" },
     });
   }
   return items.sort((a, b) => SEVERITY_ORDER[a.level] - SEVERITY_ORDER[b.level]);
@@ -136,7 +140,7 @@ export default function Overview({ canRun = false }) {
     <>
       <PageHeader
         title="Supply overview"
-        description="What needs attention in the blood bank, and what the agents did about it."
+        description="Today's stock, the week ahead, and what the agents have already handled."
         actions={canRun && (
           <button onClick={runCycle} disabled={running}>
             {running ? <RotateCw size={16} className="spin" aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
@@ -222,8 +226,9 @@ export default function Overview({ canRun = false }) {
                 {items.map((it) => (
                   <li key={it.key} className={`attention-item level-${it.level}`}>
                     <SeverityBadge level={it.level} className="attention-badge" />
-                    <p>{it.text}</p>
-                    <a className="text-link" href={it.action.href}>
+                    <p><strong className="attention-subject">{it.subject}</strong> {it.text}</p>
+                    <a className="text-link quiet" href={it.action.href}
+                       aria-label={`${it.action.label}: ${it.subject}`}>
                       {it.action.label} <ArrowRight size={14} aria-hidden="true" />
                     </a>
                   </li>
@@ -241,13 +246,13 @@ export default function Overview({ canRun = false }) {
               <div className="ai-panel"><SkeletonLines lines={5} label="Loading agent activity" /></div>
             ) : !cycle ? (
               <EmptyState title="The agents haven't run yet">
-                {canRun ? "Run an agent cycle to check stock against the forecast." : "The scheduler will run the first cycle."}
+                {canRun ? "Run a cycle to check stock against the forecast and act on any gaps." : "The first cycle will run on the scheduler."}
               </EmptyState>
             ) : (
-              <AIPanel label="HemoSmart AI · latest agent cycle">
+              <AIPanel label="HemoSmart AI · latest cycle">
                 <p className="cycle-meta">
                   <UpdatedAt iso={cycle.started_at} prefix="Ran" />
-                  <span className="muted"> · {cycle.trigger}</span>
+                  <span className="muted"> · {TRIGGER_LABEL[cycle.trigger] || cycle.trigger}</span>
                   {cycle.status !== "ok" && <SeverityBadge level="moderate" label={`Cycle ${cycle.status}`} />}
                 </p>
                 {cycle.brief && <p className="cycle-brief">{cycle.brief}</p>}
@@ -270,7 +275,7 @@ export default function Overview({ canRun = false }) {
             <div className="card-head">
               <h2 id="outcomes-title">Unit outcomes · last 30 days</h2>
             </div>
-            {!metrics ? (agents.error ? <p className="muted">Unavailable.</p> : <SkeletonLines lines={2} />) : (
+            {!metrics ? (agents.error ? <p className="muted">Outcomes are unavailable until agent activity loads.</p> : <SkeletonLines lines={2} />) : (
               <dl className="outcomes">
                 <div><dt>Issued</dt><dd>{metrics.totals.issued}</dd></div>
                 <div><dt>Expired</dt><dd className={metrics.totals.expired > 0 ? "risk" : ""}>{metrics.totals.expired}</dd></div>
@@ -286,7 +291,7 @@ export default function Overview({ canRun = false }) {
           <section className="card" aria-labelledby="donor-alerts-title">
             <div className="card-head">
               <h2 id="donor-alerts-title">Recent donor alerts</h2>
-              <a className="text-link" href="#donorOutreach">Outreach <ArrowRight size={14} aria-hidden="true" /></a>
+              <a className="text-link" href="#donorOutreach">Donor outreach <ArrowRight size={14} aria-hidden="true" /></a>
             </div>
             {alerts.error && !alerts.data ? (
               <ErrorState what="Couldn't load donor alerts." error={alerts.error} onRetry={alerts.reload} />

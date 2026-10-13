@@ -30,37 +30,37 @@ const SECTIONS = {
   inventory: {
     label: "Inventory & demand", icon: Droplets, layout: "split",
     title: "Inventory & demand",
-    description: "Units in stock by group and component, and the forecast gap against them.",
+    description: "Stock by blood group and component, and where the forecast says it will run short or expire unused.",
     render: ({ canEdit }) => <><InventoryCard editable={canEdit} /><ForecastChart /></>,
   },
   predict: {
     label: "Transfusion prediction", icon: Stethoscope, layout: "wide",
     title: "Transfusion prediction",
-    description: "Enter a patient's lab values to see which components they're likely to need.",
+    description: "Enter a patient's lab values to see which blood components they're likely to need, and why.",
     render: ({ canAlertDonors }) => <PredictionCard canAlertDonors={canAlertDonors} />,
   },
   upload: {
     label: "CBC upload", icon: FileUp, layout: "focus",
     title: "CBC report upload",
-    description: "Extract lab values from a CBC report, check them, then predict.",
+    description: "Upload a CBC report or a batch export. You check the extracted values before anything is predicted.",
     render: () => <UploadCard />,
   },
   assistant: {
     label: "AI assistant", icon: MessageSquareText, layout: "focus",
     title: "AI assistant",
-    description: "Ask about a patient, stock levels or the forecast in plain language.",
+    description: "Ask about a patient, current stock or the demand forecast in plain language.",
     render: () => <ChatCard />,
   },
   patients: {
     label: "Patients", icon: Users, layout: "stack",
     title: "Patients",
-    description: "Recent patients and their prediction history.",
+    description: "Recent patients and every prediction made for them.",
     render: () => <PatientListCard />,
   },
   donorResponses: {
     label: "Donor responses", icon: ClipboardList, layout: "stack",
     title: "Donor responses",
-    description: "Alerts awaiting a reply. Record whether each donor donated.",
+    description: "Donors who were alerted and haven't replied yet. Each reply you record teaches donor selection who responds.",
     render: () => <DonorResponsesCard />,
   },
   donorOutreach: {
@@ -72,19 +72,19 @@ const SECTIONS = {
   donors: {
     label: "Donors", icon: HeartHandshake, layout: "stack",
     title: "Donors",
-    description: "The donor pool, eligibility and each donor's learned reply rate.",
+    description: "Everyone in the donor pool, and how often each donor replies to alerts.",
     render: () => <DonorManagementCard />,
   },
   agents: {
     label: "Agent activity", icon: Bot, layout: "stack",
     title: "Agent activity",
-    description: "What the autonomous agents observed, decided and did, cycle by cycle.",
+    description: "What the autonomous agents observed, decided and did in each cycle.",
     render: ({ canRun }) => <AutonomyCard canRun={canRun} />,
   },
   audit: {
     label: "Audit log", icon: ShieldCheck, layout: "stack",
     title: "Audit log",
-    description: "Every API call, with user and time.",
+    description: "Every API call, with who made it and when.",
     render: () => <AuditLogCard />,
   },
 };

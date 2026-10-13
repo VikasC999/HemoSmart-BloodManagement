@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Droplet, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { LogoMark, Wordmark } from "./Logo";
 import ThemeToggle from "./ThemeToggle";
 
-// Placeholder mark until the real HemoSmart logo is added to the repo.
-export function BrandMark({ size = 22 }) {
+export function BrandMark({ size = 28 }) {
   return (
     <span className="brand">
-      <Droplet size={size} className="brand-icon" aria-hidden="true" />
-      <span className="brand-name">HemoSmart</span>
+      <LogoMark size={size} />
+      <Wordmark />
     </span>
   );
 }
+
+const initials = (email = "") => email.split("@")[0].split(/[._-]/).map((p) => p[0] || "").join("").slice(0, 2).toUpperCase();
 
 function NavList({ groups, activeId, onSelect, collapsed }) {
   return (
@@ -43,8 +45,11 @@ function SidebarFooter({ user, onLogout, collapsed }) {
     <div className="sidebar-footer">
       {user && !collapsed && (
         <div className="account-card">
-          <p className="account-role">{user.role}</p>
-          <p className="account-email" title={user.email}>{user.email}</p>
+          <span className="avatar" aria-hidden="true">{initials(user.email)}</span>
+          <div className="account-text">
+            <p className="account-role">{user.role}</p>
+            <p className="account-email" title={user.email}>{user.email}</p>
+          </div>
         </div>
       )}
       <ThemeToggle compact={collapsed} />
@@ -118,7 +123,7 @@ export default function AppShell({ user, groups, activeId, onLogout, children })
                 aria-label="Open menu" aria-expanded={drawerOpen} aria-controls="mobile-drawer">
           <Menu size={20} />
         </button>
-        <BrandMark size={20} />
+        <BrandMark size={26} />
       </header>
       <div className={`drawer-scrim ${drawerOpen ? "open" : ""}`} onClick={() => setDrawerOpen(false)}
            aria-hidden="true" />

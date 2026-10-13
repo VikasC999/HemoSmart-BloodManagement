@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, LockKeyhole } from "lucide-react";
 import { auth } from "../api";
-import { BrandMark } from "./layout/AppShell";
+import { LogoMark, Wordmark } from "./layout/Logo";
 
 // Getting a token is this screen's only job; the role decides the
 // workspace you land in.
@@ -27,15 +27,18 @@ export default function LoginScreen({ onLoggedIn }) {
 
   return (
     <div className="login-screen">
-      <div className="login-panel">
-        <BrandMark size={28} />
-        <h1>Sign in</h1>
+      <main className="login-panel">
+        <div className="login-brand">
+          <LogoMark size={44} />
+          <Wordmark />
+        </div>
+        <h1>Sign in to your workspace</h1>
         <p className="login-intro">
-          Blood demand prediction, inventory and transfusion support for your hospital.
+          Forecast blood demand, predict transfusion needs and keep stock from expiring unused.
         </p>
-        <form className="login-form" onSubmit={submit} noValidate={false}>
+        <form className="login-form" onSubmit={submit}>
           <label>
-            Email
+            Work email
             <input type="email" value={email} required autoComplete="username"
                    aria-invalid={error ? "true" : undefined}
                    onChange={(e) => setEmail(e.target.value)} />
@@ -55,7 +58,11 @@ export default function LoginScreen({ onLoggedIn }) {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-      </div>
+        <p className="login-foot">
+          <LockKeyhole size={13} aria-hidden="true" />
+          Your role decides what you see. Every action is recorded in the audit log.
+        </p>
+      </main>
     </div>
   );
 }
