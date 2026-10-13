@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  ArrowRight, Bot, Circle, CircleCheck, FileText, LoaderCircle, RotateCcw, Sheet, SquarePen, Stethoscope,
+  UploadCloud, X,
+} from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES, SURGERY_TYPES } from "../constants";
+import { AIPanel, EmptyState, ErrorState, SeverityBadge, urgencySeverity } from "./ui";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -26,55 +31,107 @@ async function uploadFile(path, file) {
   return res.json();
 }
 
-const STEP_ICON = { pending: "○", running: "…", verified: "✓", fell_back: "↺" };
+const MODES = {
+  pdf: {
+    label: "PDF report", icon: FileText, accept: ".pdf", action: "Extract values",
+    help: "One patient's CBC report. HemoSmart AI reads the values; you check them before anything is predicted.",
+  },
+  csv: {
+    label: "CSV batch", icon: Sheet, accept: ".csv", action: "Predict all rows",
+    help: "A hospital export with one patient per row. Each valid row gets its own prediction.",
+  },
+  case: {
+    label: "Full case (AI agents)", icon: Bot, accept: ".pdf", action: "Run AI agents",
+    help: "Six AI agents process the PDF end to end, each checked against an independent calculation. About a minute.",
+  },
+};
 
-function PredictionLine({ r, prefix = "" }) {
+const formatSize = (bytes) => (bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1048576).toFixed(1)} MB`);
+
+function useElapsed(running) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!running) return undefined;
+    setSeconds(0);
+    const started = Date.now();
+    const t = setInterval(() => setSeconds(Math.round((Date.now() - started) / 1000)), 500);
+    return () => clearInterval(t);
+  }, [running]);
+  return seconds;
+}
+
+// ✓ done → ● active → ○ to do, with elapsed time on the active step
+// "waiting" = it's the user's turn (no spinner: nothing is processing)
+const STEP_ICON = { done: CircleCheck, active: LoaderCircle, waiting: SquarePen, todo: Circle, fell_back: RotateCcw };
+function ProcessingSteps({ steps, elapsed }) {
   return (
-    <p>
-      {prefix}
-      <strong>{r.transfusion_needed ? "Transfusion needed" : "No transfusion needed"}</strong>
-      {" "}({(r.confidence * 100).toFixed(1)}%)
-      {r.transfusion_needed && (
-        <>
-          {" — "}
-          {r.components.filter((c) => c.needed).map((c) => `${c.component}×${c.units}`).join(", ")}
-          <span className={`badge urgency-${r.urgency.toLowerCase()}`}>{r.urgency}</span>
-        </>
-      )}
-      {r.blood_group && <span className="muted"> · {r.blood_group}</span>}
-    </p>
+    <ol className="steps" aria-label="Processing steps">
+      {steps.map((s) => {
+        const Icon = STEP_ICON[s.state];
+        return (
+          <li key={s.label} className={`step step-${s.state}`}
+              aria-current={s.state === "active" || s.state === "waiting" ? "step" : undefined}>
+            <Icon size={16} className={s.state === "active" ? "spin" : ""} aria-hidden="true" />
+            <span>{s.label}</span>
+            {s.state === "active" && elapsed != null && <span className="muted tabular"> · {elapsed}s</span>}
+            {s.note && <span className="step-note">{s.note}</span>}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ResultSummary({ r, label }) {
+  const needed = r.components.filter((c) => c.needed);
+  return (
+    <div className="result-summary">
+      {label && <span className="muted result-row-label">{label}</span>}
+      <strong>{r.transfusion_needed ? "Transfusion likely needed" : "Transfusion not indicated"}</strong>
+      <SeverityBadge level={urgencySeverity(r.urgency)} label={`${r.urgency} urgency`} />
+      <span className="muted">
+        {needed.length ? needed.map((c) => `${c.units} ${c.component}`).join(", ") : "No components"}
+        {" · "}model probability {(r.confidence * 100).toFixed(0)}%
+        {r.blood_group ? ` · ${r.blood_group}` : ""}
+      </span>
+    </div>
   );
 }
 
 // The CrewAI pipeline's run, agent by agent. "verified" = the LLM agent's
 // own answer matched an independent check and was used; "fell back" = it
 // failed or disagreed, so the checked value was used instead.
-function AgentCase({ job }) {
+const AGENT_STATE = { pending: "todo", running: "active", verified: "done", fell_back: "fell_back" };
+const describeDetail = (detail) => (detail && typeof detail === "object"
+  ? Object.entries(detail).map(([k, v]) => `${k.replace(/_/g, " ")}: ${Array.isArray(v) ? v.join(", ") : v}`).join(" · ")
+  : detail || null);
+
+function AgentCase({ job, elapsed }) {
   const r = job.result;
   const action = r?.action;
+  const running = job.status === "queued" || job.status === "running";
   return (
-    <div className="result">
-      <ol className="events">
-        {job.steps.map((s) => (
-          <li key={s.agent} className={`event step-${s.status}`}>
-            <span className="event-agent">{STEP_ICON[s.status]} {s.agent}</span>
-            <span className="event-kind">{s.status.replace("_", " ")}</span>
-            <span className="event-msg muted">{s.detail ? JSON.stringify(s.detail) : ""}</span>
-          </li>
-        ))}
-      </ol>
-      {job.status === "failed" && <p className="error">{job.error}</p>}
+    <div className="upload-section">
+      <ProcessingSteps
+        elapsed={running ? elapsed : null}
+        steps={job.steps.map((s) => ({
+          label: `${s.agent} agent${s.status === "fell_back" ? " · used the verified value" : ""}`,
+          state: AGENT_STATE[s.status] || "todo",
+          note: describeDetail(s.detail),
+        }))} />
+      {job.status === "failed" && <ErrorState what="The agent pipeline stopped." error={job.error} />}
       {r && (
         <>
-          <PredictionLine r={r.prediction} />
-          <p className="brief">{r.orchestrator.case_summary}</p>
-          <h4>Explanation (RAG agent)</h4>
-          <p className="pre-wrap">{r.explanation.delivered_explanation}</p>
+          <ResultSummary r={r.prediction} />
+          <AIPanel label="HemoSmart AI · case summary">
+            <p>{r.orchestrator.case_summary}</p>
+            <p className="muted" style={{ marginTop: 8 }}>{r.explanation.delivered_explanation}</p>
+          </AIPanel>
           {action && (
-            <p>
+            <p className="hint">
               {action.dispatched
-                ? `Donor alerts sent: ${(action.actually_alerted || []).join(", ") || "none needed"}`
-                : `Donor alerts recommended (needs a Blood Bank Manager): ${(action.recommended || []).join(", ") || "none"}`}
+                ? `Donor alerts sent: ${(action.actually_alerted || []).join(", ") || "none needed"}.`
+                : `Donor alerts recommended (needs a Blood Bank Manager): ${(action.recommended || []).join(", ") || "none"}.`}
             </p>
           )}
         </>
@@ -89,42 +146,68 @@ function AgentCase({ job }) {
 // FR-03: values extracted from a PDF are shown for the clinician to check
 // and correct BEFORE anything is predicted or saved.
 const FIELDS = [
-  { key: "hemoglobin", label: "Hemoglobin (g/dL)", step: "0.1" },
-  { key: "platelets", label: "Platelets (/µL)", step: "1000" },
-  { key: "INR", label: "INR", step: "0.1" },
-  { key: "age", label: "Age (years)", step: "1" },
+  { key: "hemoglobin", label: "Hemoglobin", unit: "g/dL", step: "0.1" },
+  { key: "platelets", label: "Platelets", unit: "/µL", step: "1000" },
+  { key: "INR", label: "INR", unit: "ratio", step: "0.1" },
+  { key: "age", label: "Age", unit: "years", step: "1" },
 ];
 
-function ConfirmExtracted({ values, onChange, onConfirm, onCancel, busy }) {
+function ConfirmExtracted({ fileName, values, onChange, onConfirm, onCancel, busy }) {
+  const missing = FIELDS.filter((f) => values[f.key] === "" || values[f.key] == null || Number.isNaN(Number(values[f.key])));
   return (
-    <div className="result">
-      <p><strong>Extracted from the PDF — check before predicting.</strong></p>
-      <div className="form-grid">
-        {FIELDS.map((f) => (
-          <label key={f.key}>
-            {f.label}
-            <input type="number" step={f.step} value={values[f.key] ?? ""}
-                   onChange={(e) => onChange({ ...values, [f.key]: e.target.value })} />
-          </label>
-        ))}
-        <label>
-          Surgery type
-          <select value={values.surgery_type}
-                  onChange={(e) => onChange({ ...values, surgery_type: e.target.value })}>
-            {SURGERY_TYPES.map((t) => <option key={t}>{t}</option>)}
-          </select>
-        </label>
-        <label>
-          Blood group
-          <select value={values.blood_group || ""}
-                  onChange={(e) => onChange({ ...values, blood_group: e.target.value || null })}>
-            <option value="">Unknown</option>
-            {BLOOD_TYPES.map((g) => <option key={g}>{g}</option>)}
-          </select>
-        </label>
+    <div className="upload-section">
+      <AIPanel label="Extracted by HemoSmart AI" decisionSupport={false}>
+        <p>Check each value against <strong>{fileName}</strong> and correct anything that's wrong.
+          Nothing is predicted or saved until you confirm.</p>
+      </AIPanel>
+      <div className="table-scroll">
+        <table className="extracted-table">
+          <thead><tr><th>Field</th><th>Value</th><th>Unit</th></tr></thead>
+          <tbody>
+            {FIELDS.map((f) => {
+              const bad = missing.includes(f);
+              return (
+                <tr key={f.key} className={bad ? "row-missing" : ""}>
+                  <th scope="row"><label htmlFor={`x-${f.key}`}>{f.label}</label></th>
+                  <td>
+                    <input id={`x-${f.key}`} type="number" step={f.step} value={values[f.key] ?? ""}
+                           aria-invalid={bad ? "true" : undefined}
+                           aria-describedby={bad ? `x-${f.key}-err` : undefined}
+                           onChange={(e) => onChange({ ...values, [f.key]: e.target.value })} />
+                    {bad && <span id={`x-${f.key}-err`} className="field-error">Required. Not found in the report: enter it.</span>}
+                  </td>
+                  <td className="muted">{f.unit}</td>
+                </tr>
+              );
+            })}
+            <tr>
+              <th scope="row"><label htmlFor="x-surgery">Surgery type</label></th>
+              <td>
+                <select id="x-surgery" value={values.surgery_type}
+                        onChange={(e) => onChange({ ...values, surgery_type: e.target.value })}>
+                  {SURGERY_TYPES.map((t) => <option key={t}>{t}</option>)}
+                </select>
+              </td>
+              <td />
+            </tr>
+            <tr>
+              <th scope="row"><label htmlFor="x-group">Blood group</label></th>
+              <td>
+                <select id="x-group" value={values.blood_group || ""}
+                        onChange={(e) => onChange({ ...values, blood_group: e.target.value || null })}>
+                  <option value="">Unknown</option>
+                  {BLOOD_TYPES.map((g) => <option key={g}>{g}</option>)}
+                </select>
+              </td>
+              <td />
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div className="actions">
-        <button onClick={onConfirm} disabled={busy}>{busy ? "Predicting…" : "Confirm & predict"}</button>
+        <button onClick={onConfirm} disabled={busy || missing.length > 0}>
+          <Stethoscope size={16} aria-hidden="true" /> {busy ? "Predicting…" : "Confirm and predict"}
+        </button>
         <button className="secondary" onClick={onCancel} disabled={busy}>Discard</button>
       </div>
     </div>
@@ -137,9 +220,12 @@ export default function UploadCard() {
   const [results, setResults] = useState(null);
   const [job, setJob] = useState(null);
   const [extracted, setExtracted] = useState(null);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // { what, error }
   const [loading, setLoading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const poll = useRef(null);
+  const input = useRef(null);
+  const elapsed = useElapsed(loading);
 
   useEffect(() => () => clearInterval(poll.current), []);
 
@@ -155,19 +241,29 @@ export default function UploadCard() {
         }
       } catch (e) {
         clearInterval(poll.current);
-        setError(e.message);
+        setError({ what: "Lost track of the agent run.", error: e });
         setLoading(false);
       }
     }, 1500);
   };
 
-  const submit = async () => {
-    if (!file) return;
-    setLoading(true);
-    setError(null);
+  const reset = () => {
     setResults(null);
     setJob(null);
     setExtracted(null);
+    setError(null);
+  };
+
+  const choose = (f) => {
+    if (!f) return;
+    reset();
+    setFile(f);
+  };
+
+  const submit = async () => {
+    if (!file) return;
+    setLoading(true);
+    reset();
     try {
       if (kind === "pdf") {
         setExtracted(await uploadFile("/api/predict/pdf/extract", file));
@@ -182,7 +278,10 @@ export default function UploadCard() {
       const data = await uploadFile(`/api/predict/${kind}`, file);
       setResults(Array.isArray(data) ? data : [data]);
     } catch (e) {
-      setError(e.message);
+      setError({
+        what: kind === "pdf" ? "Couldn't read this PDF." : kind === "csv" ? "Couldn't process this CSV." : "The agent run didn't start.",
+        error: e,
+      });
     }
     setLoading(false);
   };
@@ -203,47 +302,102 @@ export default function UploadCard() {
       setResults([r]);
       setExtracted(null);
     } catch (e) {
-      setError(e.message);
+      setError({ what: "The prediction didn't run.", error: e });
     }
     setLoading(false);
   };
 
+  const mode = MODES[kind];
+  const pdfSteps = [
+    { label: "Read file", state: "done" },
+    { label: "Extract CBC values with HemoSmart AI", state: loading && !extracted && !results ? "active" : extracted || results ? "done" : "todo" },
+    { label: "Your check", state: extracted ? (loading ? "done" : "waiting") : results ? "done" : "todo" },
+    { label: "Prediction", state: results ? "done" : loading && extracted ? "active" : "todo" },
+  ];
+  const showPdfSteps = kind === "pdf" && (loading || extracted || results);
+
   return (
-    <section className="card">
-      <h2>Upload Lab Report</h2>
-      <p className="hint">
-        PDF: one patient's CBC report — values are extracted for you to confirm, then predicted.
-        CSV: a batch export, one prediction per row.
-        Full case: six AI agents (CrewAI) process the PDF end to end — slower (~15–20 LLM calls).
-      </p>
-      <div className="actions">
-        <select value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="pdf">PDF report</option>
-          <option value="csv">CSV export</option>
-          <option value="case">Full case (AI agents)</option>
-        </select>
-        <input
-          type="file"
-          accept={kind === "csv" ? ".csv" : ".pdf"}
-          onChange={(e) => setFile(e.target.files[0] || null)}
-        />
-        <button onClick={submit} disabled={loading || !file}>
-          {kind === "case" ? (loading ? "Agents working…" : "Run agents")
-            : kind === "pdf" ? (loading && !extracted ? "Extracting…" : "Extract values")
-            : "Upload & Predict"}
-        </button>
+    <section className="card upload-card" aria-labelledby="upload-title">
+      <h2 id="upload-title" className="visually-hidden">Upload a report</h2>
+      <div className="segmented" role="radiogroup" aria-label="What are you uploading?">
+        {Object.entries(MODES).map(([key, m]) => (
+          <button key={key} role="radio" aria-checked={kind === key} disabled={loading}
+                  className={`segment ${kind === key ? "active" : ""}`}
+                  onClick={() => { setKind(key); setFile(null); reset(); }}>
+            <m.icon size={16} aria-hidden="true" /> {m.label}
+          </button>
+        ))}
       </div>
-      {error && <p className="error">{error}</p>}
-      {extracted && (
-        <ConfirmExtracted values={extracted} onChange={setExtracted} onConfirm={confirmExtracted}
-                          onCancel={() => setExtracted(null)} busy={loading} />
+      <p className="hint">{mode.help}</p>
+
+      {!file ? (
+        <div className={`dropzone ${dragging ? "dragging" : ""}`}
+             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+             onDragLeave={() => setDragging(false)}
+             onDrop={(e) => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]); }}>
+          <UploadCloud size={28} aria-hidden="true" />
+          <p className="dropzone-title">Drag and drop a {mode.accept.slice(1).toUpperCase()} file here</p>
+          <p className="muted">or</p>
+          <button className="secondary" onClick={() => input.current?.click()}>Browse files</button>
+          <p className="muted">{mode.accept.slice(1).toUpperCase()} only</p>
+          <input ref={input} type="file" accept={mode.accept} className="visually-hidden" tabIndex={-1}
+                 onChange={(e) => choose(e.target.files[0] || null)} />
+        </div>
+      ) : (
+        <div className="file-chip">
+          <mode.icon size={18} aria-hidden="true" />
+          <span className="file-name">{file.name}</span>
+          <span className="muted">{formatSize(file.size)}</span>
+          <button className="ghost icon-button" onClick={() => { setFile(null); reset(); }}
+                  disabled={loading} aria-label={`Remove ${file.name}`}>
+            <X size={16} />
+          </button>
+        </div>
       )}
-      {job && <AgentCase job={job} />}
+
+      {file && !extracted && !(job && loading) && (
+        <div className="actions">
+          <button onClick={submit} disabled={loading}>
+            {loading ? (kind === "case" ? "Starting agents…" : "Working…") : mode.action}
+          </button>
+        </div>
+      )}
+
+      {showPdfSteps && <ProcessingSteps steps={pdfSteps} elapsed={loading ? elapsed : null} />}
+
+      {error && (
+        <ErrorState what={error.what} error={error.error} onRetry={file ? submit : undefined}
+                    action={kind === "pdf" && (
+                      <a className="text-link" href="#predict">Enter values by hand <ArrowRight size={14} aria-hidden="true" /></a>
+                    )} />
+      )}
+
+      {extracted && (
+        <ConfirmExtracted fileName={file?.name} values={extracted} onChange={setExtracted}
+                          onConfirm={confirmExtracted} onCancel={() => setExtracted(null)} busy={loading} />
+      )}
+
+      {job && <AgentCase job={job} elapsed={elapsed} />}
+
       {results && (
-        <div className="result">
-          {results.map((r, i) => (
-            <PredictionLine key={i} r={r} prefix={results.length > 1 ? `Row ${i + 1}: ` : ""} />
-          ))}
+        <div className="upload-section">
+          {results.length === 0 ? (
+            <EmptyState title="No rows could be predicted">Check that the CSV has the expected columns.</EmptyState>
+          ) : (
+            <>
+              <h3 className="section-title">
+                {results.length === 1 ? "Prediction" : `${results.length} predictions`}
+              </h3>
+              <ul className="plain-list result-list">
+                {results.map((r, i) => (
+                  <li key={i}><ResultSummary r={r} label={results.length > 1 ? `Row ${i + 1}` : null} /></li>
+                ))}
+              </ul>
+              <p className="decision-support">
+                Decision support. Review before acting. Saved to <a className="text-link" href="#patients">Patients</a>.
+              </p>
+            </>
+          )}
         </div>
       )}
     </section>

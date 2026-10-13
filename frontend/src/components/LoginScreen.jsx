@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { CircleAlert } from "lucide-react";
 import { auth } from "../api";
+import { BrandMark } from "./layout/AppShell";
 
-// Minimal login -- functional, not visually elaborate. Role-based
-// dashboards (Day 6) are what actually differentiate the experience
-// after sign-in; this screen's only job is getting a token.
+// Getting a token is this screen's only job; the role decides the
+// workspace you land in.
 export default function LoginScreen({ onLoggedIn }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,34 +19,43 @@ export default function LoginScreen({ onLoggedIn }) {
       await auth.login(email, password);
       onLoggedIn();
     } catch (err) {
-      setError("Login failed -- check your email and password.");
+      setError("That email and password don't match an account. Check both and try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="app login-screen">
-      <header>
-        <h1>HemoSmart</h1>
-        <p>Sign in to continue</p>
-      </header>
-      <form className="card login-card" onSubmit={submit}>
-        <label>
-          Email
-          <input type="email" value={email} required
-                 onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label>
-          Password
-          <input type="password" value={password} required
-                 onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        <div className="actions">
-          <button type="submit" disabled={loading}>Sign In</button>
-        </div>
-        {error && <p className="error">{error}</p>}
-      </form>
+    <div className="login-screen">
+      <div className="login-panel">
+        <BrandMark size={28} />
+        <h1>Sign in</h1>
+        <p className="login-intro">
+          Blood demand prediction, inventory and transfusion support for your hospital.
+        </p>
+        <form className="login-form" onSubmit={submit} noValidate={false}>
+          <label>
+            Email
+            <input type="email" value={email} required autoComplete="username"
+                   aria-invalid={error ? "true" : undefined}
+                   onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label>
+            Password
+            <input type="password" value={password} required autoComplete="current-password"
+                   aria-invalid={error ? "true" : undefined}
+                   onChange={(e) => setPassword(e.target.value)} />
+          </label>
+          {error && (
+            <p className="form-error" role="alert">
+              <CircleAlert size={16} aria-hidden="true" /> {error}
+            </p>
+          )}
+          <button type="submit" disabled={loading} className="block">
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
