@@ -1,79 +1,126 @@
 """
 HemoSmart - Agent Tool Functions
 ------------------------------------
-Plain Python functions containing the actual logic each CrewAI agent
-will call. Kept separate from CrewAI's Agent/Task/Crew wrapping so the
-logic itself can be tested independently of the agent framework.
+Plain Python functions containing the actual logic each agent calls --
+shared by the REST API, the chat agent, the MCP server, the CrewAI case
+pipeline and the autonomous loop (agents/autonomy/), so every interface
+gives the same answer.
 
-    Prediction Agent    -> predict_transfusion()
-    Explanation Agent   -> generate_explanation()
-    Inventory Agent     -> check_inventory()
-    Donor Alert Agent   -> send_donor_alert()
-    Orchestrator Agent  -> calls the above in sequence, no logic of its own
+    predict_transfusion()      component-level prediction + dose + urgency + SHAP
+    generate_explanation()     RAG explanation grounded in the WHO handbook
+    check_inventory()          unit-level stock status (bloodbank/stock.py)
+    get_supply_outlook()       forecast + shortage/wastage projection
+    send_donor_alert()         bandit-selected donor alerts
+    extract_from_pdf()         CBC report -> PatientRecord
 """
 
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import math
 import pickle
-import json
-import subprocess
 
+import numpy as np
+import xgboost as xgb
+
+from bloodbank.catalog import BLOOD_GROUPS, COMPONENTS
 from db.database import SessionLocal
-from db.models import InventoryItem
+from schema.clinical_thresholds import recommended_units, urgency
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
-
-DEFAULT_INVENTORY = {
-    "A+": 45, "A-": 12, "B+": 38, "B-": 8,
-    "O+": 52, "O-": 15, "AB+": 20, "AB-": 5,
-}
-
-LOW_STOCK_THRESHOLD = 15  # units; below this, a blood type is "low"
 
 
 # ----------------------------------------------------------------------
 # Prediction Agent's tool
 # ----------------------------------------------------------------------
-_xgb_model = None
+_bundle = None
 _label_encoder = None
 
 
-def _load_xgb_model():
+def _load_models():
     """
-    Loads the trained XGBoost model + label encoder once and caches them
-    at module level. predict_transfusion() used to pickle.load() both
-    files on every single call, which is fine for a CLI script but adds
-    real latency to every API request once this is wrapped by FastAPI.
+    Loads the per-component XGBoost models + label encoder once and
+    caches them at module level (unpickling per request would add real
+    latency to every API call).
     """
-    global _xgb_model, _label_encoder
-    if _xgb_model is None or _label_encoder is None:
-        xgb_path = os.path.join(MODEL_DIR, "xgb_model.pkl")
-        le_path = os.path.join(MODEL_DIR, "label_encoder.pkl")
-        with open(xgb_path, "rb") as f:
-            _xgb_model = pickle.load(f)
-        with open(le_path, "rb") as f:
+    global _bundle, _label_encoder
+    if _bundle is None or _label_encoder is None:
+        with open(os.path.join(MODEL_DIR, "xgb_components.pkl"), "rb") as f:
+            _bundle = pickle.load(f)
+        with open(os.path.join(MODEL_DIR, "label_encoder.pkl"), "rb") as f:
             _label_encoder = pickle.load(f)
-    return _xgb_model, _label_encoder
+    return _bundle, _label_encoder
+
+
+def _shap_contributions(model, features: list, names: list) -> dict:
+    """Exact TreeSHAP contributions (log-odds) for one patient, computed
+    by XGBoost itself -- no separate `shap` dependency at serving time.
+    Positive values push toward "needs this component"."""
+    dmatrix = xgb.DMatrix(np.array([features], dtype=float), feature_names=names)
+    contribs = model.get_booster().predict(dmatrix, pred_contribs=True)[0]
+    out = {name: round(float(v), 4) for name, v in zip(names, contribs[:-1])}
+    out["_base"] = round(float(contribs[-1]), 4)
+    return out
 
 
 def predict_transfusion(patient_record) -> dict:
     """
     patient_record: a PatientRecord instance (schema.patient_schema)
-    Returns: {"transfusion_needed": bool, "confidence": float}
+
+    Returns transfusion_needed, confidence (= P(any component needed)),
+    per-component probability + dose, urgency, and per-component SHAP.
     """
-    model, le = _load_xgb_model()
-
+    bundle, le = _load_models()
+    names = bundle["features"]
     features = patient_record.to_model_features(le)
-    prediction = bool(model.predict([features])[0])
-    confidence = float(model.predict_proba([features])[0][1])
 
-    return {"transfusion_needed": prediction, "confidence": round(confidence, 4)}
+    probs = {
+        c: float(bundle["models"][c].predict_proba(np.array([features], dtype=float))[0][1])
+        for c in COMPONENTS
+    }
+    p_any = 1 - math.prod(1 - p for p in probs.values())
+    transfusion_needed = p_any >= 0.5
+    needed = {c for c, p in probs.items() if p >= 0.5}
+    if transfusion_needed and not needed:
+        # Several individually-uncertain components can add up to a
+        # likely transfusion -- recommend the most likely one rather
+        # than "transfusion needed" with nothing to give.
+        needed = {max(probs, key=probs.get)}
+
+    r = patient_record
+    components = [
+        {
+            "component": c,
+            "probability": round(probs[c], 4),
+            "needed": c in needed,
+            "units": recommended_units(c, r.hemoglobin, r.platelets, r.INR, r.surgery_type) if c in needed else 0,
+        }
+        for c in COMPONENTS
+    ]
+
+    return {
+        "transfusion_needed": transfusion_needed,
+        "confidence": round(p_any, 4),
+        "components": components,
+        "urgency": urgency(r.hemoglobin, r.platelets, r.INR, r.surgery_type, transfusion_needed),
+        "shap": {c: _shap_contributions(bundle["models"][c], features, names) for c in COMPONENTS},
+        "blood_group": r.blood_group,
+    }
 
 
 # ----------------------------------------------------------------------
 # Explanation Agent's tool
 # ----------------------------------------------------------------------
+_explanation_generator = None
+
+
+def set_explanation_generator(generator) -> None:
+    """Shares one loaded ExplanationGenerator (embedding model + FAISS
+    index) across the process -- the API sets it once at startup."""
+    global _explanation_generator
+    _explanation_generator = generator
+
+
 def generate_explanation(
     patient_record, prediction: bool,
     llm_provider: str = os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"),
@@ -81,67 +128,58 @@ def generate_explanation(
     """
     Wraps rag.explain.ExplanationGenerator -- retrieves WHO guideline
     context via FAISS, checks thresholds deterministically, and asks
-    the LLM to phrase the explanation. See rag/explain.py for details.
+    the LLM to phrase the explanation, citing handbook pages. Built once
+    and reused: loading the embedding model per call cost seconds each.
     """
-    from rag.explain import ExplanationGenerator
-    generator = ExplanationGenerator(llm_provider=llm_provider)
-    return generator.explain(patient_record, prediction)
+    global _explanation_generator
+    if _explanation_generator is None:
+        from rag.explain import ExplanationGenerator
+        _explanation_generator = ExplanationGenerator(llm_provider=llm_provider)
+    return _explanation_generator.explain(patient_record, prediction)
 
 
 # ----------------------------------------------------------------------
 # Inventory Agent's tool
 # ----------------------------------------------------------------------
-def _load_inventory() -> dict:
-    """Reads stock levels from Postgres, seeding from DEFAULT_INVENTORY
-    the first time the table is empty (was previously agents/inventory.json)."""
-    with SessionLocal() as session:
-        rows = session.query(InventoryItem).all()
-        if rows:
-            return {r.blood_type: r.units for r in rows}
-
-        for blood_type, units in DEFAULT_INVENTORY.items():
-            session.add(InventoryItem(blood_type=blood_type, units=units))
-        session.commit()
-        return dict(DEFAULT_INVENTORY)
-
-
-def _save_inventory(inventory: dict) -> None:
-    with SessionLocal() as session:
-        existing = {r.blood_type: r for r in session.query(InventoryItem).all()}
-        for blood_type, units in inventory.items():
-            row = existing.get(blood_type)
-            if row is None:
-                session.add(InventoryItem(blood_type=blood_type, units=units))
-            else:
-                row.units = units
-        session.commit()
-
-
-def check_inventory(blood_type: str = None) -> dict:
+def check_inventory(blood_group: str = None, component: str = None) -> dict:
     """
-    Returns current stock levels and flags any blood types below the
-    low-stock threshold. If blood_type is given, checks only that type.
+    Unit-level stock status. With no arguments: the full group x
+    component grid plus everything below par. With a group (and
+    optionally a component): just that slice.
     """
-    inventory = _load_inventory()
+    from bloodbank.stock import stock_summary, utcnow
 
-    if blood_type:
-        if blood_type not in inventory:
-            raise ValueError(f"Unknown blood type: {blood_type}")
-        units = inventory[blood_type]
-        return {
-            "blood_type": blood_type,
-            "units": units,
-            "low_stock": units < LOW_STOCK_THRESHOLD,
-        }
+    if blood_group and blood_group not in BLOOD_GROUPS:
+        raise ValueError(f"Unknown blood group: {blood_group}")
+    if component and component not in COMPONENTS:
+        raise ValueError(f"Unknown component: {component}")
 
-    low_stock_types = {
-        bt: units for bt, units in inventory.items() if units < LOW_STOCK_THRESHOLD
-    }
+    with SessionLocal() as db:
+        summary = stock_summary(db, utcnow())
+    if not blood_group:
+        return summary
+
+    cells = summary["inventory"][blood_group]
+    if component:
+        cells = {component: cells[component]}
     return {
-        "inventory": inventory,
-        "low_stock_types": low_stock_types,
-        "any_shortage": len(low_stock_types) > 0,
+        "blood_group": blood_group,
+        "components": cells,
+        "low_stock": any(c["status"] != "Sufficient" for c in cells.values()),
     }
+
+
+# ----------------------------------------------------------------------
+# Forecast / Planner tools
+# ----------------------------------------------------------------------
+def get_supply_outlook(days: int = 7) -> dict:
+    """Forecast demand + day-by-day projection of shortages and of units
+    that will expire unused (see bloodbank/outlook.py)."""
+    from bloodbank.outlook import compute_outlook
+    from bloodbank.stock import utcnow
+
+    with SessionLocal() as db:
+        return compute_outlook(db, utcnow(), days)
 
 
 # ----------------------------------------------------------------------
@@ -166,116 +204,16 @@ def extract_from_pdf(
     return records[0] if records else None
 
 
-
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
-LSTM_SEQ_LENGTH = 30  # must match the sequence length used in models/train_lstm_colab.py
-
-# Path to the Python interpreter INSIDE the separate LSTM venv (see
-# agents/lstm_forecast_standalone.py's setup instructions). Override
-# with the HEMOSMART_LSTM_PYTHON environment variable if your venv
-# lives somewhere else.
-LSTM_VENV_PYTHON = os.environ.get(
-    "HEMOSMART_LSTM_PYTHON",
-    os.path.join(os.path.dirname(MODEL_DIR), "lstm_env", "Scripts", "python.exe"),
-)
-LSTM_STANDALONE_SCRIPT = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "lstm_forecast_standalone.py"
-)
-
-
-def _forecast_with_lstm(days: int):
-    """
-    Runs LSTM inference in a SEPARATE, isolated Python environment via
-    subprocess, rather than importing TensorFlow directly in this
-    process. This exists because TensorFlow's installed build requires
-    an older NumPy/protobuf combination than CrewAI's dependencies
-    require -- both cannot be reliably satisfied in one environment.
-    Isolating them via a subprocess boundary removes the conflict
-    entirely: this process never imports TensorFlow at all.
-
-    Returns None (triggering fallback to Prophet) if the LSTM venv
-    doesn't exist yet, or if the subprocess call fails for any reason.
-    See agents/lstm_forecast_standalone.py's docstring for one-time
-    setup instructions (create the venv, install tensorflow there).
-    """
-    if not os.path.exists(LSTM_VENV_PYTHON):
-        print(
-            f"[FORECAST] LSTM venv not found at {LSTM_VENV_PYTHON}. "
-            f"Falling back to Prophet. (See agents/lstm_forecast_standalone.py "
-            f"for one-time setup instructions to enable LSTM.)"
-        )
-        return None
-
-    try:
-        result = subprocess.run(
-            [LSTM_VENV_PYTHON, LSTM_STANDALONE_SCRIPT, "--days", str(days)],
-            capture_output=True, text=True, timeout=60,
-        )
-        output = result.stdout.strip().splitlines()[-1] if result.stdout.strip() else ""
-        parsed = json.loads(output)
-        if "error" in parsed:
-            print(f"[FORECAST] LSTM subprocess reported an error: {parsed['error']}. Falling back to Prophet.")
-            return None
-        return parsed
-    except Exception as exc:
-        print(f"[FORECAST] LSTM subprocess call failed ({exc.__class__.__name__}: {exc}). Falling back to Prophet.")
-        return None
-
-
-def get_blood_demand_forecast(days: int = 7) -> dict:
-    """
-    Forecasting Module (matches the report's Level 2 DFD, block 3C:
-    "Forecasting Module (LSTM / Prophet)"). Tries the LSTM model first
-    since it was empirically shown to outperform Prophet after tuning
-    (MAE 3.35 vs 3.48 -- see models/train_lstm_colab.py comparison).
-    Falls back to Prophet if the LSTM model/scaler files aren't
-    present (e.g. LSTM was trained on Colab but files weren't copied
-    down yet), and returns a clear error if neither is available.
-    """
-    lstm_result = _forecast_with_lstm(days)
-    if lstm_result is not None:
-        return lstm_result
-
-    prophet_path = os.path.join(MODEL_DIR, "prophet_model.pkl")
-    if not os.path.exists(prophet_path):
-        return {
-            "error": (
-                "No trained forecasting model found. Either place "
-                "lstm_model.h5 + lstm_scaler.pkl (from Colab) or "
-                "prophet_model.pkl (from models/train_prophet.py) "
-                "in the models/ folder."
-            )
-        }
-
-    with open(prophet_path, "rb") as f:
-        model = pickle.load(f)
-
-    future = model.make_future_dataframe(periods=days)
-    forecast = model.predict(future)
-    result = forecast[["ds", "yhat"]].tail(days)
-
-    return {
-        "forecast_days": days,
-        "model_used": "Prophet",
-        "predicted_units_per_day": [
-            {"date": str(row.ds.date()), "predicted_units": round(row.yhat, 1)}
-            for row in result.itertuples()
-        ],
-        "average_daily_demand": round(float(result["yhat"].mean()), 1),
-    }
-
-
 # ----------------------------------------------------------------------
 # Donor Alert Agent's tool
 # ----------------------------------------------------------------------
-def send_donor_alert(blood_type: str) -> str:
+def send_donor_alert(blood_type: str, component: str = "PRBC", k: int = 3) -> str:
     """
     Sends personalized alerts to the top eligible, most-likely-to-respond
     donors, selected via a Multi-Armed Bandit (Thompson Sampling) -- see
-    agents/donor_module.py for the full explanation. This replaces a naive
-    "alert everyone" approach with the intelligent donor coordination
-    described in the project report's Donor Module (Section 4.3.6).
+    agents/donor_module.py. `component` decides the donation asked for:
+    whole blood for PRBC/FFP, apheresis for platelets.
     """
     from agents.donor_module import send_intelligent_donor_alerts
-    result = send_intelligent_donor_alerts(blood_type, k=3)
+    result = send_intelligent_donor_alerts(blood_type, component=component, k=k)
     return result["message"]

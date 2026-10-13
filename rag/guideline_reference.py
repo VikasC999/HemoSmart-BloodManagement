@@ -1,16 +1,15 @@
 """
-Transfusion Guideline Reference Text
-----------------------------------------
-This is the knowledge base the RAG engine retrieves from. It is written
-from general, widely-known clinical transfusion thresholds (the same
-thresholds referenced throughout this project's dataset simulation and
-labeling logic), not copied from any single copyrighted document.
+Placeholder Guideline Text (fallback only)
+----------------------------------------------
+rag/setup_rag.py indexes the real WHO handbook (rag/who_guidelines.pdf)
+and only falls back to this text if that PDF is missing.
 
-IMPORTANT FOR PERSON B: For a real submission/report, replace or
-supplement this with the actual WHO Clinical Transfusion Guidelines
-PDF (publicly available at who.int) run through the PDF extraction
-pipeline -- this placeholder exists so the RAG pipeline can be built
-and tested end-to-end right now without waiting on that.
+This text was written early in the project from general transfusion
+practice, not copied from WHO. Several of its numbers became HemoSmart's
+local protocol (schema/clinical_thresholds.py) -- INR > 1.5 for FFP and
+platelets < 100,000/uL for high-bleeding-risk surgery among them -- and
+are NOT stated in the WHO handbook. That's why explanations call them
+"HemoSmart protocol thresholds" (docs/DESIGN_DECISIONS.md D52).
 """
 
 TRANSFUSION_GUIDELINES = """

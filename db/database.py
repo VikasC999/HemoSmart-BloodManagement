@@ -15,7 +15,7 @@ connection string (see backend/.env.example) -- nothing else changes.
 
 import os
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.environ.get(
@@ -29,9 +29,39 @@ Base = declarative_base()
 
 
 def init_db() -> None:
-    """Creates any missing tables. Safe to call repeatedly (idempotent)."""
+    """Creates any missing tables and columns. Safe to call repeatedly."""
     from db import models  # noqa: F401 -- registers models on Base before create_all
     Base.metadata.create_all(bind=engine)
+    _add_missing_columns()
+
+
+def _add_missing_columns() -> None:
+    """
+    create_all() only creates missing TABLES -- it never alters an
+    existing one, so a column added to a model later would be missing
+    from any database created before it. This adds such columns.
+
+    A deliberately small stand-in for a migration tool (Alembic): it only
+    ever ADDS nullable columns, never alters or drops anything, so it
+    can't damage existing data.
+    """
+    inspector = inspect(engine)
+    with engine.begin() as conn:
+        for table in Base.metadata.sorted_tables:
+            if not inspector.has_table(table.name):
+                continue
+            existing = {c["name"] for c in inspector.get_columns(table.name)}
+            for column in table.columns:
+                if column.name in existing:
+                    continue
+                if not column.nullable:
+                    raise RuntimeError(
+                        f"Can't auto-add non-nullable column {table.name}.{column.name}; "
+                        f"make it nullable or migrate this database by hand."
+                    )
+                ddl_type = column.type.compile(dialect=engine.dialect)
+                conn.execute(text(f'ALTER TABLE {table.name} ADD COLUMN {column.name} {ddl_type}'))
+                print(f"[db] Added column {table.name}.{column.name}")
 
 
 def get_db():

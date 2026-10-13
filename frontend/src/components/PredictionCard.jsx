@@ -2,12 +2,55 @@ import { useState } from "react";
 import { api } from "../api";
 import { BLOOD_TYPES, SURGERY_TYPES } from "../constants";
 
-// `canAlertDonors` reflects RBAC, not just UI preference: Hospital
-// Staff can predict but cannot call /api/donors/alert (403), so their
-// version of this card surfaces the low-stock finding without a live
-// button -- Blood Bank Manager's does, since they hold both
-// permissions. This is the "connected predict -> inventory ->
-// donor-alert" flow, scoped honestly to who's actually allowed to act.
+const FEATURE_LABELS = {
+  hemoglobin: "Hemoglobin", platelets: "Platelets", INR: "INR", age: "Age", surgery_type: "Surgery type",
+};
+
+// SHAP for one component: each feature's push toward (+) or away from (-)
+// "needs this component", in log-odds. Exact TreeSHAP from the model.
+function ShapBars({ component, contributions }) {
+  const entries = Object.entries(contributions).filter(([k]) => k !== "_base");
+  const max = Math.max(...entries.map(([, v]) => Math.abs(v)), 1e-6);
+  return (
+    <div className="shap">
+      <div className="shap-title">Why {component}? (SHAP)</div>
+      {entries
+        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+        .map(([feature, value]) => (
+          <div key={feature} className="shap-row">
+            <span className="shap-label">{FEATURE_LABELS[feature] || feature}</span>
+            <span className="shap-track">
+              <span
+                className={`shap-bar ${value >= 0 ? "pos" : "neg"}`}
+                style={{ width: `${(Math.abs(value) / max) * 100}%` }}
+              />
+            </span>
+            <span className="shap-value">{value >= 0 ? "+" : ""}{value.toFixed(2)}</span>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+function Citations({ citations }) {
+  if (!citations?.length) return null;
+  return (
+    <details className="citations">
+      <summary>Sources ({citations.length})</summary>
+      <ol>
+        {citations.map((c) => (
+          <li key={c.ref} value={c.ref}>
+            <strong>{c.source}, p.{c.page}</strong> — {c.excerpt}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
+
+// `canAlertDonors` reflects RBAC: Hospital Staff can predict and reserve
+// blood but cannot call /api/donors/alert (403), so their card surfaces a
+// shortfall without a live alert button; Blood Bank Manager's card has it.
 export default function PredictionCard({ canAlertDonors = false }) {
   const [form, setForm] = useState({
     hemoglobin: 7.2,
@@ -15,67 +58,55 @@ export default function PredictionCard({ canAlertDonors = false }) {
     INR: 1.9,
     age: 58,
     surgery_type: "Emergency",
+    blood_group: "O+",
   });
-  const [bloodType, setBloodType] = useState("O-");
   const [result, setResult] = useState(null);
   const [explanation, setExplanation] = useState(null);
-  const [stockCheck, setStockCheck] = useState(null);
+  const [transfusion, setTransfusion] = useState(null);
   const [alertMessage, setAlertMessage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const update = (field, value) => setForm((f) => ({ ...f, [field]: value }));
 
-  const runPredict = async () => {
+  const run = async (fn) => {
     setLoading(true);
     setError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runPredict = () => run(async () => {
     setExplanation(null);
-    setStockCheck(null);
+    setTransfusion(null);
     setAlertMessage(null);
-    try {
-      const prediction = await api.predict(form);
-      setResult(prediction);
+    setResult(await api.predict(form));
+  });
 
-      // Connected flow: a positive prediction triggers an inventory
-      // check for the selected blood type, right here, instead of
-      // requiring a trip to a separate Inventory panel.
-      if (prediction.transfusion_needed) {
-        const stock = await api.inventory(bloodType);
-        setStockCheck(stock);
-      }
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const runExplain = () => run(async () => {
+    setExplanation(await api.explain(form, result.transfusion_needed, result.prediction_id));
+  });
 
-  const runExplain = async () => {
-    if (!result) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const exp = await api.explain(form, result.transfusion_needed);
-      setExplanation(exp);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const reserve = () => run(async () => {
+    setTransfusion(await api.requestTransfusion(result.patient_id, result.prediction_id, form.blood_group));
+  });
 
-  const runAlertDonors = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await api.alertDonors(bloodType);
-      setAlertMessage(res.message);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const finish = (confirm) => run(async () => {
+    setTransfusion(await (confirm ? api.confirmTransfusion : api.cancelTransfusion)(transfusion.id));
+  });
+
+  const alertFor = (component) => run(async () => {
+    const res = await api.alertDonors(form.blood_group, component);
+    setAlertMessage(res.message);
+  });
+
+  const needed = result?.components.filter((c) => c.needed) ?? [];
+  const shortfall = transfusion ? Object.entries(transfusion.shortfall) : [];
 
   return (
     <section className="card">
@@ -103,14 +134,13 @@ export default function PredictionCard({ canAlertDonors = false }) {
         </label>
         <label>
           Surgery Type
-          <select value={form.surgery_type}
-                  onChange={(e) => update("surgery_type", e.target.value)}>
+          <select value={form.surgery_type} onChange={(e) => update("surgery_type", e.target.value)}>
             {SURGERY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </label>
         <label>
-          Blood Type
-          <select value={bloodType} onChange={(e) => setBloodType(e.target.value)}>
+          Patient Blood Group
+          <select value={form.blood_group} onChange={(e) => update("blood_group", e.target.value)}>
             {BLOOD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </label>
@@ -120,32 +150,82 @@ export default function PredictionCard({ canAlertDonors = false }) {
         <button onClick={runExplain} disabled={loading || !result}>Explain</button>
       </div>
       {error && <p className="error">{error}</p>}
+
       {result && (
         <div className="result">
-          <strong>{result.transfusion_needed ? "Transfusion needed" : "No transfusion needed"}</strong>
-          {" "}({(result.confidence * 100).toFixed(1)}% confidence)
+          <div className="result-head">
+            <strong>{result.transfusion_needed ? "Transfusion needed" : "No transfusion needed"}</strong>
+            <span className={`badge urgency-${result.urgency.toLowerCase()}`}>{result.urgency}</span>
+          </div>
+          <div className="muted">P(transfusion) {(result.confidence * 100).toFixed(1)}%</div>
+          {needed.length > 0 && (
+            <ul className="component-list">
+              {needed.map((c) => (
+                <li key={c.component}>
+                  <strong>{c.component}</strong> × {c.units} unit{c.units > 1 ? "s" : ""}
+                  <span className="muted"> ({(c.probability * 100).toFixed(0)}%)</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {needed.map((c) => (
+            <ShapBars key={c.component} component={c.component} contributions={result.shap[c.component]} />
+          ))}
+          {needed.length > 0 && !transfusion && (
+            <div className="actions">
+              <button onClick={reserve} disabled={loading}>Reserve blood (FEFO)</button>
+            </div>
+          )}
         </div>
       )}
 
-      {stockCheck && (
-        stockCheck.low_stock ? (
-          <div className="stock-alert">
-            <p>
-              <strong>{bloodType}</strong> stock is low ({stockCheck.units} units) —
-              {canAlertDonors ? " ready to notify eligible donors." : " a Blood Bank Manager needs to notify donors."}
-            </p>
-            {canAlertDonors ? (
-              <button onClick={runAlertDonors} disabled={loading}>Alert Donors for {bloodType}</button>
-            ) : (
-              <button disabled title="Requires Blood Bank Manager or Donor Coordinator access">
-                Alert Donors for {bloodType}
-              </button>
-            )}
-            {alertMessage && <p className="result">{alertMessage}</p>}
+      {transfusion && (
+        <div className={shortfall.length ? "stock-alert" : "stock-ok"}>
+          <p>
+            Transfusion #{transfusion.id} — <strong>{transfusion.status}</strong>
+            {" "}for a {transfusion.recipient_group} patient
+          </p>
+          <div className="table-scroll">
+            <table>
+              <thead><tr><th>Unit</th><th>Group</th><th>Component</th><th>Expires</th><th></th></tr></thead>
+              <tbody>
+                {transfusion.units.map((u) => (
+                  <tr key={u.unit_id}>
+                    <td>{u.unit_id}</td>
+                    <td>{u.blood_group}</td>
+                    <td>{u.component}</td>
+                    <td>{u.expires_at.slice(0, 16).replace("T", " ")}</td>
+                    <td>
+                      {u.near_expiry && <span className="badge near">near expiry</span>}
+                      {u.cross_group && <span className="badge info">compatible</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <p className="stock-ok">{bloodType} stock is sufficient ({stockCheck.units} units) — no donor alert needed.</p>
-        )
+          {shortfall.length > 0 && (
+            <div className="shortfall">
+              {shortfall.map(([component, n]) => (
+                <p key={component}>
+                  Short <strong>{n} {component}</strong> for {transfusion.recipient_group} —{" "}
+                  {canAlertDonors ? (
+                    <button onClick={() => alertFor(component)} disabled={loading}>
+                      Alert {form.blood_group} donors
+                    </button>
+                  ) : "a Blood Bank Manager needs to source more."}
+                </p>
+              ))}
+              {alertMessage && <p className="result">{alertMessage}</p>}
+            </div>
+          )}
+          {transfusion.status === "reserved" && (
+            <div className="actions">
+              <button onClick={() => finish(true)} disabled={loading}>Confirm transfused</button>
+              <button className="secondary" onClick={() => finish(false)} disabled={loading}>Cancel & release</button>
+            </div>
+          )}
+        </div>
       )}
 
       {explanation && (
@@ -154,6 +234,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
           <pre>{explanation.threshold_summary}</pre>
           <h4>Clinical explanation</h4>
           <p>{explanation.llm_explanation}</p>
+          <Citations citations={explanation.citations} />
         </div>
       )}
     </section>

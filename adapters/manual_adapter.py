@@ -31,7 +31,8 @@ class ManualEntryAdapter(BaseAdapter):
             INR=raw_input["INR"],
             age=raw_input["age"],
             surgery_type=raw_input["surgery_type"],
-            source_format=self.source_format,
+            blood_group=raw_input.get("blood_group"),
+            source_format=raw_input.get("source_format") or self.source_format,
             source_hospital=raw_input.get("hospital_name", "unknown"),
         )
         return [record]

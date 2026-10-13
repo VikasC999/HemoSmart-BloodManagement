@@ -13,6 +13,39 @@ Usage:
 
 from abc import ABC, abstractmethod
 import os
+import threading
+
+# ----------------------------------------------------------------------
+# LLM call counter -- measures how many LLM calls a workflow really makes
+# (e.g. the CrewAI case pipeline), instead of estimating. Counts this
+# module's own calls plus every LiteLLM call (which is how CrewAI agents
+# reach Groq). Process-wide: a count taken around one workflow includes
+# any other LLM request that ran at the same time.
+# ----------------------------------------------------------------------
+_call_count = 0
+_count_lock = threading.Lock()
+_litellm_hooked = False
+
+
+def _increment(*_args, **_kwargs) -> None:
+    global _call_count
+    with _count_lock:
+        _call_count += 1
+
+
+def llm_call_count() -> int:
+    """Total LLM calls in this process so far; diff two readings to
+    measure a workflow."""
+    global _litellm_hooked
+    if not _litellm_hooked:
+        try:
+            import litellm
+            litellm.success_callback.append(_increment)
+            litellm.failure_callback.append(_increment)
+            _litellm_hooked = True
+        except ImportError:
+            pass
+    return _call_count
 
 
 class BaseLLMClient(ABC):
@@ -29,6 +62,7 @@ class OllamaClient(BaseLLMClient):
 
     def generate(self, prompt: str) -> str:
         import ollama
+        _increment()
         response = ollama.chat(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
@@ -52,6 +86,7 @@ class GroqClient(BaseLLMClient):
         self.model = model
 
     def generate(self, prompt: str) -> str:
+        _increment()
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": prompt}],

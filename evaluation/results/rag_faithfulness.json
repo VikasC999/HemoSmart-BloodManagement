@@ -1,0 +1,407 @@
+{
+  "meta": {
+    "generated_at": "2026-10-13 03:23",
+    "model": "openai/gpt-oss-20b via Groq",
+    "explanations_generated_at": "2026-10-13 03:17"
+  },
+  "retrieval": {
+    "legacy": {
+      "rbc": {
+        "hit_at_2": 1.0,
+        "mrr_at_5": 1.0,
+        "top2_pages_example": [
+          160,
+          7
+        ]
+      },
+      "platelets": {
+        "hit_at_2": 1.0,
+        "mrr_at_5": 1.0,
+        "top2_pages_example": [
+          162,
+          147
+        ]
+      },
+      "ffp": {
+        "hit_at_2": 0.0,
+        "mrr_at_5": 0.333,
+        "top2_pages_example": [
+          137,
+          51
+        ]
+      },
+      "surgery": {
+        "hit_at_2": 0.75,
+        "mrr_at_5": 0.458,
+        "top2_pages_example": [
+          84,
+          159
+        ]
+      }
+    },
+    "current": {
+      "rbc": {
+        "hit_at_2": 1.0,
+        "mrr_at_5": 1.0,
+        "top2_pages_example": [
+          160,
+          160
+        ]
+      },
+      "platelets": {
+        "hit_at_2": 1.0,
+        "mrr_at_5": 1.0,
+        "top2_pages_example": [
+          147,
+          28
+        ]
+      },
+      "ffp": {
+        "hit_at_2": 1.0,
+        "mrr_at_5": 0.5,
+        "top2_pages_example": [
+          76,
+          118
+        ]
+      },
+      "surgery": {
+        "hit_at_2": 0.75,
+        "mrr_at_5": 0.583,
+        "top2_pages_example": [
+          158,
+          7
+        ]
+      }
+    }
+  },
+  "faithfulness": {
+    "legacy": {
+      "cases": 10,
+      "with_misattribution": 2,
+      "with_unsupported_number": 0,
+      "with_contradiction": 0,
+      "with_bad_citation": 0,
+      "citing_a_source": 9,
+      "rows": [
+        {
+          "case": {
+            "hemoglobin": 6.8,
+            "platelets": 210000,
+            "INR": 1.1,
+            "age": 64,
+            "surgery_type": "General"
+          },
+          "explanation": "The patient\u2019s hemoglobin of 6.8\u202fg/dL is below the general\u2011surgery threshold of 8\u202fg/dL, a level at which the HemoSmart protocol and guideline [1] recommend a red\u2011cell transfusion to maintain adequate oxygen delivery during surgery. Platelet count and INR are within the safe limits (\u2265\u202f50\u202f\u00d7\u202f10^9/L and \u2264\u202f1.5), so no platelet or plasma products are indicated [3][5]. Accordingly, the AI\u2019s prediction that a transfusion is needed is consistent with these guideline criteria.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 12.9,
+            "platelets": 32000,
+            "INR": 1.0,
+            "age": 41,
+            "surgery_type": "Orthopedic"
+          },
+          "explanation": "The AI\u2019s recommendation is consistent with the HemoSmart thresholds: the platelet count is 32\u202f000\u202f/\u00b5L, which is below the 50\u202f000\u202f/\u00b5L cutoff for orthopedic surgery and therefore warrants platelet transfusion [3]. The hemoglobin level of 12.9\u202fg/dL exceeds the 8.0\u202fg/dL threshold, and the INR of 1.0 is within the normal range, so red\u2011cell or plasma transfusion is not indicated [1], [5]. Thus the prediction aligns with the guideline\u2011derived thresholds.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 13.4,
+            "platelets": 240000,
+            "INR": 2.3,
+            "age": 70,
+            "surgery_type": "General"
+          },
+          "explanation": "The AI prediction is consistent with the guidelines because the patient\u2019s INR of 2.3 exceeds the protocol threshold for fresh frozen plasma transfusion, indicating a coagulopathy that would increase intra\u2011operative bleeding risk during general surgery [3]. While the hemoglobin and platelet counts are within safe limits [1], the elevated INR mandates correction to maintain adequate hemostasis, as supported by the limited but clear indications for FFP use when coagulation values are abnormal [5]. This aligns with the HemoSmart protocol\u2019s focus on correcting coagulation defects before elective procedures.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 7.2,
+            "platelets": 45000,
+            "INR": 1.9,
+            "age": 35,
+            "surgery_type": "Emergency"
+          },
+          "explanation": "The patient\u2019s hemoglobin of 7.2\u202fg/dL is below the emergency\u2011surgery threshold of 10\u202fg/dL, a level at which guidelines recommend a red\u2011cell transfusion to preserve oxygen delivery during operative blood loss [1]. The platelet count of 45\u202f000/\u00b5L is under the 50\u202f000/\u00b5L cut\u2011off for peri\u2011operative platelet transfusion, which is advised to prevent micro\u2011vascular bleeding in surgical patients [3]. Finally, an INR of 1.9 exceeds the 1.5 threshold for fresh\u2011frozen plasma correction in the HemoSmart protocol, aligning with recommendations to normalize coagulopathy before or during surgery [3].",
+          "misattributed": [
+            10.0
+          ],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 8.6,
+            "platelets": 180000,
+            "INR": 1.0,
+            "age": 72,
+            "surgery_type": "Cardiac"
+          },
+          "explanation": "The AI prediction that a transfusion is needed is consistent with the protocol because the patient\u2019s hemoglobin of 8.6\u202fg/dL falls below the 9.0\u202fg/dL threshold set for cardiac surgery, a procedure that typically requires higher pre\u2011operative hemoglobin to avoid transfusion during anticipated blood loss [1]. Platelets are \u2265100\u202f000\u202f/\u00b5L and INR is \u22641.5, so neither meets the thresholds that would prompt platelet or plasma transfusion, supporting that the sole trigger for a transfusion in this case is the low hemoglobin [1].",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 13.0,
+            "platelets": 85000,
+            "INR": 1.2,
+            "age": 60,
+            "surgery_type": "Cardiac"
+          },
+          "explanation": "The AI\u2019s prediction of a transfusion is supported by the fact that the patient\u2019s platelet count (85\u202f000/\u00b5L) is below the 100\u202f000/\u00b5L threshold defined in the HemoSmart protocol, indicating a need for platelet replacement during cardiac surgery. The hemoglobin level (13.0\u202fg/dL) is above the 9.0\u202fg/dL threshold and the INR (1.2) is below the 1.5 limit, so neither red\u2011cell nor plasma transfusion is indicated by those criteria. Platelet transfusion in a surgical setting with a low count is in line with the guideline that stresses the importance of correcting thrombocytopenia to prevent peri\u2011operative bleeding [3].",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 9.4,
+            "platelets": 150000,
+            "INR": 1.3,
+            "age": 29,
+            "surgery_type": "Emergency"
+          },
+          "explanation": "The patient\u2019s hemoglobin of 9.4\u202fg/dL is below the 10\u202fg/dL threshold used for emergency surgery, placing the patient in the group where a red\u2011cell transfusion is usually recommended to ensure adequate oxygen delivery during operative blood loss [1]. Because the platelet count of 150\u202f000\u202f/\u00b5L is above the 50\u202f000/\u00b5L cutoff and the INR of 1.3 is within the acceptable range, there is no indication to avoid or defer the transfusion with platelets or plasma [3]. Thus the AI prediction that a transfusion is needed aligns with current transfusion guidelines.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 8.1,
+            "platelets": 52000,
+            "INR": 1.5,
+            "age": 55,
+            "surgery_type": "General"
+          },
+          "explanation": "The AI\u2019s recommendation is consistent with the guidelines because, even though the patient\u2019s hemoglobin, platelet count, and INR are within the acceptable limits for general surgery, transfusion may still be indicated if significant blood loss or hemodynamic instability occurs intra\u2011operatively [1,8].  The WHO handbook acknowledges that pre\u2011operative thresholds are only part of the decision, and that a transfusion may be necessary to maintain tissue oxygenation during surgery despite laboratory values that do not cross the protocol cut\u2011offs [1,8].",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": false
+        },
+        {
+          "case": {
+            "hemoglobin": 14.1,
+            "platelets": 260000,
+            "INR": 1.0,
+            "age": 47,
+            "surgery_type": "Orthopedic"
+          },
+          "explanation": "The patient\u2019s hemoglobin (14.1\u202fg/dL) and platelet count (260\u202f000\u202f/\u00b5L) are both above the HemoSmart thresholds for orthopedic surgery, and the INR is within normal limits, meaning no coagulation deficit exists. According to WHO guidance, transfusion is generally unnecessary when hemoglobin is \u22658\u202fg/dL and platelets are \u226550\u202f\u00d710\u2079/L, and fresh frozen plasma is indicated only when INR exceeds 1.5\u202f[1], [3], [5]. Thus, the AI\u2019s recommendation of \u201cno transfusion needed\u201d aligns with these evidence\u2011based thresholds.",
+          "misattributed": [
+            1.5
+          ],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 10.5,
+            "platelets": 130000,
+            "INR": 1.6,
+            "age": 81,
+            "surgery_type": "Cardiac"
+          },
+          "explanation": "The patient\u2019s hemoglobin (10.5\u202fg/dL) and platelet count (130\u202f000/\u00b5L) are at or above the Cardiac\u2011surgery thresholds, so routine transfusion is unnecessary [1], [3]. Although the INR of 1.6 exceeds the FFP threshold, the WHO guidelines indicate that \u201cthere are very few indications for transfusing fresh frozen plasma\u201d and it should be avoided unless there is active bleeding or a high\u2011risk situation [5]. Thus the AI\u2019s recommendation of no transfusion aligns with the protocol that prioritizes transfusion only when clinically justified.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        }
+      ]
+    },
+    "current": {
+      "cases": 10,
+      "with_misattribution": 1,
+      "with_unsupported_number": 0,
+      "with_contradiction": 1,
+      "with_bad_citation": 0,
+      "citing_a_source": 10,
+      "rows": [
+        {
+          "case": {
+            "hemoglobin": 6.8,
+            "platelets": 210000,
+            "INR": 1.1,
+            "age": 64,
+            "surgery_type": "General"
+          },
+          "explanation": "Based on HemoSmart's protocol threshold for general surgery, the patient\u2019s hemoglobin of 6.8\u202fg/dL falls below the required level, indicating a likely need for red\u2011cell transfusion. The WHO handbook notes that an adequate preoperative hemoglobin (\u22487\u20138\u202fg/dL) decreases the chance of transfusion during surgery [1]. Platelet and INR values are above their respective thresholds, so no platelet or FFP transfusion is indicated.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [
+            "ffp"
+          ],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 12.9,
+            "platelets": 32000,
+            "INR": 1.0,
+            "age": 41,
+            "surgery_type": "Orthopedic"
+          },
+          "explanation": "The AI predicts a transfusion is required because the patient\u2019s platelet count of 32\u202f\u00d7\u202f10\u00b3\u202f/\u00b5L is below HemoSmart\u2019s protocol threshold for orthopedic surgery, indicating that platelet support may be needed to control bleeding [3], [4].  \nThe hemoglobin level of 12.9\u202fg/dL is at or above the HemoSmart threshold and falls within the WHO handbook range that is considered adequate for elective surgery, so a red\u2011cell transfusion is not indicated [1].  \nThe INR of 1.0 is within acceptable limits for this procedure, so no fresh\u2011frozen plasma transfusion is required.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 13.4,
+            "platelets": 240000,
+            "INR": 2.3,
+            "age": 70,
+            "surgery_type": "General"
+          },
+          "explanation": "The patient\u2019s INR of 2.3 exceeds HemoSmart's protocol threshold(s) for fresh frozen plasma, which is triggered when INR >\u202f1.5 [5]; plasma loss of labile factors during storage necessitates replacement to prevent bleeding. Hemoglobin (13.4\u202fg/dL) and platelet count (240\u202f000/\u00b5L) are both above HemoSmart's thresholds, so no red\u2011cell or platelet transfusion is indicated. Thus, the AI predicts that only an FFP transfusion is needed, consistent with the evidence that plasma restores coagulation factors and mitigates peri\u2011operative bleeding [6].",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 7.2,
+            "platelets": 45000,
+            "INR": 1.9,
+            "age": 35,
+            "surgery_type": "Emergency"
+          },
+          "explanation": "HemoSmart\u2019s protocol thresholds for emergency surgery were crossed by the patient\u2019s hemoglobin (7.2\u202fg/dL), platelet count (45,000\u202f/\u00b5L) and INR (1.9), indicating a high risk of peri\u2011operative bleeding and impaired oxygen delivery. WHO [2] notes that severe anaemia requires urgent treatment, WHO [3] states that low platelets necessitate transfusion to control or stop bleeding, and WHO [5] explains that a high INR reflects loss of labile coagulation factors, warranting fresh frozen plasma. These findings together support the AI prediction that a transfusion will be required.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 8.6,
+            "platelets": 180000,
+            "INR": 1.0,
+            "age": 72,
+            "surgery_type": "Cardiac"
+          },
+          "explanation": "HemoSmart\u2019s protocol threshold for hemoglobin in cardiac surgery is 9.0\u202fg/dL, and this patient\u2019s hemoglobin of 8.6\u202fg/dL falls below that threshold, supporting the AI prediction that a red\u2011cell transfusion is needed [1]. The platelet count (180\u202f000/\u00b5L) is above the protocol threshold and the INR of 1.0 is within normal limits, so platelet concentrate or fresh\u2011frozen plasma are not indicated. This aligns with HemoSmart\u2019s guidance to prioritize red\u2011cell transfusion when hemoglobin is low while avoiding unnecessary platelet or plasma administration.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 13.0,
+            "platelets": 85000,
+            "INR": 1.2,
+            "age": 60,
+            "surgery_type": "Cardiac"
+          },
+          "explanation": "The AI predicts a transfusion because the patient\u2019s platelet count of 85\u202f000/\u00b5L falls below HemoSmart\u2019s protocol threshold for cardiac surgery, a situation that the WHO handbook describes as a condition that may require platelet concentrates to control bleeding [3][4]. The hemoglobin level of 13.0\u202fg/dL is above the threshold identified by HemoSmart, matching the handbook\u2019s statement that routine pre\u2011operative transfusion for elective surgery is rarely justified [1]. The INR of 1.2 does not cross HemoSmart\u2019s threshold for fresh frozen plasma, so the primary driver of the prediction is the platelet deficit rather than coagulation factor deficiency [5].",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 9.4,
+            "platelets": 150000,
+            "INR": 1.3,
+            "age": 29,
+            "surgery_type": "Emergency"
+          },
+          "explanation": "The AI predicts that a transfusion will be needed because the patient\u2019s hemoglobin of 9.4\u202fg/dL is below HemoSmart\u2019s protocol threshold of 10.0\u202fg/dL for emergency surgery. WHO\u2019s handbook excerpts state that adequate hemoglobin levels reduce the likelihood of transfusion [1] and that severe anemia requires urgent treatment, including transfusion [2]. The platelet count and INR do not cross HemoSmart\u2019s thresholds for platelet or FFP transfusion, so only a red\u2011cell transfusion is anticipated.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 8.1,
+            "platelets": 52000,
+            "INR": 1.5,
+            "age": 55,
+            "surgery_type": "General"
+          },
+          "explanation": "The AI model predicts that a transfusion is likely for this 55\u2011year\u2011old patient undergoing general surgery, even though HemoSmart\u2019s thresholds were not exceeded, because the hemoglobin of 8.1\u202fg/dL lies at the lower end of the acceptable range for elective procedures and may compromise oxygen delivery during operative blood loss [1]. A modestly elevated INR of 1.5 indicates a mild coagulopathy that could worsen bleeding and may warrant fresh frozen plasma if hemorrhage occurs [5]. Although the platelet count of 52\u202f000/\u00b5L is above HemoSmart\u2019s threshold, it is still low enough that significant bleeding could benefit from platelet transfusion to achieve the desired clinical response [4].",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 14.1,
+            "platelets": 260000,
+            "INR": 1.0,
+            "age": 47,
+            "surgery_type": "Orthopedic"
+          },
+          "explanation": "The AI predicts no transfusion is required because the patient\u2019s hemoglobin (14.1\u202fg/dL), platelet count (260,000\u202f/\u00b5L), and INR (1.0) all meet HemoSmart\u2019s protocol thresholds. WHO [1] notes that maintaining an adequate preoperative hemoglobin level\u2014typically around 7\u20138\u202fg/dL in well\u2011compensated patients\u2014reduces the likelihood of transfusion, and WHO [2] stresses treating preoperative anemia before elective surgery. WHO [3] and [4] describe platelet therapy as guided by clinical response rather than count alone, and the patient\u2019s platelet level is well above the 50,000\u202f/\u00b5L threshold, supporting the decision that platelet transfusion is unnecessary.",
+          "misattributed": [
+            50000.0
+          ],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        },
+        {
+          "case": {
+            "hemoglobin": 10.5,
+            "platelets": 130000,
+            "INR": 1.6,
+            "age": 81,
+            "surgery_type": "Cardiac"
+          },
+          "explanation": "The AI predicts no transfusion because the patient\u2019s haemoglobin (10.5\u202fg/dL) and platelet count (130\u202f000/\u00b5L) are at or above HemoSmart\u2019s protocol thresholds for cardiac surgery, so pre\u2011operative transfusion is not required [1]. Though the INR of 1.6 exceeds the FFP threshold, there are no signs of inadequate oxygen delivery or active bleeding that would prompt transfusion [7]. Thus the AI recommends proceeding without blood product administration.",
+          "misattributed": [],
+          "unsupported": [],
+          "contradictions": [],
+          "bad_citations": [],
+          "cites_any": true
+        }
+      ]
+    }
+  }
+}

@@ -25,9 +25,10 @@ from adapters.base import BaseAdapter
 EXTRACTION_PROMPT = """
 Extract the following values from this CBC (Complete Blood Count) lab
 report and return ONLY a valid JSON object with these exact keys:
-hemoglobin (float, g/dL), platelets (int, per microliter),
+hemoglobin (float, g/dL), platelets (int, per microliter -- if the
+report gives x10^3/uL, e.g. "128 x10^3/uL", return 128000),
 INR (float), age (int), surgery_type (one of: Cardiac, Orthopedic,
-General, Emergency).
+General, Emergency), blood_group (e.g. "O+", "AB-"; null if not stated).
 
 If a value is not present in the report, use null for that field.
 Return ONLY the JSON object. No explanation, no markdown formatting.
@@ -121,6 +122,7 @@ class PDFReportAdapter(BaseAdapter):
             INR=fields["INR"],
             age=fields["age"],
             surgery_type=fields["surgery_type"],
+            blood_group=fields.get("blood_group"),
             source_format=self.source_format,
         )
         return [record]

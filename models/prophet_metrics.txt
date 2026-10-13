@@ -1,2 +1,3 @@
-MAE: 3.48
-RMSE: 4.35
+FFP: MAE 2.32, RMSE 2.68 (units/day, 30-day holdout)
+PRBC: MAE 3.17, RMSE 3.87 (units/day, 30-day holdout)
+Platelets: MAE 2.43, RMSE 3.44 (units/day, 30-day holdout)

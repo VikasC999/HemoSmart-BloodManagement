@@ -1,0 +1,32 @@
+{
+  "meta": {
+    "generated_at": "2026-10-13 11:04",
+    "llm": "openai/gpt-oss-20b via Groq"
+  },
+  "results": {
+    "prediction": {
+      "n": 30,
+      "median_s": 0.006,
+      "p95_s": 0.009,
+      "max_s": 0.224,
+      "target_s": 2.0,
+      "meets_target": true
+    },
+    "forecast": {
+      "n": 10,
+      "median_s": 0.066,
+      "p95_s": 0.353,
+      "max_s": 0.353,
+      "target_s": 10.0,
+      "meets_target": true
+    },
+    "explanation": {
+      "n": 5,
+      "median_s": 2.047,
+      "p95_s": 16.943,
+      "max_s": 16.943,
+      "target_s": 5.0,
+      "meets_target": false
+    }
+  }
+}

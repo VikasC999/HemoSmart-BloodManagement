@@ -53,7 +53,7 @@ Run:
     python agents/chat_agent.py           (interactive chat, routes dynamically)
 """
 
-import sys, os
+import re, sys, os, time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from typing import List, Dict
@@ -70,6 +70,18 @@ from agents.tools import (
     send_donor_alert,
     extract_from_pdf,
 )
+
+# CrewAI 1.15 marks system/user messages with a "cache_breakpoint" key
+# (a prompt-caching hint for Anthropic). Its native provider adapters
+# strip the key, but the LiteLLM path that Groq goes through does not,
+# and Groq rejects the request ("property 'cache_breakpoint' is
+# unsupported") -- so every agent failed on its first call and the
+# guardrails silently fell back. CrewAI imports this helper at call
+# time, so making it a no-op here fixes every agent. Nothing is lost:
+# HemoSmart doesn't use Anthropic models. Remove once CrewAI strips the
+# key for LiteLLM providers. (docs/DESIGN_DECISIONS.md D41)
+import crewai.llms.cache as _crewai_cache
+_crewai_cache.mark_cache_breakpoint = lambda message: dict(message)
 
 agent_llm = LLM(
     model=os.environ.get("HEMOSMART_CREW_LLM_MODEL", "groq/openai/gpt-oss-20b"),
@@ -91,7 +103,7 @@ class ExplanationResult(BaseModel):
 
 
 class InventoryResult(BaseModel):
-    inventory: Dict[str, int]
+    # "<group> <component>" keys, e.g. "O- PRBC"
     low_stock_types: List[str]
     healthy_types: List[str]
 
@@ -166,20 +178,32 @@ def explain_prediction_tool(hemoglobin: float, platelets: int, inr: float,
     return generate_explanation(record, prediction)
 
 
-@tool("Check Blood Inventory")
-def check_inventory_tool() -> str:
-    """Checks current blood inventory levels for all blood types and
-    identifies which are low stock vs healthy."""
-    result = check_inventory()
-    low = list(result["low_stock_types"].keys())
-    healthy = [bt for bt in result["inventory"] if bt not in low]
-    return (
-        f'{{"inventory": {result["inventory"]}, '
-        f'"low_stock_types": {low}, "healthy_types": {healthy}}}'
+def _critical_and_healthy(result: dict):
+    """Critical (below half of par) "<group> <component>" keys vs the rest."""
+    critical = sorted(f"{i['blood_group']} {i['component']}" for i in result["low_stock"] if i["status"] == "Critical")
+    healthy = sorted(
+        f"{g} {c}" for g, comps in result["inventory"].items() for c in comps if f"{g} {c}" not in critical
     )
+    return critical, healthy
 
 
-def make_idempotent_action_tool(verified_low_stock_types):
+@tool("Check Blood Inventory")
+def check_inventory_tool(scope: str = "all") -> str:
+    """Checks current blood inventory for every blood group and component
+    (PRBC, Platelets, FFP) and identifies which are critically low. Pass
+    scope="all"."""
+    # `scope` exists only because Groq rejects a tool schema with no
+    # properties ("'required' present but 'properties' is missing").
+    critical, healthy = _critical_and_healthy(check_inventory())
+    return f'{{"low_stock_types": {critical}, "healthy_types": {healthy}}}'
+
+
+def _dispatch(key: str) -> str:
+    group, component = key.split(" ", 1)
+    return send_donor_alert(group, component)
+
+
+def make_idempotent_action_tool(verified_low_stock_types, allow_dispatch=True):
     """
     Factory for a donor-alert tool with TWO independent safety guarantees:
 
@@ -201,17 +225,20 @@ def make_idempotent_action_tool(verified_low_stock_types):
     2. IDEMPOTENCY GUARD: each verified blood type can still only
        trigger one real alert per run, regardless of how many times
        the agent calls the tool for it.
+
+    With allow_dispatch=False (a caller whose role may not alert donors,
+    e.g. Hospital Staff), valid calls are recorded as recommendations
+    and nobody is contacted -- the pipeline can't be a way around RBAC.
     """
     already_alerted = set()
 
     @tool("Trigger Action (Donor Alert)")
-    def action_tool(blood_type: str, units_needed: int = 0) -> str:
-        """Sends a donor alert for a low-stock blood type. Only
-        dispatches for blood types independently verified as low
-        stock; requests for any other blood type are rejected. Safe
-        to call more than once for the same blood type -- only the
-        first valid call per blood type per run dispatches a real
-        alert."""
+    def action_tool(blood_type: str) -> str:
+        """Sends a donor alert for a low-stock "<group> <component>" key,
+        e.g. "O- PRBC". Only dispatches for keys independently verified
+        as low stock; requests for anything else are rejected. Safe to
+        call more than once for the same key -- only the first valid call
+        per key per run dispatches a real alert."""
         if blood_type not in verified_low_stock_types:
             return (
                 f"REJECTED: {blood_type} is not verified as low stock. "
@@ -224,7 +251,12 @@ def make_idempotent_action_tool(verified_low_stock_types):
                 f"already sent earlier in this run. No new alert dispatched."
             )
         already_alerted.add(blood_type)
-        return send_donor_alert(blood_type, units_needed if units_needed else None)
+        if not allow_dispatch:
+            return (
+                f"RECOMMENDED: donor alert for {blood_type}. Not dispatched -- "
+                f"the requesting user's role can't contact donors; a Blood Bank Manager must."
+            )
+        return _dispatch(blood_type)
 
     return action_tool, already_alerted
 
@@ -336,24 +368,56 @@ def _run_isolated_task(label, agent, task, ground_truth_value, extract_fn, tools
     a tool error, a malformed response, a hard pydantic crash -- the
     exception is caught here, logged, and ground_truth_value is used
     instead, so the pipeline always continues.
+
+    ground_truth_value may be a zero-argument callable, computed only if
+    the agent fails -- so an expensive fallback (a second LLM explanation)
+    isn't paid for when the agent succeeds.
+
+    RATE LIMITS: Groq's free tier caps tokens per minute (8,000 for
+    gpt-oss-20b), and one full case needs more than that -- so a
+    rate-limit error isn't a failure of the agent. The task is retried
+    after the wait Groq asks for, up to RATE_LIMIT_RETRIES times.
     """
     if tools_for_agent is not None:
         agent.tools = tools_for_agent
-    try:
-        mini_crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=True)
-        result = mini_crew.kickoff()
-        value = extract_fn(result.tasks_output[0])
-        if value is None:
-            raise ValueError("Agent produced no usable structured output.")
-        print(f"[VALIDATION] {label}: agent completed successfully, using its result.")
-        return value, True, result
-    except Exception as exc:
-        print(f"[VALIDATION] {label}: FAILED ({exc.__class__.__name__}: {exc}). "
-              f"Falling back to verified value for safety.")
-        return ground_truth_value, False, None
+    for attempt in range(RATE_LIMIT_RETRIES + 1):
+        try:
+            mini_crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=True)
+            result = mini_crew.kickoff()
+            value = extract_fn(result.tasks_output[0])
+            if value is None:
+                raise ValueError("Agent produced no usable structured output.")
+            print(f"[VALIDATION] {label}: agent completed successfully, using its result.")
+            return value, True, result
+        except Exception as exc:
+            wait = _rate_limit_wait(exc)
+            if wait is not None and attempt < RATE_LIMIT_RETRIES:
+                print(f"[VALIDATION] {label}: rate-limited by the LLM provider -- retrying in {wait:.0f}s.")
+                time.sleep(wait)
+                continue
+            print(f"[VALIDATION] {label}: FAILED ({exc.__class__.__name__}: {exc}). "
+                  f"Falling back to verified value for safety.")
+            fallback = ground_truth_value() if callable(ground_truth_value) else ground_truth_value
+            return fallback, False, None
 
 
-def run_full_pipeline(pdf_path):
+RATE_LIMIT_RETRIES = 4
+MIN_RATE_LIMIT_WAIT_SECONDS = 10  # Groq's hint covers one request; an agent loop makes several
+MAX_RATE_LIMIT_WAIT_SECONDS = 65
+
+
+def _rate_limit_wait(exc: Exception):
+    """Seconds to wait if `exc` is a provider rate limit, else None.
+    Groq's message says e.g. "Please try again in 7.41s"."""
+    text = f"{exc.__class__.__name__} {exc}"
+    if "RateLimit" not in text and "rate_limit" not in text and "Rate limit" not in text:
+        return None
+    match = re.search(r"try again in (?:(\d+)m)?([\d.]+)s", text)
+    seconds = (int(match.group(1) or 0) * 60 + float(match.group(2))) if match else 20.0
+    return min(max(seconds + 1.0, MIN_RATE_LIMIT_WAIT_SECONDS), MAX_RATE_LIMIT_WAIT_SECONDS)
+
+
+def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True):
     """
     Full 6-agent pipeline: Extraction -> Prediction -> RAG -> Inventory
     -> Action -> Orchestrator. Every task runs as its own isolated
@@ -362,9 +426,23 @@ def run_full_pipeline(pdf_path):
     genuinely attempts real tool execution every time; ground-truth
     values are used only when an agent's attempt actually fails or
     disagrees, and this is always logged, never silent.
+
+    progress: optional callback(agent, status, detail) -- status is
+        "running", then "verified" (the agent's own answer was used) or
+        "fell_back" (it failed or disagreed; the verified value was used).
+    allow_dispatch: False records donor alerts as recommendations only
+        (see make_idempotent_action_tool).
     """
+    def report(agent, ok=None, detail=None):
+        if progress:
+            status = "running" if ok is None else ("verified" if ok else "fell_back")
+            progress(agent, status, detail)
+
     # ---- Task 0: Extraction ----
+    report("Extraction")
     ground_truth_extraction = extract_from_pdf(pdf_path)
+    if ground_truth_extraction is None:
+        raise ValueError("Could not extract patient data from this PDF -- use manual entry instead.")
     task0 = Task(
         description=(
             f"Call the PDF extraction tool EXACTLY ONCE with pdf_path='{pdf_path}'. "
@@ -396,15 +474,19 @@ def run_full_pipeline(pdf_path):
         "Extraction", extraction_agent, task0, ground_truth_extraction_tuple, extract_extraction,
     )
     hemoglobin, platelets, inr, age, surgery_type = extraction_value
+    report("Extraction", extraction_ok,
+           {"hemoglobin": hemoglobin, "platelets": platelets, "inr": inr, "age": age, "surgery_type": surgery_type})
 
     record = PatientRecord(
         hemoglobin=hemoglobin, platelets=platelets, INR=inr,
         age=age, surgery_type=surgery_type,
+        blood_group=ground_truth_extraction.blood_group, source_format="pdf_agents",
     )
     ground_truth = predict_transfusion(record)
     prediction_bool = ground_truth["transfusion_needed"]
 
     # ---- Task 1: Prediction ----
+    report("Prediction")
     task1 = Task(
         description=(
             f"Call the transfusion prediction tool EXACTLY ONCE with "
@@ -426,9 +508,13 @@ def run_full_pipeline(pdf_path):
     verified_prediction, pred_ok, _ = _run_isolated_task(
         "Prediction", prediction_agent, task1, ground_truth["transfusion_needed"], extract_prediction,
     )
+    report("Prediction", pred_ok, {"transfusion_needed": verified_prediction})
 
     # ---- Task 2: RAG ----
-    ground_truth_explanation = generate_explanation(record, prediction_bool)
+    report("RAG")
+    # Fallback only -- computed lazily if the RAG agent fails, so a
+    # successful run doesn't pay for a second full explanation.
+    ground_truth_explanation = lambda: generate_explanation(record, prediction_bool)
     task2 = Task(
         description=(
             f"Call the RAG explanation tool EXACTLY ONCE with hemoglobin={hemoglobin}, "
@@ -450,17 +536,15 @@ def run_full_pipeline(pdf_path):
     delivered_explanation, rag_ok, _ = _run_isolated_task(
         "RAG", rag_agent, task2, ground_truth_explanation, extract_rag,
     )
+    report("RAG", rag_ok)
 
     # ---- Task 3: Inventory ----
-    ground_truth_inventory = check_inventory()
-    ground_truth_low = sorted(ground_truth_inventory["low_stock_types"].keys())
-    ground_truth_healthy = sorted(
-        bt for bt in ground_truth_inventory["inventory"] if bt not in ground_truth_low
-    )
+    report("Inventory")
+    ground_truth_low, ground_truth_healthy = _critical_and_healthy(check_inventory())
     task3 = Task(
         description=(
-            "Call the inventory tool EXACTLY ONCE, with no arguments. "
-            "Report the exact inventory, low_stock_types, and healthy_types it returns."
+            "Call the inventory tool EXACTLY ONCE, with scope=\"all\". "
+            "Report the exact low_stock_types and healthy_types it returns."
         ),
         expected_output="The inventory status as structured data.",
         agent=inventory_agent,
@@ -476,12 +560,14 @@ def run_full_pipeline(pdf_path):
     verified_low_stock, inv_ok, _ = _run_isolated_task(
         "Inventory", inventory_agent, task3, ground_truth_low, extract_inventory,
     )
+    report("Inventory", inv_ok, {"critical": verified_low_stock})
 
     # ---- Task 4: Action ----
     # The verified-type guard tool means real dispatch is safe regardless
     # of what the Action Agent's own reasoning claims -- see
     # make_idempotent_action_tool's docstring.
-    action_tool_instance, alerted_set = make_idempotent_action_tool(set(verified_low_stock))
+    report("Action")
+    action_tool_instance, alerted_set = make_idempotent_action_tool(set(verified_low_stock), allow_dispatch)
     task4 = Task(
         description=(
             f"The verified low-stock blood types are EXACTLY: {', '.join(verified_low_stock) or 'none'}. "
@@ -523,31 +609,44 @@ def run_full_pipeline(pdf_path):
         print(f"[VALIDATION] Action: agent did not actually dispatch for {sorted(missing_dispatch)}. "
               f"Dispatching directly to guarantee real donor contact.")
         for bt in sorted(missing_dispatch):
-            units = ground_truth_inventory["low_stock_types"].get(bt, 0)
-            send_donor_alert(bt, units if units else None)
+            if allow_dispatch:
+                _dispatch(bt)
             alerted_set.add(bt)
 
     action_ok = (sorted(alerted_set) == ground_truth_low)
     print(f"[VALIDATION] Action (real dispatch): {'matches' if action_ok else 'DIFFERS FROM'} verified low-stock list.")
-    print(f"[VALIDATION] Blood types that actually received a real alert this run: {sorted(alerted_set)}")
+    print(f"[VALIDATION] {'Alerts dispatched' if allow_dispatch else 'Alerts recommended (not dispatched)'} "
+          f"this run: {sorted(alerted_set)}")
+    report("Action", action_report_ok and action_ok,
+           {"alerted" if allow_dispatch else "recommended": sorted(alerted_set)})
 
     # ---- Task 5: Orchestrator ----
+    report("Orchestrator")
     task5 = Task(
         description=(
             f"The verified case facts are: transfusion_needed={prediction_bool}, "
             f"shortage_detected={bool(verified_low_stock)}. Write a short case_summary "
             f"sentence combining the prediction and inventory situation, restate these "
-            f"two verified facts exactly, and set workflow_status to 'complete'."
+            f"two verified facts exactly, and set workflow_status to 'complete'. "
+            f"Answer with ONLY a JSON object with the keys case_summary, "
+            f"transfusion_needed, shortage_detected, workflow_status."
         ),
-        expected_output="A consolidated orchestration summary as structured data.",
+        expected_output="A JSON object: case_summary, transfusion_needed, shortage_detected, workflow_status.",
         agent=orchestrator_agent,
-        output_pydantic=OrchestratorResult,
+        # No output_pydantic here: CrewAI's converter forces a hidden
+        # structured-output tool call that gpt-oss-20b on Groq repeatedly
+        # skipped ("Tool choice is required, but model did not call a
+        # tool"). The agent answers in plain JSON and it's parsed and
+        # validated below instead -- the same check, without the tool.
     )
 
     def extract_orchestrator(task_output):
-        p = task_output.pydantic
-        if (p and p.transfusion_needed == prediction_bool
-                and p.shortage_detected == bool(verified_low_stock)):
+        from adapters.pdf_adapter import PDFReportAdapter
+        try:
+            p = OrchestratorResult(**PDFReportAdapter._extract_json(task_output.raw or ""))
+        except Exception:
+            return None
+        if p.transfusion_needed == prediction_bool and p.shortage_detected == bool(verified_low_stock):
             return p
         return None
 
@@ -561,8 +660,9 @@ def run_full_pipeline(pdf_path):
         "Orchestrator", orchestrator_agent, task5, ground_truth_orchestrator, extract_orchestrator,
     )
     orchestrator_dict = (
-        orchestrator_value.dict() if hasattr(orchestrator_value, "dict") else orchestrator_value
+        orchestrator_value.model_dump() if hasattr(orchestrator_value, "model_dump") else orchestrator_value
     )
+    report("Orchestrator", orch_ok)
 
     summary = {
         "extraction": {"verified_correct": extraction_ok,
@@ -572,8 +672,10 @@ def run_full_pipeline(pdf_path):
         "explanation": {"verified_correct": rag_ok, "delivered_explanation": delivered_explanation},
         "inventory": {"verified_correct": inv_ok, "low_stock_types": verified_low_stock,
                       "healthy_types": ground_truth_healthy},
-        "action": {"verified_correct": action_ok, "actually_alerted": sorted(alerted_set)},
+        "action": {"verified_correct": action_ok, "dispatched": allow_dispatch,
+                   "actually_alerted" if allow_dispatch else "recommended": sorted(alerted_set)},
         "orchestrator": orchestrator_dict,
+        "patient_record": record.model_dump(),
     }
     return summary
 

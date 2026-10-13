@@ -39,10 +39,17 @@ WHAT'S SIMULATED VS REAL:
     the report's MCP notification service design (Section 3.8.5). This
     keeps the project's zero-cost constraint intact while the selection
     LOGIC itself is fully real and testable.
-  - The "response" (did the donor respond) is simulated for testing,
-    since we have no real alert history yet. In production, this would
-    be recorded from actual donor replies and fed back to update the
-    bandit -- exactly as this module is designed to support.
+  - Responses: in live use a Donor Coordinator records each reply
+    (record_donor_response). With HEMOSMART_SIMULATE_DONOR_RESPONSES on,
+    the autonomous loop instead samples replies from each synthetic
+    donor's hidden `simulated_response_rate` -- a value the bandit never
+    reads, so it still has to learn who responds, from outcomes alone.
+
+THE FEEDBACK LOOP:
+  alert sent        -> alerts_sent += 1              (Beta beta grows)
+  donor responds    -> alerts_responded += 1         (Beta alpha grows)
+                    -> donation: new units enter stock, eligibility clock resets
+  no reply in 48h   -> counted as a non-response
 """
 
 import os
@@ -51,38 +58,47 @@ import sys
 from datetime import date, datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from bloodbank.catalog import BLOOD_GROUPS, DONATION_YIELD
 from db.database import SessionLocal
 from db.models import Donor as DonorRow
+from db.models import DonorAlert
+from schema.privacy import mask_identifier
 
-MIN_DONATION_INTERVAL_DAYS = 90  # standard eligibility gap between donations
-BLOOD_TYPES = ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]
+MIN_DONATION_INTERVAL_DAYS = 90   # whole blood after whole blood (red cells take ~3 months to recover)
+APHERESIS_INTERVAL_DAYS = 28      # any donation after apheresis, and apheresis itself -- configurable policy
+RESPONSE_WINDOW_HOURS = 48        # no reply by then counts as "didn't respond"
+
+
+def _utcnow() -> datetime:
+    from bloodbank.stock import utcnow
+    return utcnow()
 
 
 # ----------------------------------------------------------------------
-# Donor data simulation (stands in for Person C's PostgreSQL donor table)
+# Donor data simulation (stands in for a hospital's donor registry)
 # ----------------------------------------------------------------------
-def simulate_donors(n=50, seed=42):
+def simulate_donors(n=400, seed=42, today: datetime = None):
     """
     Generates a realistic simulated donor pool: blood type, last donation
-    date, and prior alert/response history (so the bandit has something
-    to learn from immediately, rather than starting completely blank).
+    date, prior alert/response history (so the bandit has something to
+    learn from immediately), and each donor's hidden true response rate.
     """
-    random.seed(seed)
+    rng = random.Random(seed)  # own RNG: seeding must not reset the bandit's global sampler
     donors = []
-    today = datetime.now()
+    today = today or datetime.now()
 
     for i in range(n):
-        blood_type = random.choice(BLOOD_TYPES)
-        days_since_donation = random.randint(0, 300)
+        blood_type = rng.choice(BLOOD_GROUPS)
+        days_since_donation = rng.randint(0, 300)
         last_donation = (today - timedelta(days=days_since_donation)).strftime("%Y-%m-%d")
 
-        # Simulate prior history: some donors are naturally more
-        # responsive than others (mirrors real-world variation), so the
-        # bandit has a genuine pattern to discover, not just noise.
-        true_response_rate = random.betavariate(2, 2)  # varies 0-1, centered ~0.5
-        prior_alerts = random.randint(0, 8)
+        # Some donors are naturally more responsive than others (mirrors
+        # real-world variation), so the bandit has a genuine pattern to
+        # discover, not just noise.
+        true_response_rate = rng.betavariate(2, 2)  # varies 0-1, centered ~0.5
+        prior_alerts = rng.randint(0, 8)
         prior_responses = sum(
-            1 for _ in range(prior_alerts) if random.random() < true_response_rate
+            1 for _ in range(prior_alerts) if rng.random() < true_response_rate
         )
 
         donors.append({
@@ -93,6 +109,7 @@ def simulate_donors(n=50, seed=42):
             "last_donation_date": last_donation,
             "alerts_sent": prior_alerts,
             "alerts_responded": prior_responses,
+            "simulated_response_rate": round(true_response_rate, 4),
         })
 
     return donors
@@ -107,69 +124,67 @@ def _row_to_dict(row: DonorRow) -> dict:
         "last_donation_date": row.last_donation_date.strftime("%Y-%m-%d"),
         "alerts_sent": row.alerts_sent,
         "alerts_responded": row.alerts_responded,
+        "last_donation_type": row.last_donation_type,
     }
 
 
+def ensure_donor_pool(db, today: datetime = None) -> None:
+    """Seeds the simulated donor pool the first time the table is empty."""
+    if db.query(DonorRow).first():
+        return
+    for d in simulate_donors(today=today):
+        db.add(DonorRow(
+            donor_id=d["donor_id"], name=d["name"], phone=d["phone"],
+            blood_type=d["blood_type"],
+            last_donation_date=datetime.strptime(d["last_donation_date"], "%Y-%m-%d").date(),
+            alerts_sent=d["alerts_sent"], alerts_responded=d["alerts_responded"],
+            simulated_response_rate=d["simulated_response_rate"],
+        ))
+    db.flush()
+
+
 def load_donors():
-    """Reads the donor pool from Postgres, seeding it from simulate_donors()
-    the first time the table is empty (was previously agents/donors.json)."""
+    """Reads the donor pool from Postgres, seeding it on first use."""
     with SessionLocal() as session:
-        rows = session.query(DonorRow).all()
-        if rows:
-            return [_row_to_dict(r) for r in rows]
-
-        donors = simulate_donors()
-        for d in donors:
-            session.add(DonorRow(
-                donor_id=d["donor_id"],
-                name=d["name"],
-                phone=d["phone"],
-                blood_type=d["blood_type"],
-                last_donation_date=datetime.strptime(d["last_donation_date"], "%Y-%m-%d").date(),
-                alerts_sent=d["alerts_sent"],
-                alerts_responded=d["alerts_responded"],
-            ))
+        ensure_donor_pool(session)
         session.commit()
-        return donors
-
-
-def save_donors(donors):
-    """Upserts the (possibly-updated) donor list back to Postgres."""
-    with SessionLocal() as session:
-        existing = {r.donor_id: r for r in session.query(DonorRow).all()}
-        for d in donors:
-            row = existing.get(d["donor_id"])
-            if row is None:
-                row = DonorRow(donor_id=d["donor_id"])
-                session.add(row)
-            row.name = d["name"]
-            row.phone = d["phone"]
-            row.blood_type = d["blood_type"]
-            row.last_donation_date = datetime.strptime(d["last_donation_date"], "%Y-%m-%d").date()
-            row.alerts_sent = d["alerts_sent"]
-            row.alerts_responded = d["alerts_responded"]
-        session.commit()
+        return [_row_to_dict(r) for r in session.query(DonorRow).all()]
 
 
 # ----------------------------------------------------------------------
 # Eligibility filtering
 # ----------------------------------------------------------------------
-def is_eligible(donor: dict, blood_type: str, today: datetime = None) -> bool:
-    """A donor is eligible if their blood type matches and enough time
-    has passed since their last donation."""
+def required_interval_days(component: str, last_donation_type: str = None) -> int:
+    """
+    Days a donor must wait since their last donation before donating for
+    `component` (whole blood for PRBC/FFP, apheresis for platelets).
+    The long whole-blood gap exists because whole blood removes red
+    cells; apheresis returns them to the donor, so after an apheresis
+    donation -- and for apheresis itself -- the shorter interval applies.
+    Treating apheresis as blocking whole blood for 90 days starved red
+    cell outreach in simulation (docs/DESIGN_DECISIONS.md D47).
+    """
+    if component == "Platelets" or last_donation_type == "apheresis":
+        return APHERESIS_INTERVAL_DAYS
+    return MIN_DONATION_INTERVAL_DAYS
+
+
+def is_eligible(donor: dict, blood_type: str, today: datetime = None, component: str = "PRBC") -> bool:
+    """A donor is eligible if their blood type matches and enough time has
+    passed since their last donation (see required_interval_days)."""
     if today is None:
         today = datetime.now()
 
     if donor["blood_type"] != blood_type:
         return False
 
+    interval = required_interval_days(component, donor.get("last_donation_type"))
     last_donation = datetime.strptime(donor["last_donation_date"], "%Y-%m-%d")
-    days_since = (today - last_donation).days
-    return days_since >= MIN_DONATION_INTERVAL_DAYS
+    return (today - last_donation).days >= interval
 
 
-def filter_eligible_donors(donors: list, blood_type: str) -> list:
-    return [d for d in donors if is_eligible(d, blood_type)]
+def filter_eligible_donors(donors: list, blood_type: str, today: datetime = None, component: str = "PRBC") -> list:
+    return [d for d in donors if is_eligible(d, blood_type, today, component)]
 
 
 # ----------------------------------------------------------------------
@@ -188,6 +203,11 @@ def thompson_sample_score(donor: dict) -> float:
     return random.betavariate(alpha, beta)
 
 
+def posterior_mean(donor: dict) -> float:
+    """Expected response probability under the donor's Beta posterior."""
+    return (1 + donor["alerts_responded"]) / (2 + donor["alerts_sent"])
+
+
 def select_top_donors(eligible_donors: list, k: int = 3) -> list:
     """Ranks eligible donors by a fresh Thompson sample each call and
     returns the top k. Re-sampling each call is intentional -- it's
@@ -199,10 +219,9 @@ def select_top_donors(eligible_donors: list, k: int = 3) -> list:
 
 def update_donor_response(donors: list, donor_id: str, responded: bool) -> list:
     """
-    Feeds a real outcome back into the bandit -- call this once a
-    donor's actual response (or non-response) is known, so future
-    selections improve over time. This is the "learning" part of the
-    Multi-Armed Bandit.
+    In-memory form of the bandit update (one alert, one outcome) -- the
+    DB-backed path below applies the same update in two halves: the
+    alert at send time, the outcome when it's known.
     """
     for d in donors:
         if d["donor_id"] == donor_id:
@@ -214,63 +233,135 @@ def update_donor_response(donors: list, donor_id: str, responded: bool) -> list:
 
 
 # ----------------------------------------------------------------------
-# Public entry point: intelligent, personalized donor alerting
+# Alerting (DB-backed)
 # ----------------------------------------------------------------------
-def send_intelligent_donor_alerts(blood_type: str, k: int = 3) -> dict:
-    """
-    Full pipeline: load donors -> filter eligible -> bandit-select top k
-    -> "send" personalized alerts (logged/simulated) -> return summary.
-    """
-    donors = load_donors()
-    eligible = filter_eligible_donors(donors, blood_type)
+def pending_alerts(db, blood_type: str = None, component: str = None) -> list:
+    q = db.query(DonorAlert).filter(DonorAlert.responded.is_(None))
+    if blood_type:
+        q = q.filter(DonorAlert.blood_type == blood_type)
+    if component:
+        q = q.filter(DonorAlert.component == component)
+    return q.all()
 
+
+def eligible_candidates(db, blood_type: str, component: str, now: datetime) -> list:
+    """Eligible donors of this type with no alert already awaiting a reply
+    -- nobody gets a second message while the first is unanswered."""
+    ensure_donor_pool(db)
+    busy = {a.donor_id for a in pending_alerts(db)}
+    rows = db.query(DonorRow).filter(DonorRow.blood_type == blood_type).all()
+    donors = [_row_to_dict(r) for r in rows if r.donor_id not in busy]
+    return filter_eligible_donors(donors, blood_type, now, component)
+
+
+def alert_donors(db, blood_type: str, component: str, k: int, now: datetime, cycle_id: int = None,
+                 selector=None) -> dict:
+    """Selects up to k donors (Thompson-Sampling bandit by default; the
+    evaluation passes a random selector as the no-learning baseline) and
+    records each alert. The caller owns the transaction."""
+    selector = selector or select_top_donors
+    eligible = eligible_candidates(db, blood_type, component, now)
     if not eligible:
         return {
-            "blood_type": blood_type,
+            "blood_type": blood_type, "component": component, "eligible_count": 0,
             "alerted_donors": [],
-            "message": f"No eligible donors found for blood type {blood_type}.",
+            "message": f"No eligible donors found for {blood_type} {component}.",
         }
 
-    selected = select_top_donors(eligible, k=min(k, len(eligible)))
+    selected = selector(eligible, k=min(k, len(eligible)))
+    donation = "platelet apheresis" if component == "Platelets" else "whole blood"
+    rows = {r.donor_id: r for r in db.query(DonorRow).filter(
+        DonorRow.donor_id.in_([d["donor_id"] for d in selected])
+    )}
 
     alerted = []
     for donor in selected:
-        message = (
-            f"[DONOR ALERT] To {donor['name']} ({donor['phone']}), "
-            f"blood type {blood_type}: Your donation is urgently needed. "
-            f"Please visit the nearest blood bank."
+        print(
+            f"[DONOR ALERT] To {donor['name']} ({mask_identifier(donor['phone'])}), blood type {blood_type}: "
+            f"a {donation} donation is urgently needed. Please visit the nearest blood bank."
         )
-        print(message)
+        rows[donor["donor_id"]].alerts_sent += 1  # bandit: one more trial
+        alert = DonorAlert(
+            donor_id=donor["donor_id"], blood_type=blood_type, component=component,
+            method="log", sent_at=now, cycle_id=cycle_id,
+        )
+        db.add(alert)
+        db.flush()
         alerted.append({
+            "alert_id": alert.id,
             "donor_id": donor["donor_id"],
             "name": donor["name"],
-            "phone": donor["phone"],
-            "prior_response_rate": (
-                round(donor["alerts_responded"] / donor["alerts_sent"], 2)
-                if donor["alerts_sent"] > 0 else None
-            ),
+            "phone": mask_identifier(donor["phone"]),
+            "expected_response_rate": round(posterior_mean(donor), 2),
         })
-
-    save_donors(donors)
-    _log_alerts(blood_type, alerted)
 
     return {
         "blood_type": blood_type,
+        "component": component,
         "eligible_count": len(eligible),
         "alerted_donors": alerted,
-        "message": f"Alerted {len(alerted)} donor(s) for blood type {blood_type}.",
+        "message": f"Alerted {len(alerted)} donor(s) for {blood_type} {component} ({donation}).",
     }
 
 
-def _log_alerts(blood_type: str, alerted: list) -> None:
-    """Records each alert in donor_alerts, so alert history survives
-    beyond the donor's own alerts_sent/alerts_responded counters."""
-    from db.models import DonorAlert
-    with SessionLocal() as session:
-        for donor in alerted:
-            session.add(DonorAlert(
-                donor_id=donor["donor_id"],
-                blood_type=blood_type,
-                method="log",
-            ))
-        session.commit()
+def send_intelligent_donor_alerts(blood_type: str, component: str = "PRBC", k: int = 3) -> dict:
+    """Standalone entry point (REST, chat, MCP): one transaction, real time."""
+    with SessionLocal() as db:
+        result = alert_donors(db, blood_type, component, k, _utcnow())
+        db.commit()
+        return result
+
+
+def record_donor_response(db, alert_id: int, responded: bool, now: datetime) -> dict:
+    """
+    Feeds a real outcome back into the bandit -- the "learning" half of
+    the Multi-Armed Bandit. A donor who responds also donates: the
+    donation's units enter stock (DONATION_YIELD) and their eligibility
+    clock restarts.
+    """
+    from bloodbank.stock import receive_units
+
+    alert = db.query(DonorAlert).filter(DonorAlert.id == alert_id).first()
+    if alert is None:
+        raise LookupError(f"No donor alert {alert_id}")
+    if alert.responded is not None:
+        raise ValueError(f"Alert {alert_id} already resolved")
+
+    alert.responded, alert.responded_at = responded, now
+    units = []
+    if responded:
+        donor = db.query(DonorRow).filter(DonorRow.donor_id == alert.donor_id).first()
+        donor.alerts_responded += 1
+        donor.last_donation_date = now.date()
+        donor.last_donation_type = "apheresis" if alert.component == "Platelets" else "whole_blood"
+        for component in DONATION_YIELD[alert.component or "PRBC"]:
+            units += receive_units(db, alert.blood_type, component, 1, now,
+                                   source="donation", donor_id=donor.donor_id)
+    # Sessions don't autoflush: without this, a later pending_alerts()
+    # query in the same transaction would still see this alert as pending.
+    db.flush()
+
+    return {
+        "alert_id": alert_id, "donor_id": alert.donor_id, "responded": responded,
+        "units_received": [u.unit_id for u in units],
+    }
+
+
+def expire_unanswered_alerts(db, now: datetime) -> list:
+    """No reply within RESPONSE_WINDOW_HOURS counts as a non-response."""
+    cutoff = now - timedelta(hours=RESPONSE_WINDOW_HOURS)
+    stale = [a for a in pending_alerts(db) if a.sent_at <= cutoff]
+    return [record_donor_response(db, a.id, False, now) for a in stale]
+
+
+def simulate_responses(db, now: datetime, rng: random.Random, current_cycle_id: int = None) -> list:
+    """SIMULATION ONLY: resolves alerts from earlier cycles by sampling each
+    donor's hidden simulated_response_rate."""
+    outcomes = []
+    for alert in pending_alerts(db):
+        if current_cycle_id is not None and alert.cycle_id == current_cycle_id:
+            continue
+        donor = db.query(DonorRow).filter(DonorRow.donor_id == alert.donor_id).first()
+        rate = donor.simulated_response_rate if donor.simulated_response_rate is not None else 0.5
+        outcomes.append(record_donor_response(db, alert.id, rng.random() < rate, now))
+    return outcomes

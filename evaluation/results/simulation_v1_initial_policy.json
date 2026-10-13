@@ -1,0 +1,6996 @@
+{
+  "meta": {
+    "days": 90,
+    "start": "2026-08-01",
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "generated_at": "2026-10-13 02:29"
+  },
+  "summary": {
+    "baseline": {
+      "expired": {
+        "mean": 51.0,
+        "std": 8.8318
+      },
+      "wastage_rate": {
+        "mean": 0.0161,
+        "std": 0.0029
+      },
+      "transferred": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "shortage_units": {
+        "mean": 106.3333,
+        "std": 6.549
+      },
+      "service_level": {
+        "mean": 0.967,
+        "std": 0.002
+      },
+      "donor_alerts": {
+        "mean": 1102.0,
+        "std": 87.1933
+      },
+      "donations": {
+        "mean": 470.6667,
+        "std": 37.1872
+      },
+      "alerts_per_donation": {
+        "mean": 2.3433,
+        "std": 0.017
+      },
+      "expired_by_component": {
+        "PRBC": 4.3,
+        "Platelets": 46.7,
+        "FFP": 0.0
+      },
+      "shortage_by_component": {
+        "PRBC": 12.3,
+        "Platelets": 91.7,
+        "FFP": 2.3
+      }
+    },
+    "allocation": {
+      "expired": {
+        "mean": 30.3333,
+        "std": 7.3636
+      },
+      "wastage_rate": {
+        "mean": 0.0096,
+        "std": 0.0024
+      },
+      "transferred": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "shortage_units": {
+        "mean": 107.0,
+        "std": 7.0711
+      },
+      "service_level": {
+        "mean": 0.9669,
+        "std": 0.0023
+      },
+      "donor_alerts": {
+        "mean": 1083.3333,
+        "std": 77.3276
+      },
+      "donations": {
+        "mean": 460.3333,
+        "std": 35.3491
+      },
+      "alerts_per_donation": {
+        "mean": 2.3533,
+        "std": 0.0309
+      },
+      "expired_by_component": {
+        "PRBC": 0.0,
+        "Platelets": 30.3,
+        "FFP": 0.0
+      },
+      "shortage_by_component": {
+        "PRBC": 10.7,
+        "Platelets": 94.0,
+        "FFP": 2.3
+      }
+    },
+    "agents": {
+      "expired": {
+        "mean": 70.6667,
+        "std": 15.7551
+      },
+      "wastage_rate": {
+        "mean": 0.022,
+        "std": 0.005
+      },
+      "transferred": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "shortage_units": {
+        "mean": 82.6667,
+        "std": 24.7162
+      },
+      "service_level": {
+        "mean": 0.9744,
+        "std": 0.0077
+      },
+      "donor_alerts": {
+        "mean": 1184.3333,
+        "std": 49.6275
+      },
+      "donations": {
+        "mean": 531.0,
+        "std": 17.6635
+      },
+      "alerts_per_donation": {
+        "mean": 2.23,
+        "std": 0.0408
+      },
+      "expired_by_component": {
+        "PRBC": 0.0,
+        "Platelets": 70.7,
+        "FFP": 0.0
+      },
+      "shortage_by_component": {
+        "PRBC": 37.3,
+        "Platelets": 14.0,
+        "FFP": 31.3
+      }
+    },
+    "hemosmart": {
+      "expired": {
+        "mean": 19.3333,
+        "std": 2.6247
+      },
+      "wastage_rate": {
+        "mean": 0.006,
+        "std": 0.0008
+      },
+      "transferred": {
+        "mean": 77.3333,
+        "std": 13.4247
+      },
+      "shortage_units": {
+        "mean": 93.0,
+        "std": 25.3903
+      },
+      "service_level": {
+        "mean": 0.9712,
+        "std": 0.0079
+      },
+      "donor_alerts": {
+        "mean": 1220.3333,
+        "std": 16.4992
+      },
+      "donations": {
+        "mean": 546.3333,
+        "std": 12.2565
+      },
+      "alerts_per_donation": {
+        "mean": 2.2367,
+        "std": 0.0806
+      },
+      "expired_by_component": {
+        "PRBC": 0.0,
+        "Platelets": 19.3,
+        "FFP": 0.0
+      },
+      "shortage_by_component": {
+        "PRBC": 42.7,
+        "Platelets": 17.3,
+        "FFP": 33.0
+      }
+    }
+  },
+  "runs": [
+    {
+      "policy": "baseline",
+      "seed": 1,
+      "demand_units": 3194,
+      "issued": 3096,
+      "shortage_units": 98,
+      "shortage_by_component": {
+        "PRBC": 0,
+        "Platelets": 92,
+        "FFP": 6
+      },
+      "service_level": 0.9693,
+      "expired": 60,
+      "expired_by_component": {
+        "PRBC": 11,
+        "Platelets": 49,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.019,
+      "donor_alerts": 984,
+      "donations": 419,
+      "alerts_per_donation": 2.35,
+      "mean_cycle_seconds": null,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 10
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 5
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 9,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 12,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 12,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 10,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 3,
+          "expired": 2
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 4,
+          "expired": 2
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 1,
+          "expired": 4
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 0,
+          "expired": 3
+        }
+      ]
+    },
+    {
+      "policy": "allocation",
+      "seed": 1,
+      "demand_units": 3194,
+      "issued": 3092,
+      "shortage_units": 102,
+      "shortage_by_component": {
+        "PRBC": 0,
+        "Platelets": 97,
+        "FFP": 5
+      },
+      "service_level": 0.9681,
+      "expired": 31,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 31,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0099,
+      "donor_alerts": 980,
+      "donations": 411,
+      "alerts_per_donation": 2.38,
+      "mean_cycle_seconds": null,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 10
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 10,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 14,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 9,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 0,
+          "expired": 1
+        }
+      ]
+    },
+    {
+      "policy": "agents",
+      "seed": 1,
+      "demand_units": 3194,
+      "issued": 3139,
+      "shortage_units": 55,
+      "shortage_by_component": {
+        "PRBC": 1,
+        "Platelets": 13,
+        "FFP": 41
+      },
+      "service_level": 0.9828,
+      "expired": 86,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 86,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0267,
+      "donor_alerts": 1132,
+      "donations": 507,
+      "alerts_per_donation": 2.23,
+      "mean_cycle_seconds": 0.08,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 10
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 1,
+          "expired": 4
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 6
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 4,
+          "expired": 2
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 5
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 1,
+          "expired": 3
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 2,
+          "expired": 2
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 2,
+          "expired": 3
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 0,
+          "expired": 3
+        }
+      ]
+    },
+    {
+      "policy": "hemosmart",
+      "seed": 1,
+      "demand_units": 3194,
+      "issued": 3128,
+      "shortage_units": 66,
+      "shortage_by_component": {
+        "PRBC": 7,
+        "Platelets": 15,
+        "FFP": 44
+      },
+      "service_level": 0.9793,
+      "expired": 23,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 23,
+        "FFP": 0
+      },
+      "transferred": 96,
+      "wastage_rate": 0.0071,
+      "donor_alerts": 1242,
+      "donations": 529,
+      "alerts_per_donation": 2.35,
+      "mean_cycle_seconds": 0.08,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 1,
+          "expired": 3
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 1,
+          "expired": 2
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 0,
+          "expired": 1
+        }
+      ]
+    },
+    {
+      "policy": "baseline",
+      "seed": 2,
+      "demand_units": 3277,
+      "issued": 3170,
+      "shortage_units": 107,
+      "shortage_by_component": {
+        "PRBC": 22,
+        "Platelets": 85,
+        "FFP": 0
+      },
+      "service_level": 0.9673,
+      "expired": 39,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 39,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0122,
+      "donor_alerts": 1130,
+      "donations": 488,
+      "alerts_per_donation": 2.32,
+      "mean_cycle_seconds": null,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 6
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 1,
+          "expired": 2
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 0,
+          "expired": 0
+        }
+      ]
+    },
+    {
+      "policy": "allocation",
+      "seed": 2,
+      "demand_units": 3277,
+      "issued": 3175,
+      "shortage_units": 102,
+      "shortage_by_component": {
+        "PRBC": 18,
+        "Platelets": 84,
+        "FFP": 0
+      },
+      "service_level": 0.9689,
+      "expired": 21,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 21,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0066,
+      "donor_alerts": 1104,
+      "donations": 478,
+      "alerts_per_donation": 2.31,
+      "mean_cycle_seconds": null,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 6
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 12,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 0,
+          "expired": 0
+        }
+      ]
+    },
+    {
+      "policy": "agents",
+      "seed": 2,
+      "demand_units": 3277,
+      "issued": 3199,
+      "shortage_units": 78,
+      "shortage_by_component": {
+        "PRBC": 52,
+        "Platelets": 14,
+        "FFP": 12
+      },
+      "service_level": 0.9762,
+      "expired": 49,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 49,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0151,
+      "donor_alerts": 1170,
+      "donations": 537,
+      "alerts_per_donation": 2.18,
+      "mean_cycle_seconds": 0.08,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 6
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 5
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 8
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 1,
+          "expired": 2
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 11,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 1,
+          "expired": 0
+        }
+      ]
+    },
+    {
+      "policy": "hemosmart",
+      "seed": 2,
+      "demand_units": 3277,
+      "issued": 3191,
+      "shortage_units": 86,
+      "shortage_by_component": {
+        "PRBC": 56,
+        "Platelets": 16,
+        "FFP": 14
+      },
+      "service_level": 0.9738,
+      "expired": 17,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 17,
+        "FFP": 0
+      },
+      "transferred": 65,
+      "wastage_rate": 0.0052,
+      "donor_alerts": 1217,
+      "donations": 555,
+      "alerts_per_donation": 2.19,
+      "mean_cycle_seconds": 0.08,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 2,
+          "expired": 3
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 1,
+          "expired": 2
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 11,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 1,
+          "expired": 0
+        }
+      ]
+    },
+    {
+      "policy": "baseline",
+      "seed": 3,
+      "demand_units": 3212,
+      "issued": 3098,
+      "shortage_units": 114,
+      "shortage_by_component": {
+        "PRBC": 15,
+        "Platelets": 98,
+        "FFP": 1
+      },
+      "service_level": 0.9645,
+      "expired": 54,
+      "expired_by_component": {
+        "PRBC": 2,
+        "Platelets": 52,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0171,
+      "donor_alerts": 1192,
+      "donations": 505,
+      "alerts_per_donation": 2.36,
+      "mean_cycle_seconds": null,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 12
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 9
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 2,
+          "expired": 3
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 10,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 4,
+          "expired": 1
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 1,
+          "expired": 3
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 5,
+          "expired": 2
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 8,
+          "expired": 3
+        }
+      ]
+    },
+    {
+      "policy": "allocation",
+      "seed": 3,
+      "demand_units": 3212,
+      "issued": 3095,
+      "shortage_units": 117,
+      "shortage_by_component": {
+        "PRBC": 14,
+        "Platelets": 101,
+        "FFP": 2
+      },
+      "service_level": 0.9636,
+      "expired": 39,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 39,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0124,
+      "donor_alerts": 1166,
+      "donations": 492,
+      "alerts_per_donation": 2.37,
+      "mean_cycle_seconds": null,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 10
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 12,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 13,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 8,
+          "expired": 4
+        }
+      ]
+    },
+    {
+      "policy": "agents",
+      "seed": 3,
+      "demand_units": 3212,
+      "issued": 3097,
+      "shortage_units": 115,
+      "shortage_by_component": {
+        "PRBC": 59,
+        "Platelets": 15,
+        "FFP": 41
+      },
+      "service_level": 0.9642,
+      "expired": 77,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 77,
+        "FFP": 0
+      },
+      "transferred": 0,
+      "wastage_rate": 0.0243,
+      "donor_alerts": 1251,
+      "donations": 549,
+      "alerts_per_donation": 2.28,
+      "mean_cycle_seconds": 0.07,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 10
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 7
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 3
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 8
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 5,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 11,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 2,
+          "expired": 2
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 6,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 1,
+          "expired": 4
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 2,
+          "expired": 4
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 11,
+          "expired": 4
+        }
+      ]
+    },
+    {
+      "policy": "hemosmart",
+      "seed": 3,
+      "demand_units": 3212,
+      "issued": 3085,
+      "shortage_units": 127,
+      "shortage_by_component": {
+        "PRBC": 65,
+        "Platelets": 21,
+        "FFP": 41
+      },
+      "service_level": 0.9605,
+      "expired": 18,
+      "expired_by_component": {
+        "PRBC": 0,
+        "Platelets": 18,
+        "FFP": 0
+      },
+      "transferred": 71,
+      "wastage_rate": 0.0057,
+      "donor_alerts": 1202,
+      "donations": 555,
+      "alerts_per_donation": 2.17,
+      "mean_cycle_seconds": 0.08,
+      "daily": [
+        {
+          "day": 0,
+          "date": "2026-08-01",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 1,
+          "date": "2026-08-02",
+          "unmet": 0,
+          "expired": 4
+        },
+        {
+          "day": 2,
+          "date": "2026-08-03",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 3,
+          "date": "2026-08-04",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 4,
+          "date": "2026-08-05",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 5,
+          "date": "2026-08-06",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 6,
+          "date": "2026-08-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 7,
+          "date": "2026-08-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 8,
+          "date": "2026-08-09",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 9,
+          "date": "2026-08-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 10,
+          "date": "2026-08-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 11,
+          "date": "2026-08-12",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 12,
+          "date": "2026-08-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 13,
+          "date": "2026-08-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 14,
+          "date": "2026-08-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 15,
+          "date": "2026-08-16",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 16,
+          "date": "2026-08-17",
+          "unmet": 0,
+          "expired": 2
+        },
+        {
+          "day": 17,
+          "date": "2026-08-18",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 18,
+          "date": "2026-08-19",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 19,
+          "date": "2026-08-20",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 20,
+          "date": "2026-08-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 21,
+          "date": "2026-08-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 22,
+          "date": "2026-08-23",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 23,
+          "date": "2026-08-24",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 24,
+          "date": "2026-08-25",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 25,
+          "date": "2026-08-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 26,
+          "date": "2026-08-27",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 27,
+          "date": "2026-08-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 28,
+          "date": "2026-08-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 29,
+          "date": "2026-08-30",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 30,
+          "date": "2026-08-31",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 31,
+          "date": "2026-09-01",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 32,
+          "date": "2026-09-02",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 33,
+          "date": "2026-09-03",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 34,
+          "date": "2026-09-04",
+          "unmet": 12,
+          "expired": 0
+        },
+        {
+          "day": 35,
+          "date": "2026-09-05",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 36,
+          "date": "2026-09-06",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 37,
+          "date": "2026-09-07",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 38,
+          "date": "2026-09-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 39,
+          "date": "2026-09-09",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 40,
+          "date": "2026-09-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 41,
+          "date": "2026-09-11",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 42,
+          "date": "2026-09-12",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 43,
+          "date": "2026-09-13",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 44,
+          "date": "2026-09-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 45,
+          "date": "2026-09-15",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 46,
+          "date": "2026-09-16",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 47,
+          "date": "2026-09-17",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 48,
+          "date": "2026-09-18",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 49,
+          "date": "2026-09-19",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 50,
+          "date": "2026-09-20",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 51,
+          "date": "2026-09-21",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 52,
+          "date": "2026-09-22",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 53,
+          "date": "2026-09-23",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 54,
+          "date": "2026-09-24",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 55,
+          "date": "2026-09-25",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 56,
+          "date": "2026-09-26",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 57,
+          "date": "2026-09-27",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 58,
+          "date": "2026-09-28",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 59,
+          "date": "2026-09-29",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 60,
+          "date": "2026-09-30",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 61,
+          "date": "2026-10-01",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 62,
+          "date": "2026-10-02",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 63,
+          "date": "2026-10-03",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 64,
+          "date": "2026-10-04",
+          "unmet": 1,
+          "expired": 2
+        },
+        {
+          "day": 65,
+          "date": "2026-10-05",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 66,
+          "date": "2026-10-06",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 67,
+          "date": "2026-10-07",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 68,
+          "date": "2026-10-08",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 69,
+          "date": "2026-10-09",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 70,
+          "date": "2026-10-10",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 71,
+          "date": "2026-10-11",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 72,
+          "date": "2026-10-12",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 73,
+          "date": "2026-10-13",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 74,
+          "date": "2026-10-14",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 75,
+          "date": "2026-10-15",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 76,
+          "date": "2026-10-16",
+          "unmet": 7,
+          "expired": 0
+        },
+        {
+          "day": 77,
+          "date": "2026-10-17",
+          "unmet": 4,
+          "expired": 0
+        },
+        {
+          "day": 78,
+          "date": "2026-10-18",
+          "unmet": 0,
+          "expired": 0
+        },
+        {
+          "day": 79,
+          "date": "2026-10-19",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 80,
+          "date": "2026-10-20",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 81,
+          "date": "2026-10-21",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 82,
+          "date": "2026-10-22",
+          "unmet": 1,
+          "expired": 0
+        },
+        {
+          "day": 83,
+          "date": "2026-10-23",
+          "unmet": 1,
+          "expired": 1
+        },
+        {
+          "day": 84,
+          "date": "2026-10-24",
+          "unmet": 0,
+          "expired": 1
+        },
+        {
+          "day": 85,
+          "date": "2026-10-25",
+          "unmet": 2,
+          "expired": 0
+        },
+        {
+          "day": 86,
+          "date": "2026-10-26",
+          "unmet": 2,
+          "expired": 1
+        },
+        {
+          "day": 87,
+          "date": "2026-10-27",
+          "unmet": 3,
+          "expired": 0
+        },
+        {
+          "day": 88,
+          "date": "2026-10-28",
+          "unmet": 8,
+          "expired": 0
+        },
+        {
+          "day": 89,
+          "date": "2026-10-29",
+          "unmet": 11,
+          "expired": 2
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy.orm import Session
 
-from backend.dependencies.rbac import get_current_user
+from backend.dependencies.rbac import get_current_user, require_role
 from backend.services.auth import create_access_token, hash_password, verify_password
 from db.database import get_db
 from db.models import User
@@ -24,8 +24,7 @@ class UserOut(BaseModel):
     email: str
     role: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TokenOut(BaseModel):
@@ -33,8 +32,11 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
-@router.post("/api/auth/register", response_model=UserOut)
-def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+@router.post("/api/auth/register", response_model=UserOut, dependencies=[Depends(require_role("Admin"))])
+def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)):
+    # Admin-only: this endpoint assigns roles, including Admin itself,
+    # so open self-registration would let anyone grant themselves full
+    # access. Staff accounts are provisioned by an Admin.
     if payload.role not in VALID_ROLES:
         raise HTTPException(status_code=422, detail=f"role must be one of {sorted(VALID_ROLES)}")
 
@@ -49,6 +51,11 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    request.state.audit_action = "user_created"
+    request.state.audit_resource_type = "user"
+    request.state.audit_resource_id = str(user.id)
+    request.state.audit_details = {"email": user.email, "role": user.role}
     return user
 
 

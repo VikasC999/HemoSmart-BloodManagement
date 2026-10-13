@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from agents.tools import predict_transfusion
 from backend.dependencies.rbac import require_role
-from backend.services.persistence import persist_prediction
+from backend.services.persistence import persist_prediction, to_prediction_result
 from db.database import get_db
 from db.models import User
 from integrations.mcp.mock_hospital import MockHospitalAdapter
@@ -48,7 +48,7 @@ def sync_from_hospital(
         raise HTTPException(status_code=404, detail=str(exc))
 
     result = predict_transfusion(record)
-    persist_prediction(db, record, result, created_by=user.id)
+    ids = persist_prediction(db, record, result, created_by=user.id)
 
     request.state.audit_action = "mcp_hospital_sync"
     request.state.audit_resource_type = "prediction"
@@ -59,8 +59,4 @@ def sync_from_hospital(
         "transfusion_needed": result["transfusion_needed"],
     }
 
-    return PredictionResult(
-        transfusion_needed=result["transfusion_needed"],
-        confidence=result["confidence"],
-        source_format=record.source_format,
-    )
+    return to_prediction_result(record, result, ids)

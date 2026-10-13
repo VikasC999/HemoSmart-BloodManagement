@@ -10,12 +10,27 @@ version conflict entirely.
 """
 
 import os
+import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from jose import JWTError, jwt
 
-JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "dev-only-insecure-secret-change-me")
+# The placeholder shipped in backend/.env.example -- copying that file
+# verbatim must not leave tokens signed with a publicly known secret.
+_PLACEHOLDER_SECRETS = {"", "change_me_to_a_random_64_char_hex_string"}
+
+JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "")
+if JWT_SECRET_KEY in _PLACEHOLDER_SECRETS:
+    # No hardcoded fallback: anyone who has read this repo could forge
+    # an Admin token with it. A random per-process secret is safe; the
+    # only cost is that tokens stop working when the server restarts.
+    JWT_SECRET_KEY = secrets.token_hex(32)
+    print(
+        "[auth] JWT_SECRET_KEY is unset or the .env.example placeholder -- "
+        "using a random per-process secret. Logins will not survive a "
+        "restart; set JWT_SECRET_KEY in backend/.env to fix that."
+    )
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 12  # 12 hours
 

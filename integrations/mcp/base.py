@@ -40,3 +40,13 @@ class HospitalSystemAdapter(ABC):
         system -- e.g. so a shared regional blood bank ledger stays in
         sync. Returns True if the push succeeded."""
         raise NotImplementedError
+
+    @abstractmethod
+    def offer_surplus_units(self, units: list, now=None) -> list:
+        """Offers near-expiry units this hospital won't use in time to the
+        partner, who can issue them before they expire -- redistribution
+        is how a regional network turns one site's surplus into another
+        site's supply instead of waste. `units` are dicts with unit_id,
+        blood_group, component and expires_at; returns the accepted
+        unit_ids."""
+        raise NotImplementedError

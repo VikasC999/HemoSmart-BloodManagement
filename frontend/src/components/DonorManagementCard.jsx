@@ -30,7 +30,7 @@ export default function DonorManagementCard() {
       {donors && (
         <table>
           <thead>
-            <tr><th>ID</th><th>Name</th><th>Type</th><th>Last Donation</th><th>Response Rate</th></tr>
+            <tr><th>ID</th><th>Name</th><th>Type</th><th>Last Donation</th><th>Replies</th><th title="Bandit belief: Beta posterior mean">Expected</th></tr>
           </thead>
           <tbody>
             {donors.map((d) => (
@@ -39,7 +39,8 @@ export default function DonorManagementCard() {
                 <td>{d.name}</td>
                 <td>{d.blood_type}</td>
                 <td>{d.last_donation_date}</td>
-                <td>{d.alerts_sent > 0 ? `${Math.round((d.alerts_responded / d.alerts_sent) * 100)}%` : "—"}</td>
+                <td>{d.alerts_responded}/{d.alerts_sent}</td>
+                <td>{Math.round(d.expected_response_rate * 100)}%</td>
               </tr>
             ))}
           </tbody>

@@ -20,38 +20,53 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from agents.tools import _load_xgb_model
+from agents.autonomy import scheduler
+from agents.tools import _load_models, set_explanation_generator
 from backend.middleware.audit import AuditLogMiddleware
+from backend.middleware.mcp_auth import MCPAuthMiddleware
 from backend.services.bootstrap import ensure_admin_user
 from db.database import init_db
 from mcp_server.server import mcp as mcp_server
 from rag.explain import ExplanationGenerator
 
-from backend.routes import audit, auth, chat, donors, explain, forecast, inventory, mcp_sync, patients, predict
+from backend.routes import (
+    audit, auth, autonomy, cases, chat, donors, explain, forecast, inventory, mcp_sync, patients, predict,
+    transfusions,
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load the XGBoost model/label encoder and build the FAISS-backed
+    # Load the XGBoost models/label encoder and build the FAISS-backed
     # explanation generator ONCE at startup, not per-request -- both
     # are expensive to construct (see agents/tools.py, rag/explain.py).
     init_db()  # idempotent; also runs at db/database.py import time
     ensure_admin_user()
-    _load_xgb_model()
+    _load_models()
     app.state.explanation_generator = ExplanationGenerator()
+    set_explanation_generator(app.state.explanation_generator)
+    # The autonomous wastage-reduction loop (agents/autonomy/) on a timer.
+    autonomy_task = scheduler.start(app)
     # The mounted MCP app (see below) has its own lifespan that starts
     # its session manager -- mounting a sub-app's routes doesn't run its
     # lifespan automatically, so it's entered explicitly here instead.
-    async with mcp_server.session_manager.run():
-        yield
+    try:
+        async with mcp_server.session_manager.run():
+            yield
+    finally:
+        if autonomy_task:
+            autonomy_task.cancel()
 
 
 app = FastAPI(title="HemoSmart API", lifespan=lifespan)
 
 # Comma-separated list of allowed frontend origins, e.g.
-# "https://hemosmart.vercel.app". Unset means "*", which is fine for
-# local dev but should always be set in production.
-_cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "*").split(",") if o.strip()]
+# "https://hemosmart.vercel.app". Unset means the local Vite dev server
+# only -- never "*", so a forgotten setting fails closed, not open.
+_DEFAULT_CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
+_cors_origins = [
+    o.strip() for o in os.environ.get("CORS_ORIGINS", _DEFAULT_CORS_ORIGINS).split(",") if o.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
@@ -70,15 +85,17 @@ app.include_router(chat.router)
 app.include_router(donors.router)
 app.include_router(inventory.router)
 app.include_router(patients.router)
+app.include_router(transfusions.router)
+app.include_router(autonomy.router)
+app.include_router(cases.router)
 app.include_router(mcp_sync.router)
 
 # Exposes predict/explain/check_inventory/alert_donors as MCP tools at
 # /mcp, so any MCP-compatible client (Claude Desktop, Claude Code, a
-# remote agent) can connect to this deployed backend directly. No auth
-# on this path today -- a known simplification, consistent with how
-# the rest of this project names what's simplified rather than hiding
-# it (see README's "what's simulated vs real").
-app.mount("/mcp", mcp_server.streamable_http_app())
+# remote agent) can connect to this backend directly -- with the same
+# JWT the REST API uses, restricted to roles holding every permission
+# those tools expose (see backend/middleware/mcp_auth.py).
+app.mount("/mcp", MCPAuthMiddleware(mcp_server.streamable_http_app()))
 
 
 @app.get("/api/health")

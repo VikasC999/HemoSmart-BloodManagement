@@ -37,6 +37,7 @@ from mcp.server.fastmcp import FastMCP
 from agents.tools import (
     check_inventory as _check_inventory,
     generate_explanation as _generate_explanation,
+    get_supply_outlook as _get_supply_outlook,
     predict_transfusion as _predict_transfusion,
     send_donor_alert as _send_donor_alert,
 )
@@ -49,9 +50,10 @@ mcp = FastMCP(
         "predict_transfusion to assess whether a patient needs a "
         "transfusion from their lab values, explain_prediction for a "
         "WHO-guideline-grounded clinical explanation of that result, "
-        "check_inventory for current blood stock levels, and "
-        "alert_donors to notify eligible donors for a blood type "
-        "running low."
+        "check_inventory for current blood stock levels, "
+        "supply_outlook for forecast shortages and units at risk of "
+        "expiring unused, and alert_donors to notify eligible donors "
+        "for a blood type running low."
     ),
     # FastMCP's own default path is "/mcp" -- mounted at "/mcp" in
     # backend/main.py, that would put the real route at /mcp/mcp.
@@ -64,16 +66,19 @@ mcp = FastMCP(
 @mcp.tool()
 def predict_transfusion(
     hemoglobin: float, platelets: int, INR: float, age: int, surgery_type: str,
+    blood_group: Optional[str] = None,
 ) -> dict:
     """Predicts whether a patient needs a blood transfusion from their
-    clinical values, using the trained XGBoost model.
+    clinical values, using the trained per-component XGBoost models.
 
     surgery_type must be one of: Cardiac, Orthopedic, General, Emergency.
-    Returns transfusion_needed (bool) and confidence (0.0-1.0).
+    Returns transfusion_needed, confidence (P(any transfusion)), the
+    components needed (PRBC / Platelets / FFP) with doses, urgency, and
+    per-feature SHAP contributions.
     """
     record = PatientRecord(
         hemoglobin=hemoglobin, platelets=platelets, INR=INR,
-        age=age, surgery_type=surgery_type, source_format="mcp",
+        age=age, surgery_type=surgery_type, blood_group=blood_group, source_format="mcp",
     )
     return _predict_transfusion(record)
 
@@ -96,18 +101,30 @@ def explain_prediction(
 
 
 @mcp.tool()
-def check_inventory(blood_type: Optional[str] = None) -> dict:
-    """Checks current blood stock levels. Pass a blood type (e.g. "O-")
-    to check just that type, or omit it to see all eight types and
-    which ones are running low.
+def check_inventory(blood_type: Optional[str] = None, component: Optional[str] = None) -> dict:
+    """Checks current unit-level blood stock. Pass a blood type (e.g. "O-")
+    and optionally a component (PRBC, Platelets, FFP) to check a slice,
+    or omit both to see every group x component with its par level,
+    status (Sufficient / Low / Critical) and near-expiry count.
     """
-    return _check_inventory(blood_type)
+    return _check_inventory(blood_type, component)
 
 
 @mcp.tool()
-def alert_donors(blood_type: str) -> str:
+def supply_outlook(days: int = 7) -> dict:
+    """Forecasts demand per blood group and component for the next `days`
+    days and projects, day by day against current stock, which will run
+    short (and from when) and how many units will expire unused.
+    """
+    result = _get_supply_outlook(min(max(days, 1), 30))
+    return {k: result[k] for k in ("as_of", "horizon_days", "model_used", "shortages", "wastage_risks")}
+
+
+@mcp.tool()
+def alert_donors(blood_type: str, component: str = "PRBC") -> str:
     """Alerts the most eligible, most-likely-to-respond donors for a
     blood type running low, selected via a Multi-Armed Bandit
-    (Thompson Sampling) over each donor's response history.
+    (Thompson Sampling) over each donor's response history. component
+    (PRBC, Platelets, FFP) decides the donation asked for.
     """
-    return _send_donor_alert(blood_type)
+    return _send_donor_alert(blood_type, component)

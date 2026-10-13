@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "days": 90,
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "start": "2026-08-01",
+    "shortage_weight": 3,
+    "generated_at": "2026-10-13 03:08"
+  },
+  "rows": [
+    {
+      "platelet_window_days": 2,
+      "alert_cap": 8,
+      "shortage_units": 128.7,
+      "platelet_shortage": 107.3,
+      "expired": 9.0,
+      "transferred": 19.3,
+      "not_used_here": 28.3,
+      "donor_alerts": 1105.3,
+      "cost": 414.4
+    },
+    {
+      "platelet_window_days": 2,
+      "alert_cap": 16,
+      "shortage_units": 118.0,
+      "platelet_shortage": 103.3,
+      "expired": 9.3,
+      "transferred": 19.3,
+      "not_used_here": 28.7,
+      "donor_alerts": 1122.7,
+      "cost": 382.7
+    },
+    {
+      "platelet_window_days": 3,
+      "alert_cap": 8,
+      "shortage_units": 96.3,
+      "platelet_shortage": 79.0,
+      "expired": 9.3,
+      "transferred": 20.7,
+      "not_used_here": 30.0,
+      "donor_alerts": 1131.3,
+      "cost": 318.9
+    },
+    {
+      "platelet_window_days": 3,
+      "alert_cap": 16,
+      "shortage_units": 95.0,
+      "platelet_shortage": 78.3,
+      "expired": 9.3,
+      "transferred": 20.0,
+      "not_used_here": 29.3,
+      "donor_alerts": 1176.0,
+      "cost": 314.3
+    },
+    {
+      "platelet_window_days": 4,
+      "alert_cap": 8,
+      "shortage_units": 66.0,
+      "platelet_shortage": 51.7,
+      "expired": 9.7,
+      "transferred": 22.7,
+      "not_used_here": 32.3,
+      "donor_alerts": 1209.7,
+      "cost": 230.3
+    },
+    {
+      "platelet_window_days": 4,
+      "alert_cap": 16,
+      "shortage_units": 70.3,
+      "platelet_shortage": 51.3,
+      "expired": 10.3,
+      "transferred": 22.7,
+      "not_used_here": 33.0,
+      "donor_alerts": 1255.0,
+      "cost": 243.9
+    },
+    {
+      "platelet_window_days": 5,
+      "alert_cap": 8,
+      "shortage_units": 44.0,
+      "platelet_shortage": 29.7,
+      "expired": 14.0,
+      "transferred": 37.0,
+      "not_used_here": 51.0,
+      "donor_alerts": 1358.7,
+      "cost": 183.0
+    },
+    {
+      "platelet_window_days": 5,
+      "alert_cap": 16,
+      "shortage_units": 43.0,
+      "platelet_shortage": 28.3,
+      "expired": 11.0,
+      "transferred": 36.7,
+      "not_used_here": 47.7,
+      "donor_alerts": 1324.0,
+      "cost": 176.7
+    },
+    {
+      "platelet_window_days": 6,
+      "alert_cap": 8,
+      "shortage_units": 33.0,
+      "platelet_shortage": 19.3,
+      "expired": 17.7,
+      "transferred": 68.7,
+      "not_used_here": 86.3,
+      "donor_alerts": 1367.0,
+      "cost": 185.3
+    },
+    {
+      "platelet_window_days": 6,
+      "alert_cap": 16,
+      "shortage_units": 27.3,
+      "platelet_shortage": 16.7,
+      "expired": 16.3,
+      "transferred": 77.3,
+      "not_used_here": 93.7,
+      "donor_alerts": 1467.0,
+      "cost": 175.6
+    },
+    {
+      "platelet_window_days": 7,
+      "alert_cap": 8,
+      "shortage_units": 30.0,
+      "platelet_shortage": 15.0,
+      "expired": 20.7,
+      "transferred": 115.0,
+      "not_used_here": 135.7,
+      "donor_alerts": 1561.3,
+      "cost": 225.7
+    },
+    {
+      "platelet_window_days": 7,
+      "alert_cap": 16,
+      "shortage_units": 30.3,
+      "platelet_shortage": 15.0,
+      "expired": 20.7,
+      "transferred": 117.0,
+      "not_used_here": 137.7,
+      "donor_alerts": 1536.3,
+      "cost": 228.6
+    }
+  ],
+  "best": {
+    "platelet_window_days": 6,
+    "alert_cap": 16,
+    "shortage_units": 27.3,
+    "platelet_shortage": 16.7,
+    "expired": 16.3,
+    "transferred": 77.3,
+    "not_used_here": 93.7,
+    "donor_alerts": 1467.0,
+    "cost": 175.6
+  }
+}

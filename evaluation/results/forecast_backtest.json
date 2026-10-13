@@ -1,0 +1,206 @@
+{
+  "meta": {
+    "generated_at": "2026-10-13 11:00",
+    "horizon": 7
+  },
+  "overall": {
+    "FFP": {
+      "seasonal_naive": {
+        "mae": 2.962,
+        "rmse": 3.681,
+        "bias": 0.029
+      },
+      "weekday_mean": {
+        "mae": 2.274,
+        "rmse": 2.941,
+        "bias": 0.093
+      },
+      "prophet": {
+        "mae": 2.077,
+        "rmse": 2.662,
+        "bias": -0.089
+      },
+      "lstm": {
+        "mae": 2.56,
+        "rmse": 3.264,
+        "bias": -0.358
+      },
+      "noise_floor": {
+        "mae": 2.014,
+        "rmse": 2.607,
+        "bias": 0.052
+      }
+    },
+    "PRBC": {
+      "seasonal_naive": {
+        "mae": 4.714,
+        "rmse": 5.966,
+        "bias": -0.524
+      },
+      "weekday_mean": {
+        "mae": 3.45,
+        "rmse": 4.448,
+        "bias": -0.069
+      },
+      "prophet": {
+        "mae": 3.438,
+        "rmse": 4.357,
+        "bias": -0.018
+      },
+      "lstm": {
+        "mae": 3.42,
+        "rmse": 4.542,
+        "bias": -0.159
+      },
+      "noise_floor": {
+        "mae": 3.289,
+        "rmse": 4.232,
+        "bias": -0.388
+      }
+    },
+    "Platelets": {
+      "seasonal_naive": {
+        "mae": 3.429,
+        "rmse": 4.464,
+        "bias": 0.305
+      },
+      "weekday_mean": {
+        "mae": 2.669,
+        "rmse": 3.44,
+        "bias": 0.131
+      },
+      "prophet": {
+        "mae": 2.407,
+        "rmse": 2.981,
+        "bias": 0.312
+      },
+      "lstm": {
+        "mae": 2.687,
+        "rmse": 3.413,
+        "bias": 0.235
+      },
+      "noise_floor": {
+        "mae": 2.324,
+        "rmse": 2.85,
+        "bias": 0.21
+      }
+    }
+  },
+  "dengue_window": {
+    "FFP": {
+      "seasonal_naive": {
+        "mae": 2.871,
+        "rmse": 3.478,
+        "bias": 0.097
+      },
+      "weekday_mean": {
+        "mae": 2.161,
+        "rmse": 2.569,
+        "bias": 0.29
+      },
+      "prophet": {
+        "mae": 1.812,
+        "rmse": 2.303,
+        "bias": -0.125
+      },
+      "lstm": {
+        "mae": 2.197,
+        "rmse": 2.692,
+        "bias": -0.728
+      },
+      "noise_floor": {
+        "mae": 1.713,
+        "rmse": 2.181,
+        "bias": 0.19
+      }
+    },
+    "PRBC": {
+      "seasonal_naive": {
+        "mae": 3.871,
+        "rmse": 4.866,
+        "bias": 0.581
+      },
+      "weekday_mean": {
+        "mae": 3.202,
+        "rmse": 4.137,
+        "bias": 0.46
+      },
+      "prophet": {
+        "mae": 3.762,
+        "rmse": 4.688,
+        "bias": 0.286
+      },
+      "lstm": {
+        "mae": 3.668,
+        "rmse": 4.906,
+        "bias": -0.786
+      },
+      "noise_floor": {
+        "mae": 3.437,
+        "rmse": 4.422,
+        "bias": -0.424
+      }
+    },
+    "Platelets": {
+      "seasonal_naive": {
+        "mae": 4.516,
+        "rmse": 5.304,
+        "bias": 1.935
+      },
+      "weekday_mean": {
+        "mae": 3.355,
+        "rmse": 4.062,
+        "bias": 0.452
+      },
+      "prophet": {
+        "mae": 2.872,
+        "rmse": 3.389,
+        "bias": 1.285
+      },
+      "lstm": {
+        "mae": 3.526,
+        "rmse": 4.115,
+        "bias": 0.971
+      },
+      "noise_floor": {
+        "mae": 2.692,
+        "rmse": 3.147,
+        "bias": 0.904
+      }
+    }
+  },
+  "interval": {
+    "FFP": {
+      "coverage": 0.771,
+      "coverage_dengue": 0.806,
+      "mean_width": 6.25
+    },
+    "PRBC": {
+      "coverage": 0.79,
+      "coverage_dengue": 0.742,
+      "mean_width": 10.72
+    },
+    "Platelets": {
+      "coverage": 0.79,
+      "coverage_dengue": 0.677,
+      "mean_width": 7.47
+    }
+  },
+  "origins": [
+    "2025-06-01",
+    "2025-06-15",
+    "2025-06-29",
+    "2025-07-13",
+    "2025-07-27",
+    "2025-08-10",
+    "2025-08-24",
+    "2025-09-07",
+    "2025-09-21",
+    "2025-10-05",
+    "2025-10-19",
+    "2025-11-02",
+    "2025-11-16",
+    "2025-11-30",
+    "2025-12-14"
+  ]
+}

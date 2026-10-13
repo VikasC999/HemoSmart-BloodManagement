@@ -27,6 +27,9 @@ DEFAULT_COLUMN_MAP = {
     "Age": "age",
     "Surgery": "surgery_type",
     "SurgeryType": "surgery_type",
+    "BloodGroup": "blood_group",
+    "Blood Group": "blood_group",
+    "blood_group": "blood_group",
 }
 
 
@@ -66,6 +69,7 @@ class CSVExportAdapter(BaseAdapter):
                     INR=row["INR"],
                     age=row["age"],
                     surgery_type=row["surgery_type"],
+                    blood_group=row.get("blood_group") if pd.notna(row.get("blood_group")) else None,
                     source_format=self.source_format,
                     source_hospital=self.hospital_name,
                 ))
