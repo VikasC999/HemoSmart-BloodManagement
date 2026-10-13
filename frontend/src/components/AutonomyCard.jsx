@@ -3,6 +3,7 @@ import { Play, RotateCw } from "lucide-react";
 import { api } from "../api";
 import { COMPONENTS } from "../constants";
 import { AIPanel, EmptyState, ErrorState, SeverityBadge, SkeletonLines, UpdatedAt } from "./ui";
+import { TRIGGER_LABEL } from "./ui/format";
 
 // Tone by meaning, not by "non-zero": risk counts use risk colours,
 // good outcomes use success, activity stays neutral. Yellow is brand/AI.
@@ -86,15 +87,15 @@ export default function AutonomyCard({ canRun = false }) {
             <span className="muted">
               {status.scheduler_interval_minutes > 0
                 ? `Runs every ${status.scheduler_interval_minutes} min`
-                : "Scheduler off · runs on demand"}
+                : "Scheduler off · runs when you start it"}
             </span>
           )}
-          <button className="secondary" onClick={load} disabled={loading}>
-            <RotateCw size={15} aria-hidden="true" /> Refresh
+          <button className="tool" onClick={load} disabled={loading}>
+            <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
           </button>
           {canRun && (
             <button onClick={runNow} disabled={running}>
-              <Play size={15} aria-hidden="true" /> {running ? "Running…" : "Run cycle now"}
+              <Play size={15} aria-hidden="true" /> {running ? "Running agents…" : "Run agent cycle"}
             </button>
           )}
         </div>
@@ -110,25 +111,25 @@ export default function AutonomyCard({ canRun = false }) {
           <div className={`metric ${metrics.totals.expired > 0 ? "bad" : ""}`}><span>{metrics.totals.expired}</span>expired</div>
           <div className="metric"><span>{metrics.totals.transferred}</span>redistributed</div>
           <div className="metric">
-            <span>{metrics.wastage_rate == null ? "n/a" : `${(metrics.wastage_rate * 100).toFixed(1)}%`}</span>
+            <span>{metrics.wastage_rate == null ? "None used" : `${(metrics.wastage_rate * 100).toFixed(1)}%`}</span>
             wastage rate
           </div>
           <div className="metric-note muted">
-            Last 30 days · expired by component: {COMPONENTS.map((c) => `${c} ${metrics.by_status.expired[c]}`).join(", ")}
+            Last 30 days. Expired by component: {COMPONENTS.map((c) => `${c} ${metrics.by_status.expired[c]}`).join(", ")}
           </div>
         </div>
       )}
 
       {!loading && !error && !cycle && (
         <EmptyState title="No cycles have run yet">
-          {canRun ? "Run a cycle to check stock against the forecast." : "The scheduler will run the first cycle."}
+          {canRun ? "Run a cycle to check stock against the forecast and act on any gaps." : "The first cycle will run on the scheduler."}
         </EmptyState>
       )}
       {cycle && (
         <>
           <p className="cycle-meta">
             <strong>Cycle #{cycle.id}</strong>
-            <span className="muted"> · {cycle.trigger} · </span>
+            <span className="muted"> · {TRIGGER_LABEL[cycle.trigger] || cycle.trigger} · </span>
             <UpdatedAt iso={cycle.started_at} prefix="Ran" />
             {cycle.status === "ok"
               ? <SeverityBadge level="low" label="Completed" />
@@ -147,7 +148,7 @@ export default function AutonomyCard({ canRun = false }) {
             </AIPanel>
           )}
           <details className="agent-log" open>
-            <summary>Agent log · {cycle.events.length} events</summary>
+            <summary>Step-by-step log · {cycle.events.length} events</summary>
             <ol className="events">
               {cycle.events.map((e, i) => <EventRow key={i} event={e} />)}
             </ol>

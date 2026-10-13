@@ -1,5 +1,5 @@
 /*
- * HemoSmart design tokens — the single source of truth for colour, type,
+ * HemoSmart design tokens (palette: Ivory & Ink) — the single source of truth for colour, type,
  * shape and depth. Values come from the HemoSmart frontend design skill
  * (references/tokens.md); every pairing passes WCAG 2.2 AA
  * (scripts/check_contrast.py --tokens). Components use these variables
@@ -54,17 +54,17 @@
   --color-info-chart: #5E7184;
 
   /* Surfaces */
-  --color-background: #FFFDF8;
+  --color-background: #FFFFFF;
   --color-surface: #FFFFFF;
   --color-raised: #FFFFFF;
-  --color-beige: #F3E8D2;
-  --color-border: #E7DFD0;
-  --color-gridline: #EEE7DA;
+  --color-beige: #F3F2EF;
+  --color-border: #E2E0DB;
+  --color-gridline: #ECEAE6;
 
   /* Text */
-  --color-text: #292621;
-  --color-text-secondary: #5F5A52;
-  --color-text-muted: #6E685F;
+  --color-text: #151413;
+  --color-text-secondary: #4A4844;
+  --color-text-muted: #5B5853;
   --color-on-primary: #292621;
   --color-on-critical: #FFFFFF;
 
@@ -75,22 +75,27 @@
   --chart-ffp: var(--color-info-chart);
 
   /* Shape and depth */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --shadow-card: 0 4px 20px rgba(41, 38, 33, 0.06);
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 12px;
+  --shadow-card: none;
   --shadow-pop: 0 8px 28px rgba(41, 38, 33, 0.12);
   --color-scrim: rgba(41, 38, 33, 0.42);
+  --shadow-control: 0 1px 2px rgba(41, 38, 33, 0.08);
 
-  /* Type: fixed rem scale (~1.2 ratio) for product UI */
-  --font-sans: "Inter Variable", "Inter", "Manrope", "Plus Jakarta Sans", system-ui, sans-serif;
-  --text-xs: 0.75rem;     /* 12px — floor; badges, captions */
-  --text-sm: 0.8125rem;   /* 13px — supporting text */
+  /* Type: two faces with separate jobs (D64).
+     Manrope = titles, big numbers, the wordmark. Inter = everything read
+     or typed: body, labels, tables, inputs. Fixed rem scale for product UI;
+     each step also changes weight or colour, never size alone. */
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Manrope Variable", "Manrope", var(--font-sans);
+  --text-xs: 0.78125rem;  /* 12.5px — badges, captions, notes */
+  --text-sm: 0.84375rem;  /* 13.5px — labels, supporting text */
   --text-base: 0.9375rem; /* 15px — body */
-  --text-md: 1rem;        /* 16px — card titles */
-  --text-lg: 1.25rem;     /* 20px — section headings */
-  --text-xl: 1.75rem;     /* 28px — page titles */
-  --text-metric: 1.625rem;
+  --text-md: 1.0625rem;   /* 17px — card titles (Manrope 750) */
+  --text-lg: 1.25rem;     /* 20px — verdicts, section headings */
+  --text-xl: 1.875rem;    /* 30px — page titles (Manrope 800) */
+  --text-metric: 1.75rem; /* 28px — big numbers (Manrope 750) */
 
   /* Space (4px base) */
   --space-1: 4px;
@@ -109,24 +114,24 @@
   --sidebar-width: 248px;
 }
 
-/* Dark: warm surfaces for night shifts in dim wards. Declared twice so
+/* Dark: near-black ink surfaces for night shifts in dim wards. Declared twice so
    it follows the system setting AND an explicit user choice. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-background: #1A1815;
-  --color-surface: #24211D;
-  --color-raised: #2E2A25;
-  --color-beige: #3A332A;
-  --color-border: #3A352F;
-  --color-gridline: #332F29;
+  --color-background: #0F0F0E;
+  --color-surface: #171716;
+  --color-raised: #20201E;
+  --color-beige: #262624;
+  --color-border: #2C2C2A;
+  --color-gridline: #242422;
 
-  --color-text: #F2EDE4;
-  --color-text-secondary: #BDB5A8;
-  --color-text-muted: #A39B8F;
+  --color-text: #F4F3F0;
+  --color-text-secondary: #B9B7B2;
+  --color-text-muted: #9F9D98;
   --color-on-primary: #1A1815;
 
   --color-primary: #F4C542;
-  --color-primary-soft: #3D3317;
+  --color-primary-soft: #36301A;
   --color-primary-strong: #F4C542;
   --color-primary-chart: #F4C542;
 
@@ -153,28 +158,30 @@
   --color-info-strong: #A9B6C3;
   --color-info-chart: #A9B6C3;
 
+
   --shadow-card: none;
   --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-control: none;
   --color-scrim: rgba(0, 0, 0, 0.6);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-background: #1A1815;
-    --color-surface: #24211D;
-    --color-raised: #2E2A25;
-    --color-beige: #3A332A;
-    --color-border: #3A352F;
-    --color-gridline: #332F29;
+    --color-background: #0F0F0E;
+    --color-surface: #171716;
+    --color-raised: #20201E;
+    --color-beige: #262624;
+    --color-border: #2C2C2A;
+    --color-gridline: #242422;
 
-    --color-text: #F2EDE4;
-    --color-text-secondary: #BDB5A8;
-    --color-text-muted: #A39B8F;
+    --color-text: #F4F3F0;
+    --color-text-secondary: #B9B7B2;
+    --color-text-muted: #9F9D98;
     --color-on-primary: #1A1815;
 
     --color-primary: #F4C542;
-    --color-primary-soft: #3D3317;
+    --color-primary-soft: #36301A;
     --color-primary-strong: #F4C542;
     --color-primary-chart: #F4C542;
 
@@ -201,8 +208,10 @@
     --color-info-strong: #A9B6C3;
     --color-info-chart: #A9B6C3;
 
+
     --shadow-card: none;
     --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.45);
-  --color-scrim: rgba(0, 0, 0, 0.6);
+    --shadow-control: none;
+    --color-scrim: rgba(0, 0, 0, 0.6);
   }
 }

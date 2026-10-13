@@ -44,8 +44,8 @@ export default function DonorManagementCard() {
               {BLOOD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
           </label>
-          <button className="secondary" onClick={() => load()} disabled={loading}>
-            <RotateCw size={15} aria-hidden="true" /> Refresh
+          <button className="tool" onClick={() => load()} disabled={loading}>
+            <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
           </button>
         </div>
       </div>

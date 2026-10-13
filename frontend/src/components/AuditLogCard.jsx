@@ -45,8 +45,8 @@ export default function AuditLogCard() {
           <h2 id="audit-title">Recent activity</h2>
           {entries && <p className="card-sub">The 30 most recent API calls, newest first · times in UTC</p>}
         </div>
-        <button className="secondary" onClick={load} disabled={loading}>
-          <RotateCw size={15} aria-hidden="true" /> Refresh
+        <button className="tool" onClick={load} disabled={loading}>
+          <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
         </button>
       </div>
       {error && <ErrorState what="Couldn't load the audit log." error={error} onRetry={load} />}

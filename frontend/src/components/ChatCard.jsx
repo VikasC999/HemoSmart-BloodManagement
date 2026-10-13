@@ -65,7 +65,7 @@ export default function ChatCard() {
         )}
       </div>
       {error && (
-        <ErrorState what="No reply this time." error={error.error} onRetry={() => {
+        <ErrorState what="HemoSmart AI didn't reply." error={error.error} onRetry={() => {
           setHistory((h) => h.slice(0, -1));
           send(error.text);
         }} />
@@ -79,7 +79,7 @@ export default function ChatCard() {
       )}
       <form className="chat-input" onSubmit={(e) => { e.preventDefault(); send(); }}>
         <label htmlFor="chat-message" className="visually-hidden">Message</label>
-        <input id="chat-message" type="text" placeholder="Type a question or a patient's lab values"
+        <input id="chat-message" type="text" placeholder="Ask a question or paste a patient's lab values"
                value={message} onChange={(e) => setMessage(e.target.value)} autoComplete="off" />
         <button type="submit" disabled={loading || !message.trim()} aria-label="Send">
           <Send size={16} aria-hidden="true" /> <span className="send-label">Send</span>

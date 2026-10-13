@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BookOpen, ClipboardList, PackageCheck, Sparkles, Stethoscope } from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES, SURGERY_TYPES } from "../constants";
+import { formatPercent } from "./ui/format";
 import {
   AIPanel, EmptyState, ErrorState, SeverityBadge, SkeletonLines, urgencySeverity,
 } from "./ui";
@@ -140,7 +141,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
         <div className="card-head">
           <h2 id="patient-data-title">Patient data</h2>
         </div>
-        <p className="hint">Lab values as measured. Nothing is saved until you predict.</p>
+        <p className="hint">Enter values as measured. Nothing is saved until you run the prediction.</p>
         <div className="form-grid">
           {NUMERIC_FIELDS.map((f) => {
             const bad = invalid.includes(f);
@@ -183,7 +184,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
       <div className="predict-results">
         {!result && error?.step !== "predict" && (
           <EmptyState icon={ClipboardList} title="No prediction yet">
-            Check the patient's lab values, then choose Predict to see which components they're likely to need.
+            Enter the patient's lab values and choose Predict. The result shows which blood components they're likely to need, how many units, and why.
           </EmptyState>
         )}
 
@@ -205,8 +206,8 @@ export default function PredictionCard({ canAlertDonors = false }) {
                 <SeverityBadge level={level} label={`${result.urgency} urgency`} />
               </div>
               <p className="prediction-prob">
-                Model probability <strong className="tabular">{(result.confidence * 100).toFixed(1)}%</strong>
-                <span className="muted"> · XGBoost, one model per component</span>
+                Model probability <strong className="tabular">{formatPercent(result.confidence)}</strong>
+                <span className="muted"> · XGBoost, one model per blood component</span>
               </p>
 
               {needed.length > 0 && (
@@ -220,7 +221,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                         <tr key={c.component}>
                           <td>{c.component}</td>
                           <td className="num">{c.units}</td>
-                          <td className="num">{(c.probability * 100).toFixed(0)}%</td>
+                          <td className="num">{formatPercent(c.probability)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -247,12 +248,20 @@ export default function PredictionCard({ canAlertDonors = false }) {
 
             {/* 4. AI explanation (+ the rule-based checks it is grounded on) */}
             {!explanation && busy !== "explain" && (
-              <div className="explain-cta">
+              <section className="ai-panel explain-cta" aria-labelledby="explain-title">
+                <div className="explain-copy">
+                  <h2 id="explain-title" className="ai-label">
+                    <Sparkles size={14} aria-hidden="true" /> HemoSmart AI explanation
+                  </h2>
+                  <p className="muted">
+                    A plain-language reading of this result, checked against protocol thresholds and cited to the
+                    WHO handbook. Takes a few seconds.
+                  </p>
+                </div>
                 <button className="secondary" onClick={runExplain} disabled={loading}>
-                  <Sparkles size={16} aria-hidden="true" /> Explain with HemoSmart AI
+                  <Sparkles size={16} aria-hidden="true" /> Explain this prediction
                 </button>
-                <span className="muted">Cites the WHO handbook · about 2 seconds</span>
-              </div>
+              </section>
             )}
             {busy === "explain" && (
               <AIPanel label="HemoSmart AI explanation" decisionSupport={false}>
@@ -268,7 +277,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                 <section className="card protocol-checks" aria-labelledby="protocol-title">
                   <div className="card-head">
                     <h2 id="protocol-title">Protocol checks</h2>
-                    <span className="muted">Computed by rules, not AI</span>
+                    <span className="muted">Rule-based, not AI</span>
                   </div>
                   <pre>{explanation.threshold_summary}</pre>
                 </section>
@@ -288,7 +297,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                 </div>
                 <p className="hint">
                   Reserve {needed.map((c) => `${c.units} ${c.component}`).join(", ")} for a {form.blood_group} patient.
-                  Units expiring soonest are used first (FEFO).
+                  Units closest to expiry are allocated first (FEFO), so less stock expires unused.
                 </p>
                 <div className="actions">
                   <button onClick={reserve} disabled={loading}>
@@ -339,7 +348,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                           <button className="secondary" onClick={() => alertFor(component)} disabled={loading}>
                             Alert {form.blood_group} donors
                           </button>
-                        ) : <span className="muted">A Blood Bank Manager needs to source more.</span>}
+                        ) : <span className="muted">Ask a Blood Bank Manager to source more.</span>}
                       </li>
                     ))}
                   </ul>

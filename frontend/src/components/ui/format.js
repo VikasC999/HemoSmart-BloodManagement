@@ -47,3 +47,15 @@ export function formatAgo(iso) {
   const days = Math.round(hours / 24);
   return `${days} d ago`;
 }
+
+// How an agent cycle was started, in words.
+export const TRIGGER_LABEL = { manual: "run by hand", scheduler: "scheduled", simulation: "simulation" };
+
+// Probabilities as whole percentages; never "100.0%" false precision.
+// Values that round to 0 or 100 but aren't exactly that say so.
+export function formatPercent(p) {
+  const pct = p * 100;
+  if (pct > 99.5 && pct < 100) return ">99%";
+  if (pct > 0 && pct < 0.5) return "<1%";
+  return `${Math.round(pct)}%`;
+}

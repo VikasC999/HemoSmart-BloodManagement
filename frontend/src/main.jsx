@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@fontsource-variable/inter";
+import "@fontsource-variable/manrope";
 import App from "./App.jsx";
 import { applyTheme, readTheme } from "./components/layout/ThemeToggle";
 import "./index.css";

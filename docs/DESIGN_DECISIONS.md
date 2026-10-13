@@ -662,7 +662,13 @@ The agents collected platelets for gaps a week away (which expired before they w
 
 #### D64. Frontend design system: HemoSmart tokens, app shell, clinical states
 - **Decision:**
-  - The frontend follows the HemoSmart frontend design skill: goldfish yellow for brand, actions and AI; amber, coral and red only for risk; warm beige surfaces; warm dark mode.
+  - The frontend follows the HemoSmart frontend design skill: goldfish yellow for brand, actions and AI; amber, coral and red only for risk.
+  - **Palette: Ivory & Ink**, chosen by the owner from six contrast-checked options that were each applied to the running app.
+    - Pure white ground, near-black ink text and a pale stone secondary surface.
+    - Tighter corners (6/9/12px) and no card shadows: borders and spacing carry the structure.
+    - Yellow appears only on actions, AI and the current page, so it always means something.
+    - Dark mode uses near-black ink surfaces.
+    - This replaces the skill's default cream and beige ground. The brand yellow and every risk colour are unchanged.
   - Tokens live in [frontend/src/styles/tokens.css](../frontend/src/styles/tokens.css) as CSS variables. There's no hard-coded colour anywhere else, and every pairing passes WCAG AA.
   - Each role gets a sidebar of sections instead of one long stacked page; the section lives in the URL hash, so there's no router.
   - Shared primitives in [components/ui](../frontend/src/components/ui/index.jsx): severity badge (icon + word), skeletons, empty / error / stale states, "Updated" stamp, AI panel with the decision-support line.
@@ -674,15 +680,23 @@ The agents collected platelets for gaps a week away (which expired before they w
   - a partial list (e.g. forecast failed) says it's incomplete;
   - extracted PDF values must be confirmed before predicting.
 - **Skill conflict:** impeccable bans coloured left borders thicker than 1px; the HemoSmart skill uses a 3px yellow border to mark AI content and the active nav item. HemoSmart wins, being a clinical-safety signal, and the border is used *only* for those two jobs.
-- **Added dependencies:** lucide-react (icons; severity must never be colour alone) and self-hosted Inter (identical numerals on Windows and macOS). No CDN calls.
+- **Added dependencies:** lucide-react (icons; severity must never be colour alone) and self-hosted Inter and Manrope variable fonts (identical rendering on Windows and macOS). No CDN calls.
 - **Still open (needs data or a decision, not faked):**
   - High/Medium/Low confidence cut-offs;
   - the stale-data refresh interval;
   - per-field PDF extraction confidence;
   - CBC reference ranges and the upload size limit;
   - a prediction `created_at` in the API response;
-  - donor eligibility status in `/api/donors`;
-  - the real logo (a droplet mark stands in).
+  - donor eligibility status in `/api/donors`.
+- **Logo ("refined tile"):** the mark is a slim ink teardrop on a goldfish-yellow tile with rounded corners, with a hairline pulse line through it. It means blood, read by data. The owner chose it from four lockups.
+  - It lives in [Logo.jsx](../frontend/src/components/layout/Logo.jsx) and [public/favicon.svg](../frontend/public/favicon.svg) and uses fixed brand colours, so it looks the same in light and dark mode.
+  - The wordmark is Manrope in one ink colour: "Hemo" bold, "Smart" regular.
+- **Typography: Manrope + Inter**, chosen by the owner from five options shown on the running app.
+  - Manrope (titles, big numbers, wordmark) and Inter (body, labels, tables, inputs) give each role its own face, so a heading never reads as body text.
+  - Scale: page title 30/800, card title 17/750, body 15/400 with line-height 1.6, labels 13.5/500 in secondary ink, notes 12.5, big numbers 28/700.
+  - Each step changes weight or colour as well as size.
+  - Inter's `ss03` and `cv11` features make I, l and 1 easier to tell apart in lab values.
+  - Both fonts are self-hosted through `@fontsource-variable`, so the app makes no font CDN calls.
 
 ---
 
