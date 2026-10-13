@@ -1,91 +1,102 @@
 """
-HemoSmart - Blood Demand Forecasting (Prophet)
----------------------------------------------------
-Trains a Prophet model on simulated blood consumption history.
-Runs entirely on CPU -- no GPU required, which is why this is the
-primary forecasting model on laptops without a dedicated NVIDIA GPU.
+HemoSmart - Blood Demand Forecasting (Prophet, per component)
+-----------------------------------------------------------------
+Trains one Prophet model per blood component on the simulated daily
+demand history (data/component_demand.csv), then disaggregates each
+component's forecast across blood groups by their historical share --
+a top-down hierarchical forecast.
 
-(LSTM is trained separately on Colab/Kaggle GPU and compared against
-this as models/train_lstm_colab.ipynb -- see docs/lstm_on_colab.md)
+Why top-down rather than 24 separate models (8 groups x 3 components):
+the rare groups (AB-, A-) see a fraction of a unit per day, which is
+mostly zeros -- too sparse for a per-series model to learn seasonality
+from. The component totals carry the real signal (weekday surgery
+pattern, the post-monsoon dengue platelet spike), and group shares are
+stable, so the split is where the structure actually is.
 
-Requires: data/blood_demand.csv (run data/create_dataset.py first)
+Runs entirely on CPU. Requires: data/component_demand.csv
+(run data/create_dataset.py first)
 
 Run:
     python models/train_prophet.py
 
 Outputs:
-    models/prophet_model.pkl
+    models/prophet_components.pkl   -> {component: fitted Prophet model}
+    models/demand_profile.json      -> group shares + mean daily demand per
+                                       group/component (par levels)
+    models/prophet_metrics.txt      -> MAE / RMSE on a 30-day holdout
     models/prophet_forecast_plot.png
-    models/prophet_metrics.txt
 """
 
-import pandas as pd
+import json
 import pickle
-import numpy as np
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
+import numpy as np
+import pandas as pd
 from prophet import Prophet
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
-# ----------------------------------------------------------------------
-# 1. Load data
-# ----------------------------------------------------------------------
-data = pd.read_csv("data/blood_demand.csv")
-data["ds"] = pd.to_datetime(data["ds"])
-print("Loaded blood demand data:", data.shape)
+HOLDOUT_DAYS = 30
+SHARE_WINDOW_DAYS = 365
 
-# ----------------------------------------------------------------------
-# 2. Train/test split (last 30 days held out for evaluation)
-# ----------------------------------------------------------------------
-train = data.iloc[:-30]
-test = data.iloc[-30:]
 
-# ----------------------------------------------------------------------
-# 3. Train Prophet
-# ----------------------------------------------------------------------
-print("Training Prophet...")
-model = Prophet(
-    weekly_seasonality=True,
-    yearly_seasonality=True,
-    daily_seasonality=False,
-)
-model.fit(train)
+def _new_model() -> Prophet:
+    return Prophet(weekly_seasonality=True, yearly_seasonality=True, daily_seasonality=False)
 
-# ----------------------------------------------------------------------
-# 4. Evaluate against held-out 30 days
-# ----------------------------------------------------------------------
-future = model.make_future_dataframe(periods=30)
-forecast = model.predict(future)
-predicted = forecast.set_index("ds").loc[test["ds"], "yhat"].values
-actual = test["y"].values
 
-mae = mean_absolute_error(actual, predicted)
-rmse = np.sqrt(mean_squared_error(actual, predicted))
+def main() -> None:
+    data = pd.read_csv("data/component_demand.csv", parse_dates=["ds"])
+    print("Loaded component demand:", data.shape)
 
-print(f"MAE:  {mae:.2f} units")
-print(f"RMSE: {rmse:.2f} units")
+    totals = data.groupby(["component", "ds"])["units"].sum().reset_index()
+    models, metrics, profile = {}, [], {"group_share": {}, "mean_daily": {}}
 
-with open("models/prophet_metrics.txt", "w") as f:
-    f.write(f"MAE: {mae:.2f}\nRMSE: {rmse:.2f}\n")
+    fig, axes = plt.subplots(len(totals["component"].unique()), 1, figsize=(10, 9), sharex=True)
+    for ax, (component, series) in zip(axes, totals.groupby("component")):
+        series = series[["ds", "units"]].rename(columns={"units": "y"}).sort_values("ds")
 
-# ----------------------------------------------------------------------
-# 5. Refit on FULL data and produce the real 7-day forecast
-# ----------------------------------------------------------------------
-model_full = Prophet(weekly_seasonality=True, yearly_seasonality=True)
-model_full.fit(data)
-future_7d = model_full.make_future_dataframe(periods=7)
-forecast_7d = model_full.predict(future_7d)
+        # Holdout evaluation: train on all but the last 30 days
+        train, test = series.iloc[:-HOLDOUT_DAYS], series.iloc[-HOLDOUT_DAYS:]
+        holdout_model = _new_model().fit(train)
+        predicted = holdout_model.predict(test[["ds"]])["yhat"].values
+        mae = mean_absolute_error(test["y"], predicted)
+        rmse = np.sqrt(mean_squared_error(test["y"], predicted))
+        metrics.append(f"{component}: MAE {mae:.2f}, RMSE {rmse:.2f} (units/day, {HOLDOUT_DAYS}-day holdout)")
+        print(metrics[-1])
 
-print("\n7-Day Blood Demand Forecast:")
-print(forecast_7d[["ds", "yhat", "yhat_lower", "yhat_upper"]].tail(7))
+        # Production model: refit on everything
+        model = _new_model().fit(series)
+        models[component] = model
 
-fig = model_full.plot(forecast_7d)
-plt.savefig("models/prophet_forecast_plot.png", dpi=150, bbox_inches="tight")
-plt.close()
+        fit = model.predict(series[["ds"]])
+        ax.plot(series["ds"], series["y"], ".", ms=2, alpha=0.4, label="actual")
+        ax.plot(fit["ds"], fit["yhat"], lw=1, label="Prophet fit")
+        ax.set_title(f"{component} daily demand")
+        ax.legend(loc="upper left")
 
-with open("models/prophet_model.pkl", "wb") as f:
-    pickle.dump(model_full, f)
+        recent = data[(data["component"] == component)
+                      & (data["ds"] > data["ds"].max() - pd.Timedelta(days=SHARE_WINDOW_DAYS))]
+        by_group = recent.groupby("blood_group")["units"].sum()
+        profile["group_share"][component] = (by_group / by_group.sum()).round(5).to_dict()
+        profile["mean_daily"][component] = (by_group / SHARE_WINDOW_DAYS).round(3).to_dict()
 
-print("\nSaved models/prophet_model.pkl -- ready for backend to load.")
+    plt.tight_layout()
+    plt.savefig("models/prophet_forecast_plot.png", dpi=150, bbox_inches="tight")
+    plt.close()
+
+    profile["trained_through"] = str(data["ds"].max().date())
+
+    with open("models/prophet_metrics.txt", "w") as f:
+        f.write("\n".join(metrics) + "\n")
+    with open("models/demand_profile.json", "w") as f:
+        json.dump(profile, f, indent=2)
+    with open("models/prophet_components.pkl", "wb") as f:
+        pickle.dump(models, f)
+
+    print("\nSaved models/prophet_components.pkl and models/demand_profile.json")
+
+
+if __name__ == "__main__":
+    main()

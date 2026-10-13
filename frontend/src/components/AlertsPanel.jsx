@@ -16,7 +16,7 @@ export default function AlertsPanel() {
           api.inventory(),
           api.recentDonorAlerts(5),
         ]);
-        setLowStock(inv.low_stock_types);
+        setLowStock(inv.low_stock);
         setRecentAlerts(alerts);
       } catch (e) {
         setError(e.message);
@@ -30,14 +30,17 @@ export default function AlertsPanel() {
       {error && <p className="error">{error}</p>}
       <div className="alerts-columns">
         <div>
-          <h4>Low Stock</h4>
+          <h4>Below Par</h4>
           {lowStock && (
-            Object.keys(lowStock).length === 0
-              ? <p className="stock-ok">No shortages right now.</p>
+            lowStock.length === 0
+              ? <p className="stock-ok">Every group and component is at par.</p>
               : (
                 <ul className="alert-list">
-                  {Object.entries(lowStock).map(([bt, units]) => (
-                    <li key={bt} className="alert-list-item low">{bt}: {units} units</li>
+                  {lowStock.map((i) => (
+                    <li key={i.blood_group + i.component}
+                        className={`alert-list-item ${i.status === "Critical" ? "low" : "warn"}`}>
+                      {i.blood_group} {i.component}: {i.available}/{i.par} ({i.status})
+                    </li>
                   ))}
                 </ul>
               )
@@ -51,7 +54,13 @@ export default function AlertsPanel() {
               : (
                 <ul className="alert-list">
                   {recentAlerts.map((a, i) => (
-                    <li key={i} className="alert-list-item">{a.blood_type} — donor {a.donor_id}</li>
+                    <li key={i} className="alert-list-item">
+                      {a.blood_type} {a.component || ""} — {a.donor_id}{" "}
+                      <span className="muted">
+                        {a.responded == null ? "pending" : a.responded ? "donated" : "no reply"}
+                        {a.cycle_id ? " · auto" : ""}
+                      </span>
+                    </li>
                   ))}
                 </ul>
               )

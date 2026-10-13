@@ -1,0 +1,4 @@
+-r requirements.txt
+pytest
+shap         # models/train_xgboost.py
+matplotlib   # models/train_xgboost.py, models/train_prophet.py

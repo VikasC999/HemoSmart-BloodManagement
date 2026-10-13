@@ -57,17 +57,23 @@ export const auth = {
   me: () => request("/api/auth/me"),
 };
 
+const qs = (params) => {
+  const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "");
+  return entries.length ? `?${new URLSearchParams(entries)}` : "";
+};
+
 export const api = {
   predict: (patient) =>
     request("/api/predict", { method: "POST", body: JSON.stringify(patient) }),
 
-  explain: (patient, prediction) =>
+  explain: (patient, prediction, predictionId) =>
     request("/api/explain", {
       method: "POST",
-      body: JSON.stringify({ patient, prediction }),
+      body: JSON.stringify({ patient, prediction, prediction_id: predictionId }),
     }),
 
-  forecast: (days = 7) => request(`/api/forecast?days=${days}`),
+  // Demand forecast + supply gap (shortages and wastage risks)
+  outlook: (days = 7) => request(`/api/forecast?days=${days}`),
 
   chat: (sessionId, message) =>
     request("/api/chat", {
@@ -75,29 +81,51 @@ export const api = {
       body: JSON.stringify({ session_id: sessionId, message }),
     }),
 
-  alertDonors: (bloodType) =>
+  // Inventory (unit level)
+  inventory: (bloodGroup, component) => request(`/api/inventory${qs({ blood_group: bloodGroup, component })}`),
+  inventoryUnits: (params = {}) => request(`/api/inventory/units${qs(params)}`),
+  receiveUnits: (bloodGroup, component, count, collectedAt) =>
+    request("/api/inventory/units", {
+      method: "POST",
+      body: JSON.stringify({ blood_group: bloodGroup, component, count, collected_at: collectedAt }),
+    }),
+
+  // Transfusion workflow
+  requestTransfusion: (patientId, predictionId, bloodGroup) =>
+    request("/api/transfusions", {
+      method: "POST",
+      body: JSON.stringify({ patient_id: patientId, prediction_id: predictionId, blood_group: bloodGroup }),
+    }),
+  confirmTransfusion: (id) => request(`/api/transfusions/${id}/confirm`, { method: "POST" }),
+  cancelTransfusion: (id) => request(`/api/transfusions/${id}/cancel`, { method: "POST" }),
+
+  // Donors
+  donors: (bloodType) => request(`/api/donors${qs({ blood_type: bloodType })}`),
+  alertDonors: (bloodType, component = "PRBC") =>
     request("/api/donors/alert", {
       method: "POST",
-      body: JSON.stringify({ blood_type: bloodType }),
+      body: JSON.stringify({ blood_type: bloodType, component }),
+    }),
+  recentDonorAlerts: (limit = 10, pendingOnly = false) =>
+    request(`/api/donors/alerts/recent${qs({ limit, pending_only: pendingOnly || undefined })}`),
+  recordDonorResponse: (alertId, responded) =>
+    request(`/api/donors/alerts/${alertId}/response`, {
+      method: "POST",
+      body: JSON.stringify({ responded }),
     }),
 
-  inventory: (bloodType) =>
-    request(`/api/inventory${bloodType ? `?blood_type=${bloodType}` : ""}`),
+  // Autonomous loop
+  autonomyStatus: () => request("/api/autonomy/status"),
+  autonomyCycles: (limit = 5) => request(`/api/autonomy/cycles?limit=${limit}`),
+  runAutonomyCycle: () => request("/api/autonomy/run", { method: "POST" }),
+  wastageMetrics: (days = 30) => request(`/api/autonomy/metrics?days=${days}`),
 
-  updateInventory: (bloodType, units) =>
-    request("/api/inventory", {
-      method: "PATCH",
-      body: JSON.stringify({ blood_type: bloodType, units }),
-    }),
+  // CrewAI full-case job (started via multipart upload in UploadCard)
+  caseStatus: (jobId) => request(`/api/cases/${jobId}`),
 
   patients: (limit = 20) => request(`/api/patients?limit=${limit}`),
 
   patientHistory: (id) => request(`/api/patients/${id}/predictions`),
-
-  donors: (bloodType) =>
-    request(`/api/donors${bloodType ? `?blood_type=${bloodType}` : ""}`),
-
-  recentDonorAlerts: (limit = 10) => request(`/api/donors/alerts/recent?limit=${limit}`),
 
   auditLog: (limit = 50) => request(`/api/audit-log?limit=${limit}`),
 };

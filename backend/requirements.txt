@@ -16,7 +16,7 @@ pandas
 numpy
 prophet
 
-crewai
+crewai==1.15.21  # pinned: agents/crew_agents.py patches its cache-marker internals (D41)
 litellm
 langchain-community
 langchain-huggingface

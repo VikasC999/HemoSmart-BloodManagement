@@ -79,9 +79,18 @@ header p {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, ...) lets the columns shrink below their inputs' intrinsic
+     width, so fields never spill out of a narrow card */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.form-grid input,
+.form-grid select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 label {
@@ -305,3 +314,234 @@ th, td {
   color: #666;
   margin: -6px 0 10px;
 }
+
+/* ---- P1: components, SHAP, stock grid, autonomy ---- */
+.card-wide {
+  grid-column: 1 / -1;
+}
+
+button.secondary {
+  background: white;
+  color: #b91c1c;
+  border: 1px solid #b91c1c;
+}
+
+.muted {
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.result-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-left: 6px;
+  background: #e5e7eb;
+  color: #374151;
+  font-weight: 600;
+}
+
+.badge.urgency-critical, .badge.near { background: #fee2e2; color: #991b1b; }
+.badge.urgency-moderate { background: #fef3c7; color: #92400e; }
+.badge.urgency-low, .badge.ok { background: #dcfce7; color: #166534; }
+.badge.info { background: #dbeafe; color: #1e40af; }
+
+.component-list {
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+}
+
+.shap {
+  margin-top: 10px;
+  font-size: 0.8rem;
+}
+
+.shap-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.shap-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 48px;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+.shap-track {
+  height: 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.shap-bar {
+  display: block;
+  height: 100%;
+}
+
+.shap-bar.pos { background: #dc2626; }
+.shap-bar.neg { background: #2563eb; }
+
+.shap-value {
+  text-align: right;
+  font-family: monospace;
+}
+
+.citations {
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+.citations li {
+  margin-bottom: 6px;
+}
+
+.stock-grid td, .stock-grid th {
+  text-align: center;
+}
+
+.stock-cell {
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.stock-cell.sufficient { background: #dcfce7; }
+.stock-cell.low { background: #fef3c7; }
+.stock-cell.critical { background: #fee2e2; font-weight: 600; }
+
+.near-count {
+  font-size: 0.72rem;
+  color: #92400e;
+}
+
+.legend {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+label.inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.receive h4 {
+  margin: 12px 0 6px;
+}
+
+.row-critical td { background: #fef2f2; }
+.row-low td { background: #fffbeb; }
+
+.alert-list-item.warn {
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 6px 0 12px;
+}
+
+.metric {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+}
+
+.metric span {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.metric.bad span { color: #b91c1c; }
+.metric.good span { color: #15803d; }
+
+.metric-note {
+  flex-basis: 100%;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.chip {
+  font-size: 0.78rem;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.chip.on {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.brief {
+  background: #f9fafb;
+  border-left: 3px solid #b91c1c;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+}
+
+.events {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 82px 62px 1fr;
+  gap: 8px;
+  font-size: 0.82rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.event-agent { font-weight: 600; }
+.event-kind { color: #6b7280; }
+.event.kind-act { background: #fef2f2; }
+.event.kind-decide { background: #fffbeb; }
+.event.kind-explain { background: #eff6ff; }
+.event.kind-error, .event.kind-fallback { background: #fde68a; }
+
+@media (max-width: 600px) {
+  .form-grid { grid-template-columns: 1fr; }
+  .event { grid-template-columns: 1fr; gap: 2px; }
+  .alerts-panel .alerts-columns { grid-template-columns: 1fr; }
+}
+
+.event.step-verified { background: #f0fdf4; }
+.event.step-fell_back { background: #fde68a; }
+.event.step-running { background: #eff6ff; }
+.pre-wrap { white-space: pre-wrap; font-size: 0.88rem; }

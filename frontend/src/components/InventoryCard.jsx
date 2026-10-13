@@ -1,40 +1,37 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api";
+import { BLOOD_TYPES, COMPONENTS } from "../constants";
 
-// `editable` gates the PATCH-based edit controls -- Hospital Staff has
-// read-only inventory access per RBAC (the backend would reject a PATCH
-// from them with a 403 anyway; hiding the controls here just means they
-// never see a control that would fail).
+// Unit-level stock: every cell is units available for one group x
+// component, coloured by status against its par level, with how many of
+// them are near expiry. `editable` (Blood Bank Manager) adds receiving
+// stock -- the backend 403s anyone else, this just hides the control.
 export default function InventoryCard({ editable = false }) {
   const [inventory, setInventory] = useState(null);
+  const [receive, setReceive] = useState({ group: "O+", component: "PRBC", count: 5, daysOld: 0 });
+  const [message, setMessage] = useState(null);
   const [error, setError] = useState(null);
-  const [editingType, setEditingType] = useState(null);
-  const [editValue, setEditValue] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setError(null);
     try {
-      const result = await api.inventory();
-      setInventory(result);
+      setInventory(await api.inventory());
     } catch (e) {
       setError(e.message);
     }
   };
 
-  const startEdit = (bloodType, currentUnits) => {
-    setEditingType(bloodType);
-    setEditValue(String(currentUnits));
-  };
+  useEffect(() => { load(); }, []);
 
-  const saveEdit = async (bloodType) => {
-    const units = parseInt(editValue, 10);
-    if (Number.isNaN(units) || units < 0) return;
+  const submitReceive = async () => {
     setSaving(true);
     setError(null);
+    setMessage(null);
     try {
-      await api.updateInventory(bloodType, units);
-      setEditingType(null);
+      const collected = new Date(Date.now() - receive.daysOld * 86400000).toISOString();
+      const res = await api.receiveUnits(receive.group, receive.component, receive.count, collected);
+      setMessage(`Received ${res.received.length} ${receive.group} ${receive.component} unit(s).`);
       await load();
     } catch (e) {
       setError(e.message);
@@ -46,42 +43,69 @@ export default function InventoryCard({ editable = false }) {
   return (
     <section className="card">
       <h2>Blood Inventory</h2>
-      <button onClick={load}>Refresh</button>
+      <div className="actions">
+        <button onClick={load}>Refresh</button>
+        {inventory && (
+          <span className="muted">
+            {inventory.total_available} units · {inventory.near_expiry_total} near expiry
+          </span>
+        )}
+      </div>
       {error && <p className="error">{error}</p>}
       {inventory && (
-        <table>
+        <table className="stock-grid">
           <thead>
-            <tr>
-              <th>Type</th><th>Units</th><th>Status</th>{editable && <th></th>}
-            </tr>
+            <tr><th>Group</th>{COMPONENTS.map((c) => <th key={c}>{c}</th>)}</tr>
           </thead>
           <tbody>
-            {Object.entries(inventory.inventory).map(([bt, units]) => (
-              <tr key={bt}>
-                <td>{bt}</td>
-                <td>
-                  {editable && editingType === bt ? (
-                    <input
-                      type="number" min={0} value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      className="inline-edit-input"
-                    />
-                  ) : units}
-                </td>
-                <td>{inventory.low_stock_types[bt] !== undefined ? "LOW" : "OK"}</td>
-                {editable && (
-                  <td>
-                    {editingType === bt ? (
-                      <button onClick={() => saveEdit(bt)} disabled={saving}>Save</button>
-                    ) : (
-                      <button onClick={() => startEdit(bt, units)}>Edit</button>
-                    )}
-                  </td>
-                )}
+            {BLOOD_TYPES.map((g) => (
+              <tr key={g}>
+                <td><strong>{g}</strong></td>
+                {COMPONENTS.map((c) => {
+                  const cell = inventory.inventory[g][c];
+                  return (
+                    <td key={c} className={`stock-cell ${cell.status.toLowerCase()}`}
+                        title={`${cell.status} — par ${cell.par}`}>
+                      {cell.available}
+                      {cell.near_expiry > 0 && <span className="near-count"> ⏳{cell.near_expiry}</span>}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+      <p className="hint legend">
+        <span className="stock-cell sufficient">Sufficient</span>
+        <span className="stock-cell low">Low</span>
+        <span className="stock-cell critical">Critical</span> vs par · ⏳ near expiry
+      </p>
+
+      {editable && (
+        <div className="receive">
+          <h4>Receive units</h4>
+          <div className="actions">
+            <select value={receive.group} onChange={(e) => setReceive({ ...receive, group: e.target.value })}>
+              {BLOOD_TYPES.map((t) => <option key={t}>{t}</option>)}
+            </select>
+            <select value={receive.component} onChange={(e) => setReceive({ ...receive, component: e.target.value })}>
+              {COMPONENTS.map((c) => <option key={c}>{c}</option>)}
+            </select>
+            <label className="inline">
+              count
+              <input type="number" min={1} max={200} value={receive.count} className="inline-edit-input"
+                     onChange={(e) => setReceive({ ...receive, count: parseInt(e.target.value, 10) || 1 })} />
+            </label>
+            <label className="inline">
+              days old
+              <input type="number" min={0} value={receive.daysOld} className="inline-edit-input"
+                     onChange={(e) => setReceive({ ...receive, daysOld: parseFloat(e.target.value) || 0 })} />
+            </label>
+            <button onClick={submitReceive} disabled={saving}>Receive</button>
+          </div>
+          {message && <p className="result">{message}</p>}
+        </div>
       )}
     </section>
   );

@@ -1,6 +1,14 @@
 """
-HemoSmart - Standalone LSTM Forecast Script
+HemoSmart - Standalone LSTM Forecast Script  [LEGACY -- not used]
 ------------------------------------------------
+LEGACY: no longer called by the app (agents/tools.py stopped serving the
+LSTM in P1 -- it forecast aggregate demand only, not per component/group,
+and its subprocess bridge was Windows-only). The LSTM comparison now
+lives in evaluation/forecast_backtest.py (a small PyTorch LSTM, no
+separate environment), which found it no better than Prophet
+(docs/DESIGN_DECISIONS.md D20, D51). Kept for reference with
+models/train_lstm_colab.ipynb.
+
 Runs in its OWN separate virtual environment (see setup instructions
 below), completely isolated from the main HemoSmart/CrewAI
 environment. This exists because TensorFlow's installed build

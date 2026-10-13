@@ -31,12 +31,27 @@ from agents.tools import (
     check_inventory,
     send_donor_alert,
     extract_from_pdf,
-    get_blood_demand_forecast,
-    DEFAULT_INVENTORY,
+    get_supply_outlook,
 )
+from bloodbank.catalog import BLOOD_GROUPS, COMPONENTS
 from rag.llm_client import get_llm_client
 
-VALID_BLOOD_TYPES = set(DEFAULT_INVENTORY.keys())
+VALID_BLOOD_TYPES = set(BLOOD_GROUPS)
+_COMPONENT_WORDS = {"platelet": "Platelets", "plasma": "FFP", "ffp": "FFP", "red cell": "PRBC", "prbc": "PRBC"}
+
+
+def _find_blood_group(message: str):
+    """Longest match first, so "AB+" isn't read as "B+"."""
+    upper = message.upper()
+    for bt in sorted(VALID_BLOOD_TYPES, key=len, reverse=True):
+        if re.search(rf"(?<![A-Z]){re.escape(bt)}", upper):
+            return bt
+    return None
+
+
+def _find_component(message: str):
+    lowered = message.lower()
+    return next((c for word, c in _COMPONENT_WORDS.items() if word in lowered), None)
 
 INTENT_CLASSIFICATION_PROMPT = """
 Classify the user's request into exactly ONE of these categories:
@@ -44,7 +59,7 @@ Classify the user's request into exactly ONE of these categories:
   - extract       (mentions uploading, parsing, or reading a PDF/lab report file)
   - explain       (asking WHY a prediction was made, or for guideline reasoning)
   - inventory     (asking about blood stock levels)
-  - forecast      (asking about future/predicted blood demand, e.g. "next week", "7-day forecast")
+  - forecast      (asking about future demand, shortages, or blood that may expire/be wasted)
   - action        (asking to alert donors or take action on a shortage)
   - unclear       (none of the above fit, or missing required information)
 
@@ -76,9 +91,14 @@ class ChatSession:
         # Fast path: keyword rules for unambiguous cases
         if re.search(r"\.pdf|upload|scan|lab report", lowered):
             return "extract"
-        if any(k in lowered for k in ["forecast", "demand", "next week", "predicted demand", "how much blood will"]):
+        if any(k in lowered for k in ["forecast", "demand", "next week", "shortage", "outlook",
+                                       "waste", "wastage", "expire", "how much blood will"]):
             return "forecast"
-        if any(bt.lower() in lowered for bt in VALID_BLOOD_TYPES) or "inventory" in lowered or "stock" in lowered:
+        # Lab values typed in -> a prediction, even if a blood group is
+        # mentioned too ("hb 7.2 ... O+" is a patient, not a stock query).
+        if re.search(r"(?:h(?:ae|e)moglobin|hb)\s*[:=]?\s*\d", lowered):
+            return "predict"
+        if _find_blood_group(message) or "inventory" in lowered or "stock" in lowered:
             if "alert" in lowered or "notify" in lowered or "donor" in lowered:
                 return "action"
             return "inventory"
@@ -121,6 +141,10 @@ class ChatSession:
                 values["surgery_type"] = st
                 break
 
+        group = _find_blood_group(message)
+        if group:
+            values["blood_group"] = group
+
         return values
 
     # ------------------------------------------------------------
@@ -142,10 +166,15 @@ class ChatSession:
             result = predict_transfusion(record)
             self.last_patient = record
             self.last_prediction = result["transfusion_needed"]
-            verdict = "needs" if result["transfusion_needed"] else "does not need"
+            if not result["transfusion_needed"]:
+                return (
+                    f"Prediction: this patient does not need a transfusion "
+                    f"(P(transfusion) {result['confidence']:.1%}). Ask me 'why?' for the clinical reasoning."
+                )
+            plan = ", ".join(f"{c['component']} x{c['units']}" for c in result["components"] if c["needed"])
             return (
-                f"Prediction: this patient {verdict} a transfusion "
-                f"(confidence: {result['confidence']:.1%}). Ask me 'why?' for the clinical reasoning."
+                f"Prediction: transfusion needed (P {result['confidence']:.1%}), urgency {result['urgency']}. "
+                f"Recommended: {plan}. Ask me 'why?' for the guideline reasoning."
             )
 
         elif intent == "explain":
@@ -173,43 +202,49 @@ class ChatSession:
             )
 
         elif intent == "inventory":
-            bt_match = next((bt for bt in VALID_BLOOD_TYPES if bt.lower() in message.lower()), None)
-            result = check_inventory(bt_match)
-
+            bt_match = _find_blood_group(message)
             if bt_match:
-                status = "LOW STOCK" if result["low_stock"] else "OK"
-                return f"{result['blood_type']}: {result['units']} units ({status})"
+                result = check_inventory(bt_match, _find_component(message))
+                return f"{bt_match} stock:\n" + "\n".join(
+                    f"  {c}: {cell['available']} units ({cell['status']}, {cell['near_expiry']} near expiry)"
+                    for c, cell in result["components"].items()
+                )
 
+            result = check_inventory()
+            if not result["low_stock"]:
+                return f"All {result['total_available']} units are at or above par for every group and component."
             lines = "\n".join(
-                f"  {bt}: {units} units" + (" (LOW)" if bt in result["low_stock_types"] else "")
-                for bt, units in result["inventory"].items()
+                f"  {i['blood_group']} {i['component']}: {i['available']} units ({i['status']}, par {i['par']})"
+                for i in result["low_stock"]
             )
-            shortage_note = (
-                f"Shortage alert: {', '.join(result['low_stock_types'].keys())} running low."
-                if result["any_shortage"] else "All blood types are adequately stocked."
+            return (
+                f"{result['total_available']} units available, {result['near_expiry_total']} near expiry. "
+                f"Below par:\n{lines}"
             )
-            return f"Current blood inventory:\n{lines}\n{shortage_note}"
 
         elif intent == "forecast":
             days_match = re.search(r"(\d+)\s*-?\s*day", message, re.I)
             days = int(days_match.group(1)) if days_match else 7  # report specifies 7-day forecast by default
-            result = get_blood_demand_forecast(days)
-            if "error" in result:
-                return result["error"]
-            lines = "\n".join(
-                f"  {d['date']}: {d['predicted_units']} units"
-                for d in result["predicted_units_per_day"]
-            )
-            return (
-                f"{result['forecast_days']}-day blood demand forecast "
-                f"(model: {result['model_used']}, average {result['average_daily_demand']} units/day):\n{lines}"
-            )
+            result = get_supply_outlook(min(days, 30))
+            totals = {
+                c: round(sum(d["units"] for d in daily), 1) for c, daily in result["component_forecast"].items()
+            }
+            lines = [f"{days}-day demand forecast: " + ", ".join(f"{c} {n}" for c, n in totals.items()) + " units."]
+            for s in result["shortages"]:
+                lines.append(f"  SHORTAGE {s['blood_group']} {s['component']}: {s['projected_shortage']} unit(s) "
+                             f"from {s['first_shortage_date']}")
+            for w in result["wastage_risks"]:
+                lines.append(f"  WASTAGE RISK {w['blood_group']} {w['component']}: "
+                             f"{w['projected_wastage']} unit(s) may expire unused")
+            if len(lines) == 1:
+                lines.append("No shortages or wastage risks projected.")
+            return "\n".join(lines)
 
         elif intent == "action":
-            bt_match = next((bt for bt in VALID_BLOOD_TYPES if bt.lower() in message.lower()), None)
+            bt_match = _find_blood_group(message)
             if not bt_match:
                 return "Which blood type should I send a donor alert for?"
-            return send_donor_alert(bt_match)
+            return send_donor_alert(bt_match, _find_component(message) or "PRBC")
 
         else:
             return (

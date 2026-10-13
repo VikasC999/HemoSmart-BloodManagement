@@ -1,14 +1,17 @@
 """
-HemoSmart - RAG Explanation Generator (Person B)
--------------------------------------------------------
+HemoSmart - RAG Explanation Generator
+-----------------------------------------
 This is the actual "RAG" step: given a prediction + patient data,
-retrieve relevant guideline chunks from FAISS, then ask the LLM to
-explain the prediction USING those retrieved chunks as grounding
-context (not from the LLM's own unguided medical knowledge).
+retrieve relevant WHO handbook pages from FAISS, then ask the LLM to
+explain the prediction USING those passages as grounding (not its own
+unguided medical knowledge). Threshold comparisons are computed in code
+(schema/clinical_thresholds.py) and called HemoSmart's protocol; WHO is
+credited only with what a retrieved page says (DESIGN_DECISIONS D52).
 
 Usage:
-    generator = ExplanationGenerator(llm_provider="ollama")
-    explanation = generator.explain(patient_record, prediction=True)
+    generator = ExplanationGenerator()            # Groq by default
+    result = generator.explain_with_sources(patient_record, prediction=True)
+    # -> {"explanation", "threshold_facts", "citations"}
 """
 
 from langchain_community.vectorstores import FAISS
@@ -16,11 +19,19 @@ from langchain_huggingface import HuggingFaceEmbeddings
 
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from llm_client import get_llm_client
+from schema.clinical_thresholds import describe_threshold_facts
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "faiss_index")
 
+# Two kinds of grounding, kept apart on purpose: HemoSmart's protocol
+# thresholds (computed in code, schema/clinical_thresholds.py) and the
+# WHO handbook passages. Several protocol numbers (INR 1.5, platelets
+# 100k for cardiac surgery) are NOT in the handbook, and the first
+# version of this prompt let the LLM write "WHO guidelines state INR >
+# 1.5..." -- see evaluation/rag_faithfulness.py and DESIGN_DECISIONS D52.
 EXPLANATION_PROMPT_TEMPLATE = """
 You are assisting a clinician by explaining an AI transfusion prediction.
 
@@ -33,85 +44,87 @@ Patient data:
 
 AI Prediction: {prediction_text}
 
-The following threshold checks have ALREADY been computed and verified
--- treat them as fact, do not recompute or re-judge these comparisons:
+HemoSmart protocol checks (computed in code -- treat as fact, do not
+recompute or re-judge them):
 {threshold_facts}
 
-Relevant clinical guideline text (for wording/context only):
+Numbered WHO handbook excerpts:
 {context}
 
-Using ONLY the threshold facts above as the source of truth, write a
-2-3 sentence clinical explanation of why the prediction is consistent
-with the guidelines. Do not state that any value crosses a threshold
-unless the facts above say it does. Do not invent additional criteria.
+Write a 2-3 sentence clinical explanation of the prediction. Rules:
+1. Call the thresholds above "HemoSmart's protocol threshold(s)". Never
+   say WHO, the handbook or "guidelines" set a number unless that exact
+   number appears in an excerpt you cite.
+2. When an excerpt supports a point, cite it with its bracketed number,
+   e.g. [1], and only say what the excerpt itself says.
+3. Do not state that any value crosses a threshold unless the protocol
+   checks say it does. Do not invent criteria, numbers or sources.
 """
 
 
-def check_thresholds(patient_record) -> str:
+def parameter_queries(surgery_type: str) -> list:
+    """One retrieval query per parameter, in the handbook's own words
+    (British spelling, x 10^9/L units). Measured against the earlier
+    generic queries in evaluation/rag_faithfulness.py."""
+    return [
+        f"preoperative haemoglobin level threshold for {surgery_type.lower()} surgery",
+        "give platelet concentrates when the platelet count falls below 50 x 10^9/L",
+        "fresh frozen plasma indications coagulation factor deficiency INR before surgery",
+        f"{surgery_type.lower()} surgery blood loss transfusion",
+    ]
+
+
+# Thresholds live in schema/clinical_thresholds.py, shared with the
+# dataset labeling rule so the explanation and the model can't disagree.
+check_thresholds = describe_threshold_facts
+
+
+def _citation(doc, ref: int, excerpt_chars: int = 320) -> dict:
+    text = " ".join(doc.page_content.split())
+    return {
+        "ref": ref,
+        "source": doc.metadata.get("source", "guideline"),
+        "page": doc.metadata.get("page"),
+        "excerpt": text[:excerpt_chars] + ("..." if len(text) > excerpt_chars else ""),
+    }
+
+
+class GuidelineRetriever:
     """
-    Deterministically checks each lab value against guideline thresholds
-    in plain Python -- NOT via the LLM. Small LLMs have been observed to
-    make numeric comparison errors (e.g. claiming 65,000 < 50,000) even
-    when the correct numbers are right in front of them. Computing this
-    in code guarantees correctness; the LLM is only used to phrase the
-    already-correct facts into natural language.
+    Semantic search over the indexed WHO handbook, returning citable
+    passages (source, page, excerpt). Loaded once and shared: by the
+    explanation generator below, and by the autonomous loop's
+    Explanation agent to ground each automated action in the handbook.
     """
-    facts = []
 
-    hb = patient_record.hemoglobin
-    hb_threshold = 10.0 if patient_record.surgery_type == "Emergency" else 8.0
-    if hb < hb_threshold:
-        facts.append(
-            f"- Hemoglobin {hb} g/dL is BELOW the {hb_threshold} g/dL threshold "
-            f"for {patient_record.surgery_type} surgery -> crosses guideline threshold."
-        )
-    else:
-        facts.append(
-            f"- Hemoglobin {hb} g/dL is AT OR ABOVE the {hb_threshold} g/dL threshold "
-            f"for {patient_record.surgery_type} surgery -> does NOT cross guideline threshold."
-        )
+    def __init__(self, vectorstore=None):
+        if vectorstore is None:
+            embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+            vectorstore = FAISS.load_local(INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
+        self.vectorstore = vectorstore
 
-    plt = patient_record.platelets
-    if plt < 50000:
-        facts.append(
-            f"- Platelets {plt}/microliter is BELOW 50,000 -> crosses guideline threshold."
-        )
-    else:
-        facts.append(
-            f"- Platelets {plt}/microliter is AT OR ABOVE 50,000 -> does NOT cross guideline threshold."
-        )
+    def search(self, query: str, k: int = 2) -> list:
+        return self.vectorstore.similarity_search(query, k=k)
 
-    inr = patient_record.INR
-    if inr > 1.5:
-        facts.append(
-            f"- INR {inr} is ABOVE 1.5 -> crosses guideline threshold for FFP transfusion."
-        )
-    else:
-        facts.append(
-            f"- INR {inr} is AT OR BELOW 1.5 -> does NOT cross guideline threshold for FFP transfusion."
-        )
-
-    return "\n".join(facts)
+    def cite(self, query: str, k: int = 2) -> list:
+        return [_citation(d, i + 1) for i, d in enumerate(self.search(query, k))]
 
 
 class ExplanationGenerator:
     def __init__(
         self,
         llm_provider: str = os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"),
-        top_k: int = 5,
+        retriever: GuidelineRetriever = None,
+        prompt_template: str = EXPLANATION_PROMPT_TEMPLATE,
+        queries=parameter_queries,
+        llm=None,
     ):
-        self.embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        self.vectorstore = FAISS.load_local(
-            INDEX_PATH, self.embeddings, allow_dangerous_deserialization=True
-        )
-        self.llm = get_llm_client(provider=llm_provider)
-        self.top_k = top_k
+        self.retriever = retriever or GuidelineRetriever()
+        self.llm = llm or get_llm_client(provider=llm_provider)
+        self.prompt_template = prompt_template
+        self.queries = queries
 
-    def retrieve_context(self, query: str) -> str:
-        docs = self.vectorstore.similarity_search(query, k=self.top_k)
-        return "\n\n".join(d.page_content for d in docs)
-
-    def retrieve_context_per_parameter(self, patient_record) -> str:
+    def retrieve_sources_per_parameter(self, patient_record) -> list:
         """
         Runs one targeted retrieval query per clinical parameter, instead
         of a single combined query. This matters because small embedding
@@ -122,34 +135,33 @@ class ExplanationGenerator:
         per-parameter guarantees each lab value's relevant guideline
         section is included, regardless of embedding quality.
         """
-        sub_queries = [
-            f"hemoglobin transfusion threshold for {patient_record.surgery_type} surgery",
-            "platelet transfusion threshold before surgery",
-            "INR fresh frozen plasma transfusion threshold",
-            f"{patient_record.surgery_type} surgery transfusion guidelines",
-        ]
-
         seen = set()
-        ordered_chunks = []
-        for sub_query in sub_queries:
-            docs = self.vectorstore.similarity_search(sub_query, k=2)
-            for d in docs:
+        ordered = []
+        for sub_query in self.queries(patient_record.surgery_type):
+            for d in self.retriever.search(sub_query, k=2):
                 if d.page_content not in seen:
                     seen.add(d.page_content)
-                    ordered_chunks.append(d.page_content)
+                    ordered.append(d)
+        return ordered
 
-        return "\n\n".join(ordered_chunks)
-
-    def explain(self, patient_record, prediction: bool, verbose: bool = False) -> str:
+    def explain_with_sources(self, patient_record, prediction: bool, verbose: bool = False) -> dict:
         """
         patient_record: a PatientRecord instance (from schema.patient_schema)
-        prediction: the boolean output from the XGBoost model
+        prediction: the transfusion decision from the models
         verbose: if True, prints which guideline chunks were retrieved,
                  so retrieval quality can be checked rather than assumed
+
+        Returns {"explanation", "threshold_facts", "citations"} -- each
+        citation is a numbered handbook excerpt with its page, matching
+        the [n] markers the LLM is asked to use.
         """
         prediction_text = "Transfusion needed" if prediction else "No transfusion needed"
 
-        context = self.retrieve_context_per_parameter(patient_record)
+        docs = self.retrieve_sources_per_parameter(patient_record)
+        citations = [_citation(d, i + 1) for i, d in enumerate(docs)]
+        context = "\n\n".join(
+            f"[{c['ref']}] (page {c['page']}) {d.page_content}" for c, d in zip(citations, docs)
+        )
         threshold_facts = check_thresholds(patient_record)
 
         if verbose:
@@ -159,7 +171,7 @@ class ExplanationGenerator:
             print(threshold_facts)
             print("=" * 40)
 
-        prompt = EXPLANATION_PROMPT_TEMPLATE.format(
+        prompt = self.prompt_template.format(
             hemoglobin=patient_record.hemoglobin,
             platelets=patient_record.platelets,
             inr=patient_record.INR,
@@ -170,7 +182,18 @@ class ExplanationGenerator:
             context=context,
         )
 
-        return self.llm.generate(prompt)
+        return {
+            "explanation": self.llm.generate(prompt),
+            "threshold_facts": threshold_facts,
+            "citations": citations,
+        }
+
+    def explain(self, patient_record, prediction: bool, verbose: bool = False) -> str:
+        """Text-only form, for callers that just need the explanation
+        (chat, MCP, CrewAI): the explanation followed by its sources."""
+        result = self.explain_with_sources(patient_record, prediction, verbose)
+        sources = "\n".join(f"[{c['ref']}] {c['source']}, p.{c['page']}" for c in result["citations"])
+        return f"{result['explanation']}\n\nSources:\n{sources}"
 
 
 if __name__ == "__main__":

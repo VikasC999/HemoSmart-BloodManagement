@@ -20,7 +20,9 @@ outputs a PatientRecord -- nothing else in the system needs to change.
 """
 
 from pydantic import BaseModel, Field, field_validator
-from typing import Literal
+from typing import Dict, List, Optional
+
+from bloodbank.catalog import BLOOD_GROUPS
 
 
 VALID_SURGERY_TYPES = ("Cardiac", "Orthopedic", "General", "Emergency")
@@ -42,12 +44,36 @@ class PatientRecord(BaseModel):
                         description="International Normalized Ratio")
     age: int = Field(..., ge=0, le=120)
     surgery_type: str
+    # ABO/RhD group -- not a model feature (it doesn't change whether a
+    # patient needs blood), but required to allocate compatible units.
+    blood_group: Optional[str] = None
 
     # Optional metadata -- not used by the model, but useful for
     # traceability (which hospital/format this record came from).
     source_format: str = Field(default="unknown",
                                 description="e.g. 'pdf', 'manual', 'csv'")
     source_hospital: str = Field(default="unknown")
+
+    @field_validator("platelets", mode="before")
+    @classmethod
+    def normalize_platelet_units(cls, v):
+        # Many labs report platelets in x10^3/uL ("128 x10^3/uL") rather
+        # than per uL ("128,000 /uL"). A count below 1,000/uL is not a
+        # real measurement, so a value in that range can only mean the
+        # x10^3 convention -- convert it here, once, for every adapter.
+        if isinstance(v, (int, float)) and 0 < v < 1000:
+            return int(round(v * 1000))
+        return v
+
+    @field_validator("blood_group", mode="before")
+    @classmethod
+    def check_blood_group(cls, v):
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+        cleaned = str(v).strip().upper().replace("POS", "+").replace("NEG", "-").replace(" ", "")
+        if cleaned not in BLOOD_GROUPS:
+            raise ValueError(f"blood_group must be one of {BLOOD_GROUPS}, got '{v}'")
+        return cleaned
 
     @field_validator("surgery_type")
     @classmethod
@@ -79,13 +105,27 @@ class PatientRecord(BaseModel):
         ]
 
 
+class ComponentRecommendation(BaseModel):
+    component: str
+    probability: float
+    needed: bool
+    units: int
+
+
 class PredictionResult(BaseModel):
     """
-    The canonical shape of what the ML model + RAG engine hand back
-    to the backend / frontend. Person C's FastAPI layer and Person B's
-    RAG output both target this shape.
+    The canonical shape of what the ML models hand back to the backend /
+    frontend. `confidence` is P(any transfusion); `components` breaks it
+    down per component with a dose; `shap` gives each feature's
+    contribution (log-odds) to each component's prediction.
     """
     transfusion_needed: bool
     confidence: float = Field(..., ge=0.0, le=1.0)
+    components: List[ComponentRecommendation] = []
+    urgency: str = "Low"
+    shap: Dict[str, Dict[str, float]] = {}
+    blood_group: Optional[str] = None
+    patient_id: Optional[int] = None
+    prediction_id: Optional[int] = None
     explanation: str = ""
     source_format: str = "unknown"
