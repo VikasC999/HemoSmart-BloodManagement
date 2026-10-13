@@ -1,29 +1,50 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { auth } from "./api";
+import AppShell, { PageHeader } from "./components/layout/AppShell";
 import LoginScreen from "./components/LoginScreen";
-import AdminDashboard from "./dashboards/AdminDashboard";
-import AuditorDashboard from "./dashboards/AuditorDashboard";
-import BloodBankManagerDashboard from "./dashboards/BloodBankManagerDashboard";
-import DonorCoordinatorDashboard from "./dashboards/DonorCoordinatorDashboard";
-import HospitalStaffDashboard from "./dashboards/HospitalStaffDashboard";
+import { ErrorState, Skeleton } from "./components/ui";
+import { NAVIGATION, sectionsFor } from "./navigation";
 
-const DASHBOARDS = {
-  "Admin": AdminDashboard,
-  "Blood Bank Manager": BloodBankManagerDashboard,
-  "Hospital Staff": HospitalStaffDashboard,
-  "Donor Coordinator": DonorCoordinatorDashboard,
-  "Auditor": AuditorDashboard,
-};
+// The current section lives in the URL hash (#inventory), so a refresh
+// or the Back button keeps you where you were -- without a router.
+function useHash() {
+  const [hash, setHash] = useState(() => window.location.hash.slice(1));
+  useEffect(() => {
+    const onChange = () => setHash(window.location.hash.slice(1));
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  return hash;
+}
+
+function WorkspaceSkeleton() {
+  return (
+    <div className="page" role="status" aria-label="Loading your workspace">
+      <div className="page-header">
+        <div style={{ display: "grid", gap: 10, width: "min(420px, 100%)" }}>
+          <Skeleton height={30} width="60%" />
+          <Skeleton height={16} />
+        </div>
+      </div>
+      <Skeleton height={220} style={{ borderRadius: "var(--radius-lg)" }} />
+    </div>
+  );
+}
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(auth.isLoggedIn());
   const [user, setUser] = useState(null);
+  const [userError, setUserError] = useState(null);
+  const hash = useHash();
+
+  const loadUser = useCallback(() => {
+    setUserError(null);
+    auth.me().then(setUser).catch(setUserError);
+  }, []);
 
   useEffect(() => {
-    if (loggedIn) {
-      auth.me().then(setUser).catch(() => {});
-    }
-  }, [loggedIn]);
+    if (loggedIn) loadUser();
+  }, [loggedIn, loadUser]);
 
   if (!loggedIn) {
     return <LoginScreen onLoggedIn={() => setLoggedIn(true)} />;
@@ -33,23 +54,45 @@ export default function App() {
     auth.logout();
     setLoggedIn(false);
     setUser(null);
+    window.location.hash = "";
   };
 
-  const RoleDashboard = user ? DASHBOARDS[user.role] : null;
+  const groups = user ? NAVIGATION[user.role] || [] : [];
+  const sections = user ? sectionsFor(user.role) : [];
+  const active = sections.find((s) => s.id === hash) || sections[0];
+
+  let content;
+  if (userError) {
+    content = (
+      <div className="page">
+        <ErrorState what="Couldn't load your account." error={userError} onRetry={loadUser} />
+      </div>
+    );
+  } else if (!user) {
+    content = <WorkspaceSkeleton />;
+  } else if (!active) {
+    content = (
+      <div className="page">
+        <ErrorState what={`No workspace is set up for the role "${user.role}".`}
+                    error="Ask an administrator to check your account's role." />
+      </div>
+    );
+  } else {
+    content = (
+      <div className={`page layout-${active.layout}`} key={active.id}>
+        {active.ownHeader ? active.render(active.props) : (
+          <>
+            <PageHeader title={active.title} description={active.description} />
+            <div className="page-body">{active.render(active.props)}</div>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className="app">
-      <header className="header-row">
-        <div>
-          <h1>HemoSmart</h1>
-          <p>AI-assisted blood transfusion prediction &amp; supply coordination</p>
-        </div>
-        <div className="account">
-          {user && <span className="account-info">{user.email} · {user.role}</span>}
-          <button onClick={logout}>Sign Out</button>
-        </div>
-      </header>
-      {RoleDashboard ? <RoleDashboard /> : <p>Loading your dashboard…</p>}
-    </div>
+    <AppShell user={user} groups={groups} activeId={active?.id} onLogout={logout}>
+      {content}
+    </AppShell>
   );
 }

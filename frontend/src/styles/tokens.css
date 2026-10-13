@@ -1,0 +1,208 @@
+/*
+ * HemoSmart design tokens — the single source of truth for colour, type,
+ * shape and depth. Values come from the HemoSmart frontend design skill
+ * (references/tokens.md); every pairing passes WCAG 2.2 AA
+ * (scripts/check_contrast.py --tokens). Components use these variables
+ * only; dark mode redefines the variables, never the components.
+ *
+ * One job per hue:
+ *   primary (goldfish yellow) brand, CTAs, active nav, AI   — never risk
+ *   amber                     moderate risk / warning only
+ *   coral                     high risk, blood accents
+ *   critical                  act-now states only
+ *   success                   low risk / healthy
+ *   info                      neutral information
+ * Fills are pale: put dark text on them. For coloured text, icons and
+ * thin lines use the -strong (text) or -chart (lines) variants.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Brand */
+  --color-primary: #F4C542;
+  --color-primary-soft: #FFF3C4;
+  --color-primary-strong: #7A5C00;
+  --color-primary-chart: #A87A00;
+
+  /* Moderate risk / warning */
+  --color-amber: #F0A93B;
+  --color-amber-soft: #FDE7C8;
+  --color-amber-strong: #8F4E00;
+  --color-amber-chart: #C46A00;
+
+  /* High risk, blood accents */
+  --color-coral: #E98B82;
+  --color-coral-soft: #F8D9D5;
+  --color-coral-strong: #9E3B31;
+  --color-coral-chart: #C9584D;
+
+  /* Critical */
+  --color-critical: #B3261E;
+  --color-critical-soft: #F6D3CF;
+  --color-critical-strong: #9C1F17;
+
+  /* Low risk / success */
+  --color-success: #6F9B72;
+  --color-success-soft: #DDEBDD;
+  --color-success-strong: #3D6B43;
+  --color-success-chart: #5C8A60;
+
+  /* Neutral info */
+  --color-info-soft: #E6E9EC;
+  --color-info-strong: #4F5D6B;
+  --color-info-chart: #5E7184;
+
+  /* Surfaces */
+  --color-background: #FFFDF8;
+  --color-surface: #FFFFFF;
+  --color-raised: #FFFFFF;
+  --color-beige: #F3E8D2;
+  --color-border: #E7DFD0;
+  --color-gridline: #EEE7DA;
+
+  /* Text */
+  --color-text: #292621;
+  --color-text-secondary: #5F5A52;
+  --color-text-muted: #6E685F;
+  --color-on-primary: #292621;
+  --color-on-critical: #FFFFFF;
+
+  /* Chart series identity (blood components). Coral is allowed here as
+     the blood accent; risk on charts is marked separately. */
+  --chart-prbc: var(--color-primary-chart);
+  --chart-platelets: var(--color-coral-chart);
+  --chart-ffp: var(--color-info-chart);
+
+  /* Shape and depth */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --shadow-card: 0 4px 20px rgba(41, 38, 33, 0.06);
+  --shadow-pop: 0 8px 28px rgba(41, 38, 33, 0.12);
+  --color-scrim: rgba(41, 38, 33, 0.42);
+
+  /* Type: fixed rem scale (~1.2 ratio) for product UI */
+  --font-sans: "Inter Variable", "Inter", "Manrope", "Plus Jakarta Sans", system-ui, sans-serif;
+  --text-xs: 0.75rem;     /* 12px — floor; badges, captions */
+  --text-sm: 0.8125rem;   /* 13px — supporting text */
+  --text-base: 0.9375rem; /* 15px — body */
+  --text-md: 1rem;        /* 16px — card titles */
+  --text-lg: 1.25rem;     /* 20px — section headings */
+  --text-xl: 1.75rem;     /* 28px — page titles */
+  --text-metric: 1.625rem;
+
+  /* Space (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* Motion: state, not decoration */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration: 180ms;
+
+  --sidebar-width: 248px;
+}
+
+/* Dark: warm surfaces for night shifts in dim wards. Declared twice so
+   it follows the system setting AND an explicit user choice. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-background: #1A1815;
+  --color-surface: #24211D;
+  --color-raised: #2E2A25;
+  --color-beige: #3A332A;
+  --color-border: #3A352F;
+  --color-gridline: #332F29;
+
+  --color-text: #F2EDE4;
+  --color-text-secondary: #BDB5A8;
+  --color-text-muted: #A39B8F;
+  --color-on-primary: #1A1815;
+
+  --color-primary: #F4C542;
+  --color-primary-soft: #3D3317;
+  --color-primary-strong: #F4C542;
+  --color-primary-chart: #F4C542;
+
+  --color-amber: #F5B556;
+  --color-amber-soft: #3F2E14;
+  --color-amber-strong: #F5B556;
+  --color-amber-chart: #F5B556;
+
+  --color-coral: #F0A49B;
+  --color-coral-soft: #3F2522;
+  --color-coral-strong: #F0A49B;
+  --color-coral-chart: #F0A49B;
+
+  --color-critical: #B3261E;
+  --color-critical-soft: #44201D;
+  --color-critical-strong: #F28B82;
+
+  --color-success: #8FBF93;
+  --color-success-soft: #22301F;
+  --color-success-strong: #8FBF93;
+  --color-success-chart: #8FBF93;
+
+  --color-info-soft: #262C33;
+  --color-info-strong: #A9B6C3;
+  --color-info-chart: #A9B6C3;
+
+  --shadow-card: none;
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --color-scrim: rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-background: #1A1815;
+    --color-surface: #24211D;
+    --color-raised: #2E2A25;
+    --color-beige: #3A332A;
+    --color-border: #3A352F;
+    --color-gridline: #332F29;
+
+    --color-text: #F2EDE4;
+    --color-text-secondary: #BDB5A8;
+    --color-text-muted: #A39B8F;
+    --color-on-primary: #1A1815;
+
+    --color-primary: #F4C542;
+    --color-primary-soft: #3D3317;
+    --color-primary-strong: #F4C542;
+    --color-primary-chart: #F4C542;
+
+    --color-amber: #F5B556;
+    --color-amber-soft: #3F2E14;
+    --color-amber-strong: #F5B556;
+    --color-amber-chart: #F5B556;
+
+    --color-coral: #F0A49B;
+    --color-coral-soft: #3F2522;
+    --color-coral-strong: #F0A49B;
+    --color-coral-chart: #F0A49B;
+
+    --color-critical: #B3261E;
+    --color-critical-soft: #44201D;
+    --color-critical-strong: #F28B82;
+
+    --color-success: #8FBF93;
+    --color-success-soft: #22301F;
+    --color-success-strong: #8FBF93;
+    --color-success-chart: #8FBF93;
+
+    --color-info-soft: #262C33;
+    --color-info-strong: #A9B6C3;
+    --color-info-chart: #A9B6C3;
+
+    --shadow-card: none;
+    --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  }
+}

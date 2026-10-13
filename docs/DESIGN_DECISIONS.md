@@ -33,7 +33,7 @@ Each entry: **Decision** · **Why** · **Alternatives considered** ·
   - [RAG faithfulness](#rag-faithfulness)
   - [Donor bandit](#donor-bandit)
   - [Tooling](#tooling)
-- [P3 — Report alignment](#p3--report-alignment) (D55–D63)
+- [P3 — Report alignment](#p3--report-alignment) (D55–D63) · frontend design system (D64)
 - [LLM call budget](#llm-call-budget)
 - [Known limitations](#known-limitations)
 
@@ -659,6 +659,30 @@ The agents collected platelets for gaps a week away (which expired before they w
   - Alerts are now described as *outreach needs*, each labelled "unmet demand", "safety-stock top-up" or both.
   - Cycle summaries gain an `outreach_needs` count.
   - This is wording only: no decision logic changed, so the simulation results stand.
+
+#### D64. Frontend design system: HemoSmart tokens, app shell, clinical states
+- **Decision:**
+  - The frontend follows the HemoSmart frontend design skill: goldfish yellow for brand, actions and AI; amber, coral and red only for risk; warm beige surfaces; warm dark mode.
+  - Tokens live in [frontend/src/styles/tokens.css](../frontend/src/styles/tokens.css) as CSS variables. There's no hard-coded colour anywhere else, and every pairing passes WCAG AA.
+  - Each role gets a sidebar of sections instead of one long stacked page; the section lives in the URL hash, so there's no router.
+  - Shared primitives in [components/ui](../frontend/src/components/ui/index.jsx): severity badge (icon + word), skeletons, empty / error / stale states, "Updated" stamp, AI panel with the decision-support line.
+- **Why CSS variables, not Tailwind:** every component already used class names against one stylesheet, so variables re-skinned everything without rewriting JSX. Tailwind would have meant migrating every component for the same result.
+- **Clinical rules enforced in the UI:**
+  - a prediction is never shown in a success colour;
+  - data, model prediction, rule-based protocol checks and AI explanation are visually separate;
+  - nothing shows a placeholder number while loading;
+  - a partial list (e.g. forecast failed) says it's incomplete;
+  - extracted PDF values must be confirmed before predicting.
+- **Skill conflict:** impeccable bans coloured left borders thicker than 1px; the HemoSmart skill uses a 3px yellow border to mark AI content and the active nav item. HemoSmart wins, being a clinical-safety signal, and the border is used *only* for those two jobs.
+- **Added dependencies:** lucide-react (icons; severity must never be colour alone) and self-hosted Inter (identical numerals on Windows and macOS). No CDN calls.
+- **Still open (needs data or a decision, not faked):**
+  - High/Medium/Low confidence cut-offs;
+  - the stale-data refresh interval;
+  - per-field PDF extraction confidence;
+  - CBC reference ranges and the upload size limit;
+  - a prediction `created_at` in the API response;
+  - donor eligibility status in `/api/donors`;
+  - the real logo (a droplet mark stands in).
 
 ---
 
