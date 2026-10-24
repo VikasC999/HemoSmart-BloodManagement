@@ -8,28 +8,15 @@ app_port: 8000
 pinned: false
 ---
 
-<div align="center">
+# HemoSmart
 
-# 🩸 HemoSmart
+**A wastage-reducing, autonomous blood management system built on RAG and multi-agent AI.**
 
-### A wastage-reducing, autonomous blood management system built on RAG and multi-agent AI
+HemoSmart predicts which blood components a patient will need, projects the supply gap, and runs a multi-agent loop that alerts donors before a shortage and redistributes blood before it expires. Every action is grounded in the WHO *Clinical Use of Blood* handbook.
 
-Predicts which blood components a patient will need, projects the supply gap, and runs a multi-agent loop that **alerts donors before a shortage and redistributes blood before it expires**, with every action grounded in the WHO *Clinical Use of Blood* handbook.
+Final-year project, SJBIT, Computer Science & Engineering (Data Science), 2026–27.
 
-![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
-![XGBoost](https://img.shields.io/badge/XGBoost-SHAP-EB6F2F)
-![CrewAI](https://img.shields.io/badge/CrewAI-LLM%20agents-7A5C00)
-![MCP](https://img.shields.io/badge/MCP-server-292621)
-![Tests](https://img.shields.io/badge/tests-285%20passing-3D6B43)
-
-Final-year project · SJBIT, Computer Science & Engineering (Data Science) · 2025–26
-
-[Results](#results) · [Architecture](#architecture) · [Quick start](#quick-start) · [Documentation](#documentation)
-
-</div>
+**Contents:** [Problem](#the-problem) · [Features](#what-hemosmart-does) · [Results](#results) · [Architecture](#architecture) · [Technology](#technology) · [Quick start](#quick-start) · [Tests](#tests) · [Evaluation](#evaluation) · [Limitations](#honest-limitations) · [MCP](#mcp-server) · [Deployment](#deployment) · [Documentation](#documentation)
 
 ---
 
@@ -39,24 +26,24 @@ Blood banks face two failures at once: patients can wait on shortages, while scr
 
 ## What HemoSmart does
 
-| | |
+| Feature | What it does |
 |---|---|
-| 🧠 **Component-level prediction** | One XGBoost model per component (PRBC, platelets, FFP) with per-patient TreeSHAP, so a clinician sees *why* |
-| 📚 **RAG explanations with citations** | Every explanation cites the WHO handbook page it came from; local protocol thresholds are labelled as such, never credited to WHO |
-| 🩸 **Unit-level inventory** | Real units with expiry dates, ABO/RhD compatibility, and FEFO allocation that prefers near-expiry units |
-| 📈 **Demand–supply gap** | Prophet forecasts per component, replayed day by day with the *same* allocation policy used at issue time, giving projected shortages and units that will expire unused |
-| 🤖 **Autonomous agent loop** | Seven specialist agents on a shared blackboard collect donor replies, sweep expiry, forecast, plan, alert donors, redistribute to a partner hospital and explain, with no human clicking a button |
-| 📄 **CBC report to full case** | Upload a PDF, confirm the extracted values, and six CrewAI agents process the case, each answer checked against an independently computed value |
-| 🔐 **Role-aware assistant** | A chat assistant that answers only what the signed-in role's pages allow, checked in code before any data is read or any LLM is called |
-| 👁️ **Agent monitor** | A live 2D "agent office" showing which agents are working, waiting, degraded or stuck, how long each step takes, and what needs a person |
+| **Component-level prediction** | One XGBoost model per component (PRBC, platelets, FFP) with per-patient TreeSHAP, so a clinician sees *why* |
+| **RAG explanations with citations** | Every explanation cites the WHO handbook page it came from; local protocol thresholds are labelled as such, never credited to WHO |
+| **Unit-level inventory** | Real units with expiry dates, ABO/RhD compatibility, and FEFO allocation that prefers near-expiry units |
+| **Demand–supply gap** | Prophet forecasts per component, replayed day by day with the *same* allocation policy used at issue time, giving projected shortages and units that will expire unused |
+| **Autonomous agent loop** | Seven specialist agents on a shared blackboard collect donor replies, sweep expiry, forecast, plan, alert donors, redistribute to a partner hospital and explain, with no human clicking a button |
+| **CBC report to full case** | Upload a PDF, confirm the extracted values, and six CrewAI agents process the case, each answer checked against an independently computed value |
+| **Role-aware assistant** | A chat assistant that answers only what the signed-in role's pages allow, checked in code before any data is read or any LLM is called |
+| **Agent monitor** | A live 2D "agent office" showing which agents are working, waiting, degraded or stuck, how long each step takes, and what needs a person |
 
 ## Results
 
 All results are on **synthetic data**; every number is reproducible with one command (see [Evaluation](#evaluation)).
 
-<p align="center">
-  <img src="docs/figures/fig_simulation.png" alt="90-day simulation: expired units and unmet demand across four configurations" width="860">
-</p>
+![90-day simulation: expired units and unmet demand across four configurations](docs/figures/fig_simulation.png)
+
+*Figure 1. Synthetic 90-day simulation, mean of 3 seeds, against a manual blood bank.*
 
 | What | Result |
 |---|---|
@@ -69,9 +56,9 @@ All results are on **synthetic data**; every number is reproducible with one com
 
 ## Architecture
 
-<p align="center">
-  <img src="docs/figures/fig_architecture.png" alt="HemoSmart architecture: dashboards, MCP clients and hospital systems over a FastAPI backend with two agent layers" width="860">
-</p>
+![HemoSmart architecture: dashboards, MCP clients and hospital systems over a FastAPI backend with two agent layers](docs/figures/fig_architecture.png)
+
+*Figure 2. System architecture: two agent layers behind one FastAPI backend.*
 
 HemoSmart has **two deliberately different agent layers**:
 
@@ -205,14 +192,15 @@ python -m evaluation.figures                # report figures -> docs/figures/
 ```
 
 <details>
-<summary><b>More figures</b> (prediction, forecast, donor selection, sensitivity)</summary>
+<summary>More figures (prediction, forecast, donor selection, sensitivity)</summary>
 
-<p align="center">
-  <img src="docs/figures/fig_prediction.png" alt="Prediction: model against a static threshold rule" width="780"><br>
-  <img src="docs/figures/fig_forecast.png" alt="Demand forecast against baselines" width="780"><br>
-  <img src="docs/figures/fig_bandit.png" alt="Donor selection: Thompson sampling against baselines" width="780"><br>
-  <img src="docs/figures/fig_sensitivity.png" alt="Outreach window sensitivity" width="780">
-</p>
+![Prediction: model against a static threshold rule](docs/figures/fig_prediction.png)
+
+![Demand forecast against baselines](docs/figures/fig_forecast.png)
+
+![Donor selection: Thompson sampling against baselines](docs/figures/fig_bandit.png)
+
+![Outreach window sensitivity](docs/figures/fig_sensitivity.png)
 
 </details>
 
@@ -266,7 +254,7 @@ docker run -p 8000:8000 \
 A single container with no sidecar. The image installs a CPU-only `torch` (every model here runs CPU inference), which keeps it at ~1.3 GB compressed, runs as a non-root user, and bakes in the RAG embedding model so a cold start never downloads anything. The backend needs ~600 MB resident, so free tiers capped at 512 MB (such as Render) will OOM-kill it.
 
 <details>
-<summary><b>Testing the container against a local Postgres/Redis</b></summary>
+<summary>Testing the container against a local Postgres/Redis</summary>
 
 Built and verified with [Colima](https://github.com/abiosoft/colima) (`brew install docker colima && colima start`), a license-free Docker runtime for macOS. Use `host.docker.internal` in place of `localhost` in the connection strings, and make sure Postgres accepts password-authenticated connections from the Colima subnet (`listen_addresses = '*'` in `postgresql.conf`, plus a `host ... scram-sha-256` line in `pg_hba.conf`); local Postgres otherwise only trusts `127.0.0.1`.
 
