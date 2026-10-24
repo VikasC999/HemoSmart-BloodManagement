@@ -16,7 +16,7 @@ from bloodbank.allocation import is_near_expiry
 from bloodbank.stock import discard_unit, receive_units, utcnow
 from db.database import get_db
 from db.models import BloodUnit
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 
 router = APIRouter()
 
@@ -48,7 +48,7 @@ def _unit_out(u: BloodUnit, now: datetime) -> UnitOut:
     )
 
 
-@router.get("/api/inventory", dependencies=[Depends(require_role("Hospital Staff", "Blood Bank Manager", "Auditor"))])
+@router.get("/api/inventory", dependencies=[Depends(require_permission("inventory:read"))])
 def inventory(blood_group: Optional[str] = None, component: Optional[str] = None):
     try:
         return check_inventory(blood_group, component)
@@ -58,7 +58,7 @@ def inventory(blood_group: Optional[str] = None, component: Optional[str] = None
 
 @router.get(
     "/api/inventory/units", response_model=List[UnitOut],
-    dependencies=[Depends(require_role("Hospital Staff", "Blood Bank Manager", "Auditor"))],
+    dependencies=[Depends(require_permission("inventory:read"))],
 )
 def list_units(
     blood_group: Optional[str] = None, component: Optional[str] = None,
@@ -74,7 +74,7 @@ def list_units(
     return [_unit_out(u, now) for u in q.order_by(BloodUnit.expires_at).limit(limit).all()]
 
 
-@router.post("/api/inventory/units", dependencies=[Depends(require_role("Blood Bank Manager"))])
+@router.post("/api/inventory/units", dependencies=[Depends(require_permission("inventory:write"))])
 def receive(payload: ReceiveUnitsRequest, request: Request, db: Session = Depends(get_db)):
     """Records units received (a collection drive, a supplier delivery).
     Expiry is computed from the collection time and the component's
@@ -96,7 +96,7 @@ def receive(payload: ReceiveUnitsRequest, request: Request, db: Session = Depend
     return {"received": [_unit_out(u, now) for u in units]}
 
 
-@router.post("/api/inventory/units/{unit_id}/discard", dependencies=[Depends(require_role("Blood Bank Manager"))])
+@router.post("/api/inventory/units/{unit_id}/discard", dependencies=[Depends(require_permission("inventory:write"))])
 def discard(unit_id: str, request: Request, db: Session = Depends(get_db)):
     """Removes a unit from stock for a reason other than expiry (failed
     QC, broken bag) -- recorded separately from expiry wastage."""

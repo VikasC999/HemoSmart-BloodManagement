@@ -25,7 +25,7 @@ passes its own clock.
 import os
 import random
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from agents.autonomy.agents import (
     DonorAgent,
@@ -35,6 +35,7 @@ from agents.autonomy.agents import (
     LogisticsAgent,
     PlannerAgent,
 )
+from agents import telemetry
 from agents.autonomy.blackboard import Blackboard, _jsonable
 from bloodbank.forecast import get_forecaster
 from bloodbank.stock import utcnow
@@ -43,6 +44,8 @@ from db.models import AgentCycle
 from integrations.mcp.mock_hospital import MockHospitalAdapter
 
 _cycle_lock = threading.Lock()
+LAYER = "supply_loop"
+ORPHAN_AFTER = timedelta(minutes=10)
 
 
 class CycleAlreadyRunning(RuntimeError):
@@ -87,32 +90,41 @@ def _run(now, mode, trigger, horizon_days, forecaster, retriever, llm, partner,
         db.add(cycle)
         db.commit()
 
+        # Operational telemetry for the agent monitor (D71); none in simulation.
+        run_id = None if mode == "simulation" else f"cycle:{cycle.id}"
+        telemetry.emit(run_id, LAYER, telemetry.RUN, None, "run_started", trigger=trigger)
+
         bb = Blackboard(now=now, cycle_id=cycle.id, mode=mode, horizon_days=horizon_days)
         donor = DonorAgent(simulate_responses, rng or random.Random(cycle.id))
         forecast = ForecastAgent(forecaster or get_forecaster())
         planner_ok = True
 
-        # (agent, step, needs the Planner's output)
+        # (agent, step label, step, needs the Planner's output)
         steps = [
-            ("Donor", donor.collect_feedback, False),
-            ("Inventory", InventoryAgent().run, False),
-            ("Forecast", forecast.run, False),
-            ("Planner", PlannerAgent().run, False),
-            ("Donor", donor.act, True),
-            ("Logistics", LogisticsAgent(partner or MockHospitalAdapter()).run, True),
-            ("Explanation", ExplanationAgent(retriever, llm).run, False),
+            ("Donor", "collect replies", donor.collect_feedback, False),
+            ("Inventory", "sweep and check stock", InventoryAgent().run, False),
+            ("Forecast", "forecast demand", forecast.run, False),
+            ("Planner", "plan supply", PlannerAgent().run, False),
+            ("Donor", "alert donors", donor.act, True),
+            ("Logistics", "redistribute", LogisticsAgent(partner or MockHospitalAdapter()).run, True),
+            ("Explanation", "write brief", ExplanationAgent(retriever, llm).run, False),
         ]
         degraded = False
-        for name, step, needs_plan in steps:
+        for name, label, step, needs_plan in steps:
             if needs_plan and not planner_ok:
                 bb.log(name, "fallback", "Skipped -- the Planner produced no plan this cycle.")
+                telemetry.emit(run_id, LAYER, name, label, "step_finished", status="skipped")
                 continue
+            timer = telemetry.start_step(run_id, LAYER, name, label)
+            fallbacks_before = _fallbacks(bb, name)
             try:
                 step(bb, db)
                 db.commit()
+                timer.finish("fell_back" if _fallbacks(bb, name) > fallbacks_before else "ok")
             except Exception as exc:
                 db.rollback()
                 degraded = True
+                timer.finish("error", exc_class=exc.__class__.__name__)
                 bb.log(name, "error", f"{name} agent failed: {exc.__class__.__name__}: {exc}")
                 if name == "Forecast":
                     forecast.fallback(bb)
@@ -126,7 +138,31 @@ def _run(now, mode, trigger, horizon_days, forecaster, retriever, llm, partner,
         cycle.events = bb.events
         cycle.brief = bb.brief
         db.commit()
+        telemetry.emit(run_id, LAYER, telemetry.RUN, None, "run_finished", status=cycle.status,
+                       **{k: cycle.summary.get(k) for k in
+                          ("expired_units", "donors_alerted", "transferred_units", "escalations")})
         return cycle_to_dict(cycle)
+
+
+def _fallbacks(bb: Blackboard, agent: str) -> int:
+    """An agent that logged a fallback (e.g. a template brief because the
+    LLM was down) finished, but degraded -- the monitor shows it so."""
+    return sum(1 for e in bb.events_of("fallback") if e["agent"] == agent)
+
+
+def mark_orphaned_cycles(session_factory=SessionLocal, now: datetime = None) -> int:
+    """At startup: a cycle still "running" after ORPHAN_AFTER belonged to
+    a process that died mid-cycle. Marks it failed instead of leaving it
+    running forever."""
+    cutoff = (now or utcnow()) - ORPHAN_AFTER
+    with session_factory() as db:
+        rows = (db.query(AgentCycle)
+                .filter(AgentCycle.status == "running", AgentCycle.started_at < cutoff).all())
+        for cycle in rows:
+            cycle.status = "failed"
+            cycle.finished_at = cycle.finished_at or utcnow()
+        db.commit()
+        return len(rows)
 
 
 def _summary(bb: Blackboard) -> dict:

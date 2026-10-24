@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from adapters.manual_adapter import ManualEntryAdapter
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 from backend.schemas.requests import ExplainRequest
 from db.database import get_db
 from db.models import Prediction
@@ -10,7 +10,7 @@ from db.models import Prediction
 router = APIRouter()
 
 
-@router.post("/api/explain", dependencies=[Depends(require_role("Hospital Staff", "Blood Bank Manager"))])
+@router.post("/api/explain", dependencies=[Depends(require_permission("explain:run"))])
 def explain(payload: ExplainRequest, request: Request, db: Session = Depends(get_db)):
     adapter = ManualEntryAdapter()
     records = adapter.safe_parse(payload.patient.model_dump())

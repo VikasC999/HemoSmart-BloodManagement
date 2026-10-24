@@ -12,6 +12,16 @@ gives the same answer.
     get_supply_outlook()       forecast + shortage/wastage projection
     send_donor_alert()         bandit-selected donor alerts
     extract_from_pdf()         CBC report -> PatientRecord
+
+Read helpers shared by the REST routes and the chat assistant, so a
+role sees the same records on a page and in chat:
+
+    list_recent_patients()     patients + their latest prediction
+    list_donors_masked()       donor pool, phones masked (NFR-03)
+    recent_donor_alerts()      alerts, optionally only unanswered ones
+    latest_autonomy_cycle()    what the last agent cycle did
+    recent_audit_entries()     audit log rows, newest first
+    answer_guideline_question() WHO handbook Q&A (RAG), no patient data
 """
 
 import sys, os
@@ -19,6 +29,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import math
 import pickle
+from contextlib import contextmanager
 
 import numpy as np
 import xgboost as xgb
@@ -28,6 +39,16 @@ from db.database import SessionLocal
 from schema.clinical_thresholds import recommended_units, urgency
 
 MODEL_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
+
+
+@contextmanager
+def _session(db=None):
+    """Uses the caller's DB session (a route's) or opens one (chat, MCP)."""
+    if db is not None:
+        yield db
+    else:
+        with SessionLocal() as own:
+            yield own
 
 
 # ----------------------------------------------------------------------
@@ -217,3 +238,124 @@ def send_donor_alert(blood_type: str, component: str = "PRBC", k: int = 3) -> st
     from agents.donor_module import send_intelligent_donor_alerts
     result = send_intelligent_donor_alerts(blood_type, component=component, k=k)
     return result["message"]
+
+
+# ----------------------------------------------------------------------
+# Read helpers (routes + chat)
+# ----------------------------------------------------------------------
+def prediction_to_dict(pr) -> dict:
+    return {
+        "id": pr.id,
+        "transfusion_needed": pr.transfusion_needed,
+        "confidence": pr.confidence,
+        "urgency": pr.urgency,
+        "components": pr.components,
+        "explanation": pr.explanation or None,
+        "citations": pr.citations,
+        "created_at": pr.created_at.isoformat(),
+    }
+
+
+def list_recent_patients(limit: int = 50, db=None) -> list:
+    """Most recent patients first, each with their latest prediction."""
+    from db.models import Patient
+
+    with _session(db) as s:
+        patients = s.query(Patient).order_by(Patient.created_at.desc()).limit(limit).all()
+        return [
+            {
+                "id": p.id, "hemoglobin": p.hemoglobin, "platelets": p.platelets, "inr": p.inr, "age": p.age,
+                "surgery_type": p.surgery_type, "blood_group": p.blood_group, "source_format": p.source_format,
+                "source_hospital": p.source_hospital, "created_at": p.created_at.isoformat(),
+                "latest_prediction": prediction_to_dict(p.predictions[-1]) if p.predictions else None,
+            }
+            for p in patients
+        ]
+
+
+def list_donors_masked(blood_type: str = None) -> list:
+    """The donor pool with phones masked to the last 4 digits and the
+    bandit's current belief about each donor's reply rate."""
+    from agents.donor_module import load_donors, posterior_mean
+    from schema.privacy import mask_identifier
+
+    donors = load_donors()
+    if blood_type:
+        donors = [d for d in donors if d["blood_type"] == blood_type]
+    return [{**d, "phone": mask_identifier(d["phone"]), "expected_response_rate": round(posterior_mean(d), 3)}
+            for d in donors]
+
+
+def recent_donor_alerts(limit: int = 10, pending_only: bool = False, db=None) -> list:
+    from db.models import DonorAlert
+
+    with _session(db) as s:
+        q = s.query(DonorAlert)
+        if pending_only:
+            q = q.filter(DonorAlert.responded.is_(None))
+        rows = q.order_by(DonorAlert.sent_at.desc()).limit(limit).all()
+        return [
+            {
+                "id": r.id, "donor_id": r.donor_id, "blood_type": r.blood_type, "component": r.component,
+                "sent_at": r.sent_at.isoformat(), "method": r.method, "responded": r.responded,
+                "responded_at": r.responded_at.isoformat() if r.responded_at else None, "cycle_id": r.cycle_id,
+            }
+            for r in rows
+        ]
+
+
+def latest_autonomy_cycle(db=None):
+    from agents.autonomy.orchestrator import cycle_to_dict
+    from db.models import AgentCycle
+
+    with _session(db) as s:
+        last = s.query(AgentCycle).order_by(AgentCycle.id.desc()).first()
+        return cycle_to_dict(last) if last else None
+
+
+def recent_audit_entries(limit: int = 100, action: str = None, db=None) -> list:
+    from db.models import AuditLog
+
+    with _session(db) as s:
+        q = s.query(AuditLog)
+        if action:
+            q = q.filter(AuditLog.action == action)
+        rows = q.order_by(AuditLog.timestamp.desc()).limit(limit).all()
+        return [
+            {
+                "id": r.id, "user_id": r.user_id, "action": r.action, "resource_type": r.resource_type,
+                "resource_id": r.resource_id, "ip_address": r.ip_address,
+                "timestamp": r.timestamp.isoformat(), "details": r.details,
+            }
+            for r in rows
+        ]
+
+
+GUIDELINE_PROMPT = """{role_scope}
+Answer the question using ONLY the WHO handbook excerpts below. Cite
+excerpts as [n]. If the excerpts don't answer it, say so. Do not give
+advice about a specific patient. Keep it under 120 words.
+
+Excerpts:
+{context}
+
+Question: {question}
+"""
+
+
+def answer_guideline_question(question: str, llm=None, role_scope: str = "") -> dict:
+    """RAG over the WHO handbook for general questions (no patient data).
+    If the LLM fails, returns the retrieved excerpts with degraded=True."""
+    global _explanation_generator
+    if _explanation_generator is None:
+        from rag.explain import ExplanationGenerator
+        _explanation_generator = ExplanationGenerator()
+    citations = _explanation_generator.retriever.cite(question, k=3)
+    context = "\n\n".join(f"[{c['ref']}] (page {c['page']}) {c['excerpt']}" for c in citations)
+    try:
+        llm = llm or _explanation_generator.llm
+        answer = llm.generate(GUIDELINE_PROMPT.format(role_scope=role_scope, context=context, question=question))
+        return {"answer": answer.strip(), "citations": citations, "degraded": False}
+    except Exception:
+        return {"answer": "The AI model is unavailable, so here are the most relevant handbook passages.",
+                "citations": citations, "degraded": True}

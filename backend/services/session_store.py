@@ -9,11 +9,15 @@ session ID.
 
 Day 1: plain in-memory dict, lost on restart. Day 4: Redis -- but a
 ChatSession object itself isn't serializable (it holds a live LLM
-client), so what's actually persisted is just its two pieces of state
-(last_patient, last_prediction). A fresh ChatSession is constructed
-per request (cheap -- it only wraps an LLM client, unlike the FAISS-
-backed ExplanationGenerator) and that state is restored onto it before
-`.handle()` runs, then saved back after.
+client), so what's actually persisted is just its state (last_patient,
+last_prediction, a donor alert awaiting confirmation). A fresh
+ChatSession is constructed per request and that state is restored onto
+it before `.handle()` runs, then saved back after.
+
+Sessions belong to a user (D67): the key includes the user's id, so a
+session_id copied from someone else finds nothing, and the stored role
+must match the user's current role or the state is dropped -- a pending
+donor alert can't survive a role change.
 """
 
 import json
@@ -27,27 +31,31 @@ from schema.patient_schema import PatientRecord
 SESSION_TTL_SECONDS = 60 * 60 * 2  # 2 hours
 
 
-def _key(session_id: str) -> str:
-    return f"chat_session:{session_id}"
+def _key(user_id: int, session_id: str) -> str:
+    return f"chat_session:{user_id}:{session_id}"
 
 
-def get_or_create_session(session_id: Optional[str]) -> Tuple[str, ChatSession]:
+def get_or_create_session(session_id: Optional[str], user) -> Tuple[str, ChatSession]:
     new_id = session_id or str(uuid.uuid4())
-    session = ChatSession()
+    session = ChatSession(role=user.role)
 
-    raw = cache_get(_key(new_id))
+    raw = cache_get(_key(user.id, new_id))
     if raw:
         data = json.loads(raw)
-        if data.get("last_patient"):
-            session.last_patient = PatientRecord(**data["last_patient"])
-        session.last_prediction = data.get("last_prediction")
+        if data.get("role") == user.role:
+            if data.get("last_patient"):
+                session.last_patient = PatientRecord(**data["last_patient"])
+            session.last_prediction = data.get("last_prediction")
+            session.pending_action = data.get("pending_action")
 
     return new_id, session
 
 
-def save_session(session_id: str, session: ChatSession) -> None:
+def save_session(session_id: str, session: ChatSession, user) -> None:
     data = {
+        "role": user.role,
         "last_patient": session.last_patient.model_dump() if session.last_patient else None,
         "last_prediction": session.last_prediction,
+        "pending_action": session.pending_action,
     }
-    cache_set(_key(session_id), json.dumps(data), SESSION_TTL_SECONDS)
+    cache_set(_key(user.id, session_id), json.dumps(data), SESSION_TTL_SECONDS)

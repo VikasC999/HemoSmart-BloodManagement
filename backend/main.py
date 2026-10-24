@@ -20,7 +20,9 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from agents import telemetry
 from agents.autonomy import scheduler
+from agents.autonomy.orchestrator import mark_orphaned_cycles
 from agents.tools import _load_models, set_explanation_generator
 from backend.middleware.audit import AuditLogMiddleware
 from backend.middleware.mcp_auth import MCPAuthMiddleware
@@ -30,7 +32,7 @@ from mcp_server.server import mcp as mcp_server
 from rag.explain import ExplanationGenerator
 
 from backend.routes import (
-    audit, auth, autonomy, cases, chat, donors, explain, forecast, inventory, mcp_sync, patients, predict,
+    agents_monitor, audit, auth, autonomy, cases, chat, donors, explain, forecast, inventory, mcp_sync, patients, predict,
     transfusions,
 )
 
@@ -45,6 +47,11 @@ async def lifespan(app: FastAPI):
     _load_models()
     app.state.explanation_generator = ExplanationGenerator()
     set_explanation_generator(app.state.explanation_generator)
+    # A crash mid-run leaves a cycle "running" and its telemetry open
+    # forever; close both out as failed before the monitor reads them.
+    mark_orphaned_cycles()
+    telemetry.close_open_runs()
+    telemetry.prune()
     # The autonomous wastage-reduction loop (agents/autonomy/) on a timer.
     autonomy_task = scheduler.start(app)
     # The mounted MCP app (see below) has its own lifespan that starts
@@ -89,6 +96,7 @@ app.include_router(transfusions.router)
 app.include_router(autonomy.router)
 app.include_router(cases.router)
 app.include_router(mcp_sync.router)
+app.include_router(agents_monitor.router)
 
 # Exposes predict/explain/check_inventory/alert_donors as MCP tools at
 # /mcp, so any MCP-compatible client (Claude Desktop, Claude Code, a

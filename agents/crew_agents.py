@@ -56,9 +56,15 @@ Run:
 import re, sys, os, time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pydantic import BaseModel, Field
 
+# CrewAI's anonymous usage telemetry stays off: nothing about a case
+# leaves the system (D72). Must be set before crewai is imported.
+os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
+os.environ.setdefault("OTEL_SDK_DISABLED", "true")
+
+from agents import telemetry
 from crewai import Agent, Task, Crew, Process, LLM
 from crewai.tools import tool
 
@@ -114,11 +120,29 @@ class ActionResult(BaseModel):
 
 
 class ExtractionResult(BaseModel):
-    hemoglobin: float
-    platelets: int
-    inr: float
-    age: int
-    surgery_type: str
+    # Optional: a plain CBC states no INR or surgery type; the agent must
+    # report those as null, not invent them.
+    hemoglobin: Optional[float] = None
+    platelets: Optional[int] = None
+    inr: Optional[float] = None
+    age: Optional[int] = None
+    surgery_type: Optional[str] = None
+
+
+REQUIRED_FIELDS = ("hemoglobin", "platelets", "INR", "age", "surgery_type")
+
+
+def report_fields(pdf_path: str):
+    """What the report itself states, field by field (None = not in the
+    report), or None if the PDF can't be read at all."""
+    from adapters.pdf_adapter import PDFReportAdapter
+    from rag.llm_client import get_llm_client
+    try:
+        llm = get_llm_client(provider=os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"))
+        return PDFReportAdapter(llm_client=llm).extract_fields(pdf_path)
+    except Exception as exc:
+        print(f"[crew] PDF extraction failed: {exc.__class__.__name__}: {exc}")
+        return None
 
 
 class OrchestratorResult(BaseModel):
@@ -138,15 +162,14 @@ class OrchestratorResult(BaseModel):
 @tool("Extract Patient Data From PDF")
 def extract_pdf_tool(pdf_path: str) -> str:
     """Extracts patient hemoglobin, platelets, INR, age, and surgery
-    type from an uploaded CBC lab report PDF."""
-    record = extract_from_pdf(pdf_path)
-    if record is None:
+    type from an uploaded CBC lab report PDF. A value the report doesn't
+    state comes back as null."""
+    import json
+    fields = report_fields(pdf_path)
+    if fields is None:
         return '{"error": "EXTRACTION_FAILED: route this patient to manual entry."}'
-    return (
-        f'{{"hemoglobin": {record.hemoglobin}, "platelets": {record.platelets}, '
-        f'"inr": {record.INR}, "age": {record.age}, '
-        f'"surgery_type": "{record.surgery_type}"}}'
-    )
+    return json.dumps({"hemoglobin": fields["hemoglobin"], "platelets": fields["platelets"],
+                       "inr": fields["INR"], "age": fields["age"], "surgery_type": fields["surgery_type"]})
 
 
 @tool("Predict Transfusion Need")
@@ -393,6 +416,7 @@ def _run_isolated_task(label, agent, task, ground_truth_value, extract_fn, tools
             wait = _rate_limit_wait(exc)
             if wait is not None and attempt < RATE_LIMIT_RETRIES:
                 print(f"[VALIDATION] {label}: rate-limited by the LLM provider -- retrying in {wait:.0f}s.")
+                telemetry.emit_current(label, label, "llm_wait", wait_s=round(wait), attempt=attempt + 1)
                 time.sleep(wait)
                 continue
             print(f"[VALIDATION] {label}: FAILED ({exc.__class__.__name__}: {exc}). "
@@ -417,7 +441,7 @@ def _rate_limit_wait(exc: Exception):
     return min(max(seconds + 1.0, MIN_RATE_LIMIT_WAIT_SECONDS), MAX_RATE_LIMIT_WAIT_SECONDS)
 
 
-def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True):
+def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True, confirmed=None):
     """
     Full 6-agent pipeline: Extraction -> Prediction -> RAG -> Inventory
     -> Action -> Orchestrator. Every task runs as its own isolated
@@ -432,6 +456,11 @@ def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True):
         "fell_back" (it failed or disagreed; the verified value was used).
     allow_dispatch: False records donor alerts as recommendations only
         (see make_idempotent_action_tool).
+    confirmed: optional dict of clinician-confirmed values (hemoglobin,
+        platelets, INR, age, surgery_type, blood_group). They are the
+        values the case uses (FR-03): a plain CBC states no INR or surgery
+        type, so the clinician supplies them. The Extraction agent is
+        still checked against what the report itself says.
     """
     def report(agent, ok=None, detail=None):
         if progress:
@@ -440,9 +469,23 @@ def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True):
 
     # ---- Task 0: Extraction ----
     report("Extraction")
-    ground_truth_extraction = extract_from_pdf(pdf_path)
-    if ground_truth_extraction is None:
-        raise ValueError("Could not extract patient data from this PDF -- use manual entry instead.")
+    stated = report_fields(pdf_path)
+    if stated is None and confirmed is None:
+        raise ValueError("Could not read this PDF -- use manual entry instead.")
+    stated = stated or dict.fromkeys(REQUIRED_FIELDS + ("blood_group",))
+    final = {**stated, **{k: v for k, v in (confirmed or {}).items() if v is not None}}
+    missing = [k for k in REQUIRED_FIELDS if final.get(k) is None]
+    if missing:
+        raise ValueError(
+            f"The report doesn't state {', '.join(missing)}. Confirm the values first "
+            f"(the upload page asks for them), or use manual entry."
+        )
+    ground_truth_extraction = PatientRecord(
+        **{k: final[k] for k in REQUIRED_FIELDS}, blood_group=final.get("blood_group"), source_format="pdf_agents",
+    )
+    clinician_filled = [k for k in REQUIRED_FIELDS if stated.get(k) is None]
+    clinician_corrected = [k for k in REQUIRED_FIELDS
+                           if stated.get(k) is not None and confirmed and confirmed.get(k) not in (None, stated[k])]
     task0 = Task(
         description=(
             f"Call the PDF extraction tool EXACTLY ONCE with pdf_path='{pdf_path}'. "
@@ -457,12 +500,15 @@ def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True):
         p = task_output.pydantic
         if not p:
             return None
-        if (p.hemoglobin == ground_truth_extraction.hemoglobin
-                and p.platelets == ground_truth_extraction.platelets
-                and p.inr == ground_truth_extraction.INR
-                and p.age == ground_truth_extraction.age
-                and p.surgery_type == ground_truth_extraction.surgery_type):
-            return (p.hemoglobin, p.platelets, p.inr, p.age, p.surgery_type)
+        # The agent's job is reading the report: it is checked against what
+        # the report states (null where it states nothing). The values the
+        # case then uses are the clinician-confirmed ones.
+        if (p.hemoglobin == stated["hemoglobin"]
+                and p.platelets == stated["platelets"]
+                and p.inr == stated["INR"]
+                and p.age == stated["age"]
+                and p.surgery_type == stated["surgery_type"]):
+            return ground_truth_extraction_tuple
         return None  # treat any mismatch as a failure -> triggers fallback
 
     ground_truth_extraction_tuple = (
@@ -475,7 +521,8 @@ def run_full_pipeline(pdf_path, progress=None, allow_dispatch=True):
     )
     hemoglobin, platelets, inr, age, surgery_type = extraction_value
     report("Extraction", extraction_ok,
-           {"hemoglobin": hemoglobin, "platelets": platelets, "inr": inr, "age": age, "surgery_type": surgery_type})
+           {"hemoglobin": hemoglobin, "platelets": platelets, "inr": inr, "age": age, "surgery_type": surgery_type,
+            "completed_by_clinician": clinician_filled, "corrected_by_clinician": clinician_corrected})
 
     record = PatientRecord(
         hemoglobin=hemoglobin, platelets=platelets, INR=inr,

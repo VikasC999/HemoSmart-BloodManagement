@@ -9,7 +9,7 @@ from adapters.csv_adapter import CSVExportAdapter
 from adapters.manual_adapter import ManualEntryAdapter
 from adapters.pdf_adapter import PDFReportAdapter
 from agents.tools import predict_transfusion
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 from backend.schemas.requests import ManualPatientInput
 from backend.services.persistence import persist_prediction as _persist
 from backend.services.persistence import to_prediction_result
@@ -19,7 +19,7 @@ from rag.llm_client import get_llm_client
 from schema.patient_schema import PredictionResult
 
 router = APIRouter()
-allowed_roles = require_role("Hospital Staff", "Blood Bank Manager")
+allowed_roles = require_permission("predict:run")
 
 
 @router.post("/api/predict", response_model=PredictionResult)
@@ -62,6 +62,12 @@ def _extract_pdf(path: str):
     return records[0]
 
 
+def _extract_fields(path: str) -> dict:
+    """Partial extraction for the confirm step: missing values are None."""
+    llm = get_llm_client(provider=os.environ.get("HEMOSMART_LLM_PROVIDER", "groq"))
+    return PDFReportAdapter(llm_client=llm).extract_fields(path)
+
+
 async def _save_upload(file: UploadFile, suffix: str) -> str:
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(await file.read())
@@ -76,16 +82,25 @@ async def extract_from_pdf(request: Request, file: UploadFile = File(...), user:
     source_format="pdf"."""
     tmp_path = await _save_upload(file, ".pdf")
     try:
-        record = _extract_pdf(tmp_path)
+        fields = _extract_fields(tmp_path)
+    except ValueError as exc:
+        scanned = "No extractable text" in str(exc)
+        raise HTTPException(status_code=422, detail=(
+            "This PDF has no readable text (it looks like a scanned image). Use manual entry instead."
+            if scanned else "Couldn't read lab values from this PDF. Use manual entry instead."))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=(
+            f"The AI reader is unavailable right now ({exc.__class__.__name__}). Use manual entry instead."))
     finally:
         os.unlink(tmp_path)
+    if all(fields[k] is None for k in ("hemoglobin", "platelets", "INR", "age")):
+        raise HTTPException(status_code=422, detail=(
+            "No CBC values were found in this PDF. Check it's a lab report, or use manual entry."))
     request.state.audit_action = "pdf_extracted"
     request.state.audit_resource_type = "patient"
-    return {
-        "hemoglobin": record.hemoglobin, "platelets": record.platelets, "INR": record.INR,
-        "age": record.age, "surgery_type": record.surgery_type, "blood_group": record.blood_group,
-        "hospital_name": record.source_hospital, "source_format": "pdf",
-    }
+    request.state.audit_details = {"missing": [k for k, v in fields.items() if v is None]}
+    return {**fields, "hospital_name": "unknown", "source_format": "pdf",
+            "missing": [k for k, v in fields.items() if v is None and k != "blood_group"]}
 
 
 @router.post("/api/predict/pdf", response_model=PredictionResult)

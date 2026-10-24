@@ -55,7 +55,8 @@ def test_donor_list_masks_phone_numbers(users):
 # Confirmed PDF flow: extract (no prediction, nothing saved) -> confirm
 # ----------------------------------------------------------------------
 def test_pdf_extract_returns_values_without_predicting(users, monkeypatch):
-    monkeypatch.setattr(predict, "_extract_pdf", lambda path: PatientRecord(**PATIENT, source_format="pdf"))
+    monkeypatch.setattr(predict, "_extract_fields", lambda path: {
+        **{k: PATIENT[k] for k in ("hemoglobin", "platelets", "INR", "age", "surgery_type", "blood_group")}})
     with SessionLocal() as db:
         before = db.query(Patient).count()
     res = client.post("/api/predict/pdf/extract", files={"file": ("r.pdf", b"%PDF-1.4", "application/pdf")},
@@ -66,6 +67,49 @@ def test_pdf_extract_returns_values_without_predicting(users, monkeypatch):
     assert "transfusion_needed" not in body
     with SessionLocal() as db:
         assert db.query(Patient).count() == before  # nothing persisted until confirmed
+
+
+def _extract(users, monkeypatch, fields=None, error=None):
+    def fake(path):
+        if error:
+            raise error
+        return fields
+    monkeypatch.setattr(predict, "_extract_fields", fake)
+    return client.post("/api/predict/pdf/extract", files={"file": ("r.pdf", b"%PDF-1.4", "application/pdf")},
+                       headers=auth_header(users["Hospital Staff"]))
+
+
+def test_pdf_extract_returns_partial_values_for_the_clinician_to_complete(users, monkeypatch):
+    # A real CBC has no INR and no surgery type: show what was found, flag the rest.
+    res = _extract(users, monkeypatch, {"hemoglobin": 8.4, "platelets": 96000, "INR": None, "age": 47,
+                                        "surgery_type": None, "blood_group": "A-"})
+    assert res.status_code == 200
+    assert res.json()["missing"] == ["INR", "surgery_type"]
+
+
+def test_pdf_with_no_lab_values_is_refused_clearly(users, monkeypatch):
+    res = _extract(users, monkeypatch, dict.fromkeys(
+        ("hemoglobin", "platelets", "INR", "age", "surgery_type", "blood_group")))
+    assert res.status_code == 422 and "No CBC values" in res.json()["detail"]
+
+
+def test_scanned_pdf_gets_a_specific_message(users, monkeypatch):
+    res = _extract(users, monkeypatch, error=ValueError("No extractable text found in PDF"))
+    assert res.status_code == 422 and "scanned image" in res.json()["detail"]
+
+
+def test_pdf_adapter_keeps_valid_fields_and_drops_bad_ones():
+    from adapters.pdf_adapter import PDFReportAdapter
+
+    class LLM:
+        def generate(self, prompt):
+            return '{"hemoglobin": "6.9", "platelets": 42, "INR": null, "age": 400, ' \
+                   '"surgery_type": "Emergency laparotomy", "blood_group": "O Pos"}'
+
+    adapter = PDFReportAdapter(llm_client=LLM())
+    adapter.extract_text = lambda path: "report"
+    assert adapter.extract_fields("x.pdf") == {"hemoglobin": 6.9, "platelets": 42000, "INR": None, "age": None,
+                                               "surgery_type": "Emergency", "blood_group": "O+"}
 
 
 def test_confirmed_pdf_values_keep_their_provenance(users):

@@ -80,6 +80,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ session_id: sessionId, message }),
     }),
+  // What the logged-in role can ask the assistant about
+  chatCapabilities: () => request("/api/chat/capabilities"),
 
   // Inventory (unit level)
   inventory: (bloodGroup, component) => request(`/api/inventory${qs({ blood_group: bloodGroup, component })}`),
@@ -119,6 +121,11 @@ export const api = {
   autonomyCycles: (limit = 5) => request(`/api/autonomy/cycles?limit=${limit}`),
   runAutonomyCycle: () => request("/api/autonomy/run", { method: "POST" }),
   wastageMetrics: (days = 30) => request(`/api/autonomy/metrics?days=${days}`),
+
+  // Agent monitor (read-only operations view, D71-D75)
+  agentOverview: () => request("/api/agents/overview"),
+  agentRuns: (limit = 10) => request(`/api/agents/runs?limit=${limit}`),
+  agentRun: (runId) => request(`/api/agents/runs/${encodeURIComponent(runId)}`),
 
   // CrewAI full-case job (started via multipart upload in UploadCard)
   caseStatus: (jobId) => request(`/api/cases/${jobId}`),

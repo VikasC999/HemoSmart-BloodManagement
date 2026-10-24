@@ -36,8 +36,16 @@ export function describeError(error) {
   return { message, ref: `HTTP ${status}` };
 }
 
+// The API stores and sends naive UTC ("2026-10-24T18:06:01"). Without a
+// zone, browsers read that as local time -- 5.5 h off in India -- so a
+// timestamp with no zone is read as UTC here.
+export function parseTime(iso) {
+  if (typeof iso === "string" && /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(iso)) return new Date(`${iso}Z`);
+  return new Date(iso);
+}
+
 export function formatAgo(iso) {
-  const seconds = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  const seconds = Math.round((Date.now() - parseTime(iso).getTime()) / 1000);
   if (Number.isNaN(seconds)) return "";
   if (seconds < 45) return "just now";
   const minutes = Math.round(seconds / 60);
@@ -46,6 +54,12 @@ export function formatAgo(iso) {
   if (hours < 24) return `${hours} h ago`;
   const days = Math.round(hours / 24);
   return `${days} d ago`;
+}
+
+// An agent-monitor run ID ("cycle:12", "case:3f2a…") in words.
+export function runLabel(runId) {
+  const [kind, ref = ""] = runId.split(":");
+  return kind === "cycle" ? `Cycle #${ref}` : kind === "case" ? `Case ${ref.slice(0, 6)}…` : runId;
 }
 
 // How an agent cycle was started, in words.

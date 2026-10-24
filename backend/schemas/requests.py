@@ -7,7 +7,7 @@ schema.patient_schema.PatientRecord because the API accepts the raw
 (set by the adapter, not by the caller).
 """
 
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel
 
 
@@ -36,6 +36,21 @@ class ExplainRequest(BaseModel):
 class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     message: str
+
+
+class ChatPart(BaseModel):
+    intent: str
+    allowed: bool  # False = refused by the role check, in code (D66)
+    text: str
+
+
+class ChatResponse(BaseModel):
+    session_id: str
+    reply: str
+    parts: List[ChatPart]
+    role: str
+    degraded: bool  # True when the LLM was unavailable and a fallback answered
+    can_ask_about: List[str]
 
 
 class DonorAlertRequest(BaseModel):

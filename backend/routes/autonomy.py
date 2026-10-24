@@ -11,16 +11,17 @@ from sqlalchemy.orm import Session
 
 from agents.autonomy.orchestrator import CycleAlreadyRunning, cycle_to_dict, run_cycle
 from agents.autonomy.scheduler import interval_minutes
+from agents.tools import latest_autonomy_cycle
 from bloodbank.stock import utcnow, wastage_stats
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 from db.database import get_db
 from db.models import AgentCycle
 
 router = APIRouter()
-readers = require_role("Blood Bank Manager", "Auditor")
+readers = require_permission("autonomy:read")
 
 
-@router.post("/api/autonomy/run", dependencies=[Depends(require_role("Blood Bank Manager"))])
+@router.post("/api/autonomy/run", dependencies=[Depends(require_permission("autonomy:run"))])
 async def run_now(request: Request):
     generator = getattr(request.app.state, "explanation_generator", None)
     try:
@@ -47,10 +48,9 @@ def list_cycles(limit: int = Query(10, ge=1, le=100), db: Session = Depends(get_
 
 @router.get("/api/autonomy/status", dependencies=[Depends(readers)])
 def status(db: Session = Depends(get_db)):
-    last = db.query(AgentCycle).order_by(AgentCycle.id.desc()).first()
     return {
         "scheduler_interval_minutes": interval_minutes(),
-        "last_cycle": cycle_to_dict(last) if last else None,
+        "last_cycle": latest_autonomy_cycle(db=db),
     }
 
 

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from agents.tools import predict_transfusion
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 from backend.services.persistence import persist_prediction, to_prediction_result
 from db.database import get_db
 from db.models import User
@@ -22,7 +22,7 @@ from integrations.mcp.mock_hospital import MockHospitalAdapter
 from schema.patient_schema import PredictionResult
 
 router = APIRouter()
-allowed_roles = require_role("Hospital Staff", "Blood Bank Manager")
+allowed_roles = require_permission("predict:run")
 
 _ADAPTERS = {
     "mock-regional-hospital": MockHospitalAdapter(),

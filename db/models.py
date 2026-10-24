@@ -134,6 +134,26 @@ class AgentCycle(Base):
     brief = Column(Text, nullable=True)
 
 
+class AgentEvent(Base):
+    """Operational telemetry for the agent monitor (agents/telemetry.py):
+    step started/finished, LLM rate-limit waits, scheduler heartbeats.
+    Append-only, allow-listed payloads, no patient data (D71, D72).
+    Separate from AgentCycle.events, which is the reasoning log."""
+    __tablename__ = "agent_events"
+
+    id = Column(Integer, primary_key=True)
+    run_id = Column(String, nullable=False, index=True)  # cycle:{id} | case:{job_id} | scheduler
+    layer = Column(String, nullable=False)  # supply_loop | case_pipeline | scheduler
+    agent = Column(String, nullable=False)
+    step = Column(String, nullable=True)
+    type = Column(String, nullable=False)  # run_started | step_started | step_finished | llm_wait | run_finished | heartbeat
+    status = Column(String, nullable=True)  # ok | verified | fell_back | skipped | error | degraded | failed
+    ts = Column(DateTime, nullable=False, index=True)
+    duration_ms = Column(Integer, nullable=True)
+    llm_calls = Column(Integer, nullable=True)
+    data = Column(JSON, nullable=True)
+
+
 class Patient(Base):
     __tablename__ = "patients"
 

@@ -13,12 +13,13 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 // multipart/form-data, not the JSON Content-Type that helper always
 // sets, so this builds the fetch call directly (still attaching the
 // same bearer token from localStorage).
-async function uploadFile(path, file) {
+async function uploadFile(path, file, fields = {}) {
   const token = (() => {
     try { return localStorage.getItem("hemosmart_token"); } catch { return null; }
   })();
   const formData = new FormData();
   formData.append("file", file);
+  Object.entries(fields).forEach(([k, v]) => formData.append(k, v));
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -41,8 +42,8 @@ const MODES = {
     help: "A hospital export with one patient per row. Each valid row gets its own prediction.",
   },
   case: {
-    label: "Full case (AI agents)", icon: Bot, accept: ".pdf", action: "Run AI agents",
-    help: "Six AI agents process the PDF end to end, each checked against an independent calculation. About a minute.",
+    label: "Full case (AI agents)", icon: Bot, accept: ".pdf", action: "Extract values",
+    help: "You check the extracted values first, then six AI agents process the case end to end, each checked against an independent calculation. About a minute.",
   },
 };
 
@@ -152,8 +153,9 @@ const FIELDS = [
   { key: "age", label: "Age", unit: "years", step: "1" },
 ];
 
-function ConfirmExtracted({ fileName, values, onChange, onConfirm, onCancel, busy }) {
+function ConfirmExtracted({ fileName, values, onChange, onConfirm, onCancel, busy, confirmLabel = "Confirm and predict", busyLabel = "Predicting…", ConfirmIcon = Stethoscope }) {
   const missing = FIELDS.filter((f) => values[f.key] === "" || values[f.key] == null || Number.isNaN(Number(values[f.key])));
+  const noSurgery = !values.surgery_type;
   return (
     <div className="upload-section">
       <AIPanel label="Extracted by HemoSmart AI" decisionSupport={false}>
@@ -183,10 +185,14 @@ function ConfirmExtracted({ fileName, values, onChange, onConfirm, onCancel, bus
             <tr>
               <th scope="row"><label htmlFor="x-surgery">Surgery type</label></th>
               <td>
-                <select id="x-surgery" value={values.surgery_type}
-                        onChange={(e) => onChange({ ...values, surgery_type: e.target.value })}>
+                <select id="x-surgery" value={values.surgery_type || ""}
+                        aria-invalid={noSurgery ? "true" : undefined}
+                        aria-describedby={noSurgery ? "x-surgery-err" : undefined}
+                        onChange={(e) => onChange({ ...values, surgery_type: e.target.value || null })}>
+                  <option value="">Choose…</option>
                   {SURGERY_TYPES.map((t) => <option key={t}>{t}</option>)}
                 </select>
+                {noSurgery && <span id="x-surgery-err" className="field-error">Required. Not stated in the report: choose it.</span>}
               </td>
               <td />
             </tr>
@@ -205,8 +211,8 @@ function ConfirmExtracted({ fileName, values, onChange, onConfirm, onCancel, bus
         </table>
       </div>
       <div className="actions">
-        <button onClick={onConfirm} disabled={busy || missing.length > 0}>
-          <Stethoscope size={16} aria-hidden="true" /> {busy ? "Predicting…" : "Confirm and predict"}
+        <button onClick={onConfirm} disabled={busy || missing.length > 0 || noSurgery}>
+          <ConfirmIcon size={16} aria-hidden="true" /> {busy ? busyLabel : confirmLabel}
         </button>
         <button className="secondary" onClick={onCancel} disabled={busy}>Discard</button>
       </div>
@@ -265,21 +271,17 @@ export default function UploadCard() {
     setLoading(true);
     reset();
     try {
-      if (kind === "pdf") {
+      if (kind === "pdf" || kind === "case") {
+        // Both start with the clinician's check of the extracted values (FR-03).
         setExtracted(await uploadFile("/api/predict/pdf/extract", file));
         setLoading(false);
         return;
-      }
-      if (kind === "case") {
-        const { job_id } = await uploadFile("/api/cases", file);
-        watch(job_id);
-        return; // stays loading until the job finishes
       }
       const data = await uploadFile(`/api/predict/${kind}`, file);
       setResults(Array.isArray(data) ? data : [data]);
     } catch (e) {
       setError({
-        what: kind === "pdf" ? "Couldn't read this PDF." : kind === "csv" ? "Couldn't process this CSV." : "The agent run didn't start.",
+        what: kind === "csv" ? "Couldn't process this CSV." : "Couldn't read this PDF.",
         error: e,
       });
     }
@@ -290,19 +292,27 @@ export default function UploadCard() {
     setLoading(true);
     setError(null);
     try {
-      const v = extracted;
-      const r = await api.predict({
+      const { missing: _missing, ...v } = extracted;
+      const values = {
         ...v,
         hemoglobin: Number(v.hemoglobin),
         platelets: Math.round(Number(v.platelets)),
         INR: Number(v.INR),
         age: Math.round(Number(v.age)),
-        source_format: "pdf",
-      });
+      };
+      if (kind === "case") {
+        // The agents run on the confirmed values; the report is still sent
+        // so the Extraction agent is checked against what it actually says.
+        const { job_id } = await uploadFile("/api/cases", file, { values: JSON.stringify(values) });
+        setExtracted(null);
+        watch(job_id);
+        return; // stays loading until the job finishes
+      }
+      const r = await api.predict({ ...values, source_format: "pdf" });
       setResults([r]);
       setExtracted(null);
     } catch (e) {
-      setError({ what: "The prediction didn't run.", error: e });
+      setError({ what: kind === "case" ? "The agent run didn't start." : "The prediction didn't run.", error: e });
     }
     setLoading(false);
   };
@@ -367,14 +377,16 @@ export default function UploadCard() {
 
       {error && (
         <ErrorState what={error.what} error={error.error} onRetry={file ? submit : undefined}
-                    action={kind === "pdf" && (
+                    action={kind !== "csv" && (
                       <a className="text-link" href="#predict">Enter values by hand <ArrowRight size={14} aria-hidden="true" /></a>
                     )} />
       )}
 
       {extracted && (
         <ConfirmExtracted fileName={file?.name} values={extracted} onChange={setExtracted}
-                          onConfirm={confirmExtracted} onCancel={() => setExtracted(null)} busy={loading} />
+                          onConfirm={confirmExtracted} onCancel={() => setExtracted(null)} busy={loading}
+                          {...(kind === "case" && { confirmLabel: "Confirm and run AI agents",
+                                                    busyLabel: "Starting agents…", ConfirmIcon: Bot })} />
       )}
 
       {job && <AgentCase job={job} elapsed={elapsed} />}
