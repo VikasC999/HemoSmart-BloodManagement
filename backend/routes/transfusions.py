@@ -21,12 +21,12 @@ from sqlalchemy.orm import Session
 from bloodbank.allocation import is_near_expiry
 from bloodbank.catalog import COMPONENTS
 from bloodbank.stock import cancel_transfusion, confirm_transfusion, reserve_for_transfusion, utcnow
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 from db.database import get_db
 from db.models import BloodUnit, Patient, Prediction, Transfusion, User
 
 router = APIRouter()
-clinical_roles = require_role("Hospital Staff", "Blood Bank Manager")
+clinical_roles = require_permission("transfusions:write")
 
 
 class TransfusionRequest(BaseModel):
@@ -130,7 +130,7 @@ def cancel(transfusion_id: int, request: Request, db: Session = Depends(get_db))
 
 @router.get(
     "/api/transfusions", response_model=List[dict],
-    dependencies=[Depends(require_role("Hospital Staff", "Blood Bank Manager", "Auditor"))],
+    dependencies=[Depends(require_permission("transfusions:read"))],
 )
 def list_transfusions(limit: int = 20, patient_id: Optional[int] = None, db: Session = Depends(get_db)):
     q = db.query(Transfusion)

@@ -4,7 +4,7 @@
 import {
   CircleAlert, CircleCheck, Clock, Inbox, OctagonAlert, RotateCw, Sparkles, TriangleAlert, Info,
 } from "lucide-react";
-import { describeError, formatAgo } from "./format";
+import { describeError, formatAgo, parseTime } from "./format";
 
 // ---------------------------------------------------------------------
 // Severity: colour + icon + word, never colour alone
@@ -131,10 +131,10 @@ export function StaleNotice({ children }) {
 // interval is a product decision, so screens don't invent one.
 export function UpdatedAt({ iso, staleAfterMinutes, prefix = "Updated" }) {
   if (!iso) return null;
-  const ageMin = (Date.now() - new Date(iso).getTime()) / 60000;
+  const ageMin = (Date.now() - parseTime(iso).getTime()) / 60000;
   const stale = staleAfterMinutes != null && ageMin > staleAfterMinutes;
   return (
-    <span className={`updated ${stale ? "is-stale" : ""}`} title={new Date(iso).toLocaleString()}>
+    <span className={`updated ${stale ? "is-stale" : ""}`} title={parseTime(iso).toLocaleString()}>
       <Clock size={12} aria-hidden="true" />
       {prefix} {formatAgo(iso)}
     </span>

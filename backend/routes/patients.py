@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
-from backend.dependencies.rbac import require_role
+from agents.tools import list_recent_patients, prediction_to_dict
+from backend.dependencies.rbac import require_permission
 from db.database import get_db
 from db.models import Patient, Prediction
 
 router = APIRouter()
-allowed_roles = require_role("Hospital Staff", "Blood Bank Manager", "Auditor")
+allowed_roles = require_permission("patients:read")
 
 
 class PredictionOut(BaseModel):
@@ -45,29 +46,7 @@ class PatientOut(BaseModel):
 def list_patients(limit: int = 50, db: Session = Depends(get_db)):
     """Most recent patients first -- backs the Day 6 case-list view so
     predictions persist across page reloads instead of vanishing."""
-    patients = (
-        db.query(Patient)
-        .order_by(Patient.created_at.desc())
-        .limit(limit)
-        .all()
-    )
-    out = []
-    for p in patients:
-        latest = p.predictions[-1] if p.predictions else None
-        out.append(PatientOut(
-            id=p.id,
-            hemoglobin=p.hemoglobin,
-            platelets=p.platelets,
-            inr=p.inr,
-            age=p.age,
-            surgery_type=p.surgery_type,
-            blood_group=p.blood_group,
-            source_format=p.source_format,
-            source_hospital=p.source_hospital,
-            created_at=p.created_at.isoformat(),
-            latest_prediction=_prediction_out(latest) if latest else None,
-        ))
-    return out
+    return list_recent_patients(limit, db=db)
 
 
 @router.get(
@@ -84,13 +63,4 @@ def patient_predictions(patient_id: int, db: Session = Depends(get_db)):
 
 
 def _prediction_out(pr: Prediction) -> PredictionOut:
-    return PredictionOut(
-        id=pr.id,
-        transfusion_needed=pr.transfusion_needed,
-        confidence=pr.confidence,
-        urgency=pr.urgency,
-        components=pr.components,
-        explanation=pr.explanation or None,
-        citations=pr.citations,
-        created_at=pr.created_at.isoformat(),
-    )
+    return PredictionOut(**prediction_to_dict(pr))

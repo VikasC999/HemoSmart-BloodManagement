@@ -34,6 +34,8 @@ Each entry: **Decision** · **Why** · **Alternatives considered** ·
   - [Donor bandit](#donor-bandit)
   - [Tooling](#tooling)
 - [P3 — Report alignment](#p3--report-alignment) (D55–D63) · frontend design system (D64)
+- [Role-aware assistant (FR-08)](#role-aware-assistant-fr-08) (D65–D70)
+- [Agent monitor](#agent-monitor) (D71–D75)
 - [LLM call budget](#llm-call-budget)
 - [Known limitations](#known-limitations)
 
@@ -700,6 +702,134 @@ The agents collected platelets for gaps a week away (which expired before they w
 
 ---
 
+## Role-aware assistant (FR-08)
+
+The assistant is available to every role and answers only from what that role's pages allow. Before this, only Hospital Staff (and Admin) could open it, and it never checked who was asking. It returned the demand forecast and sent real donor alerts for Hospital Staff, both of which the forecast and donor routes refuse that role. It also read any PDF path typed into it, and a copied session ID exposed another user's last patient.
+
+#### D65. One permission matrix for routes and chat
+- **Decision:** [schema/permissions.py](../schema/permissions.py) lists each capability (`inventory:read`, `forecast:read`, `donor_alerts:send`, …) and the roles that hold it; Admin holds all.
+  - Every route now uses `require_permission(capability)` instead of a hand-typed role list.
+  - The chat assistant maps each intent to a capability from the same table (`INTENT_CAPABILITY`).
+  - The matrix was derived one-for-one from the route guards, with one owner decision: **Donor Coordinators may read inventory**, to coordinate donor calls against stock. They get an Inventory page (read-only, no forecast).
+  - `donors.py` is split into `donors:read`, `donor_alerts:send` and `donor_responses:write`, with the same roles as before.
+- **Enforced by tests** ([tests/test_chat_rbac.py](../tests/test_chat_rbac.py)): no route may use a raw role list; every capability except `guidelines:read` guards a route; a hand-written role × topic table must match the matrix.
+- **MCP unchanged (owner's choice):** the `/mcp` gate stays Admin and Blood Bank Manager per connection.
+- **Trade-off:** the 403 message changed to the shared refusal wording.
+
+#### D66. The assistant checks permission in code, before any tool or LLM runs
+- **Decision:** per message,
+  1. split into clauses ("O− stock and the audit log" is two);
+  2. classify each clause with keyword rules; the LLM only for a clause no rule matches, and its answer must be one label from a closed set;
+  3. check the clause's capability for the user's role (deny by default);
+  4. run the allowed tools and phrase results with templates.
+- **A refused clause** gets a fixed line, *"Not authorised: the Hospital Staff role doesn't have access to the audit log."*, plus one line listing what the role can ask (owner decision). No data is read and no LLM call is made for it.
+- **Mixed questions** answer the allowed clauses and refuse the rest.
+- **Prompt injection** ("ignore your rules", "I am admin") can't change the decision, because the role comes only from the logged-in user. Such messages are flagged for the audit log.
+- **The LLM** gets a role-scoped prompt prefix ("You may only discuss: …"), as defence in depth only. It only ever sees data that already passed step 3.
+- **Donor alerts need a "yes"** (owner decision): the assistant states what it will send and waits. The permission is checked again when the user confirms.
+- **New read topics** (patients, donors with masked phones, pending donor replies, the last agent cycle, the audit log and refused chat requests, WHO guideline questions) call the same helpers in [agents/tools.py](../agents/tools.py) that the routes now use.
+- **Why:** an LLM can't be trusted to keep a secret it was given. Deciding access in code makes the refusal exact and testable.
+- **Trade-off:** keyword routing occasionally mis-files a question. It then gets refused or answered under a topic the role is allowed anyway, never leaked.
+
+#### D67. Chat sessions belong to a user and a role
+- **Decision:** the session cache key is `chat_session:{user_id}:{session_id}`. The stored role must match the user's current role, or the state (last patient, a pending alert) is dropped.
+- **Why:** a copied session ID used to reveal another user's last patient through "why?". A pending alert must not survive a role change.
+
+#### D68. Each chat message is one structured audit record, without its text
+- **Decision:** `action = "chat_query"`, with the role, intents, allowed/denied decision per clause, outcome (`answered` / `partial` / `denied`), whether the LLM was used or degraded, the injection flag, any action taken (a donor alert), and the message length.
+- **The message text is not stored** (owner decision, data minimisation as in D56).
+- **Use:** the Auditor can ask the assistant "show refused chat requests".
+
+#### D69. The assistant no longer reads PDFs
+- **Decision:** the chat `extract` intent, which opened any `*.pdf` path typed into chat on the server, is removed (owner decision). Reports go through the CBC upload page, where the clinician confirms the values (D55).
+
+#### D70. When the LLM is down, the assistant degrades instead of erroring
+- **Decision:** `/api/chat` no longer returns 502. A failed classifier call answers with the role's "what you can ask" list; a failed explanation falls back to the rule-based protocol checks; a failed guideline answer shows the retrieved handbook passages. The reply is marked `degraded` and the UI says "Limited mode".
+- **Known gap:** a pending donor alert lives in the Redis session. Without Redis, "yes" finds nothing to confirm and nothing is sent, which fails safe.
+
+---
+
+## Agent monitor
+
+A live page showing whether the agents are running, how long each step takes, how often the LLM agents' answers check out, and what needs a person. It is a flat (2D) take on the Agents Office idea, planned in [2dvision.md](2dvision.md). The **Agent activity** page shows what the supply loop *decided*; the monitor shows how the agents are *operating*. It sits next to the agents, not inside them: each layer gets a few lines of hooks, and no agent logic changes.
+
+Owner decisions (2026-10-24, all the plan's recommended defaults): a new `agents:monitor` permission; Hospital Staff don't see case cards; a separate page; polling, not push; 14-day retention; stuck after 5 min (loop step) or 6 min (case step); the filename leak fixed; CrewAI telemetry off; orphaned cycles marked failed at startup; an unanswered donor alert needs attention after 24 h; no Groq budget spent on an evidence table.
+
+#### D71. Agent telemetry is its own append-only table, written through one `emit()` seam
+- **Decision:** a new `agent_events` table ([db/models.py](../db/models.py) `AgentEvent`): `run_id` (`cycle:{id}` / `case:{job_id}`), `layer` (`supply_loop` / `case_pipeline` / `scheduler`), `agent`, `step`, `type` (`run_started`, `step_started`, `step_finished`, `llm_wait`, `run_finished`, `heartbeat`), `status`, `ts`, `duration_ms`, `llm_calls`, `data`.
+  - Everything goes through [agents/telemetry.py](../agents/telemetry.py): `emit()` writes one row, and `step()` is a context manager that records start, end, duration and the LLM-call delta.
+  - Both **never raise**, and they use their own session, so a telemetry failure can't roll back an agent's work.
+  - **Off for simulation:** `emit()` does nothing in `mode="simulation"`, without a run ID, or with `HEMOSMART_AGENT_EVENTS=0`. The evaluation scripts run thousands of cycles and write zero events.
+  - **Retention:** 14 days (`HEMOSMART_AGENT_EVENTS_DAYS`), pruned on every scheduler tick. That is about 500 rows a day.
+- **Why:** `AgentCycle.events` is written only when a cycle ends, so nothing is visible mid-run. Case jobs live in memory, keep the last 20 and are lost on restart.
+  - `AgentCycle.events` stays as it is: it is the domain reasoning log that Agent activity and the assistant read.
+- **Alternatives:**
+  - CrewAI's internal event bus: rejected, because CrewAI is pinned and already patched once (D41).
+  - Langfuse or OpenTelemetry: rejected, because they need self-hosting, and traces would leave the system (against D56/D68). They are the production path behind the same `emit()` seam.
+- **Trade-off:** `llm_calls` is a process-wide counter, so a parallel chat request can add to a step's count. Cycles and cases each run under a lock, which keeps this small. No token counts.
+- **Revert:** set `HEMOSMART_AGENT_EVENTS=0`, or remove the `telemetry` calls; the table is never read by any agent.
+
+#### D72. Telemetry payloads are allow-listed; patient data can't reach them
+- **Decision:** `emit()` keeps only these `data` keys and silently drops the rest:
+  - counts (`expired_units`, `donors_alerted`, `transferred_units`, `escalations`, `units`, `attempt`, `wait_s`, `recommended_alerts`, `interval_min`);
+  - categories (`blood_group`, `component`, `outcome`, `trigger`, `dispatch_allowed`);
+  - `exc_class`: the exception **class name only**.
+
+  Values must be plain scalars, so a nested dict can't smuggle anything in.
+
+  It never stores lab values, the PDF filename or path, chat text, the cycle brief, donor IDs or phones, or exception *messages* (Pydantic errors echo input values such as hemoglobin).
+- **Leak fixed along the way:** `agent_case_started` audit rows stored the uploaded **filename**, and CBC files are often named after the patient (`Ravi_Kumar_CBC.pdf`). The audit row and the in-memory job now record only the file size.
+- **Also:** CrewAI's anonymous telemetry is turned off (`CREWAI_DISABLE_TELEMETRY`, `OTEL_SDK_DISABLED`) before CrewAI is imported, which keeps the data-minimisation story consistent.
+- **Why an allow-list:** a deny-list fails open when someone adds a new field, and an allow-list fails closed. A test passes lab values, a filename, a donor ID, a phone number and an exception message, and checks that none of them is stored.
+
+#### D73. The monitor polls; it doesn't push
+- **Decision:** `GET /api/agents/overview` every **2 s while a run is open**, every **20 s when idle**, paused while the tab is hidden. This is the pattern the upload page already uses for case status.
+- **Why not SSE or WebSockets:**
+  - events arrive seconds apart, so 2 s polling looks live;
+  - events come from worker threads, so a push bus needs thread-to-event-loop plumbing (and Redis for more than one worker);
+  - the browser's `EventSource` can't send the `Authorization` header, so it would need a token in the URL, which the audit log would record;
+  - the audit middleware writes one row per connection.
+- **Trade-off:** every poll is an `/api/*` request, so it writes an audit row (about 180 an hour per open tab when idle, 1,800 an hour while a run is open). This is accepted as normal page traffic, the same as the upload page's polling. Excluding read-only polling from the audit log would be a separate decision.
+- **Upgrade path:** `sse_starlette` is already installed. One SSE endpoint with a short-lived stream ticket could be added later, keeping polling as the fallback.
+
+#### D74. A new `agents:monitor` permission, for Blood Bank Manager and Auditor
+- **Decision:** `agents:monitor` in [schema/permissions.py](../schema/permissions.py) (Admin implicit), guarding every route in [backend/routes/agents_monitor.py](../backend/routes/agents_monitor.py):
+  - `GET /api/agents/overview`
+  - `GET /api/agents/runs`
+  - `GET /api/agents/runs/{run_id}`
+  - `GET /api/agents/metrics`
+- **Not a chat topic:** the assistant doesn't answer monitoring questions.
+- **Hospital Staff** don't see case cards. They already watch their own run on the upload page, and a per-run ownership check isn't worth its tests.
+- **Why not reuse `autonomy:read`:** a separate permission lets the monitor be granted on its own later, and keeps the assistant's topic list unchanged. It holds the same roles today.
+- **Read-only:** the monitor links to the page where each action lives (Agent activity, Donor responses, Upload), so each action keeps its own permission check in one place.
+
+#### D75. Agent status is derived from events, never stored
+- **Decision:** each agent's status comes from its latest events ([backend/services/agent_monitor.py](../backend/services/agent_monitor.py), pure functions with an injectable clock):
+
+  | Status | Rule |
+  |---|---|
+  | working | a `step_started` with no matching `step_finished` |
+  | waiting | the latest event is an `llm_wait` from the last 70 s |
+  | degraded | the last finished step was `fell_back` or `skipped` |
+  | failed | the last finished step was `error` |
+  | idle | otherwise |
+
+- **Alerts:**
+  - **stuck:** working for more than 5 min (loop step) or 6 min (case step: 4 rate-limit retries × 65 s, plus the calls);
+  - **orphaned cycle:** an `AgentCycle` still `running` after 10 min. At startup, such cycles are marked `failed`;
+  - **scheduler missed a tick:** now is past the last heartbeat + the interval + 5 min. An interval of 0 shows "Scheduler off", not an alert;
+  - **repeated fallback:** the same agent fell back in 3 runs in a row.
+- **Needs attention** also lists degraded cycles, escalations to the regional bank, case runs whose donor alerts were only recommended, and donor alerts unanswered after 24 h.
+- **Not shown:** chat "yes" confirmations. They are per user and per session in Redis (D67, D70), so there is no global list to show.
+- **Why derived:** stored status drifts when a process dies. Deriving it from events plus the clock means a crash shows up as "stuck", not as a frozen "working".
+- **Restart:** at startup, every run with no `run_finished` event is closed as failed ("interrupted"), because a single API process means it died with the old process.
+- **Severity:** stuck, orphaned and missed-tick alerts are *High*, fallbacks and escalations *Moderate*, the rest *Info*. *Critical* stays reserved for clinical act-now states (D64).
+- **Kind:** the supply loop's Explanation agent is shown as an LLM agent (yellow AI border), because an LLM writes its brief. The other supply-loop agents are rule-based.
+- **LLM calls today** counts agent steps against `HEMOSMART_LLM_DAILY_LIMIT` (default 1,000, Groq's free-tier requests per day for the model; check the console if the plan changes). The assistant's LLM use is shown on its own card.
+- **Tune:** the thresholds are constants at the top of `agent_monitor.py`.
+
+---
+
 ## LLM call budget
 
 | Feature | LLM calls | Notes |
@@ -707,7 +837,7 @@ The agents collected platelets for gaps a week away (which expired before they w
 | Manual / CSV prediction | 0 | XGBoost only |
 | PDF upload (normal) | 1 | PDF text → JSON |
 | Explain button | 1 | + FAISS retrieval |
-| Chat | 0–1 | keyword routing first; LLM only for unclear intents (+1 if it explains) |
+| Chat | 0–1 per clause | keyword routing first; LLM only for unclear clauses (+1 for an explanation or a guideline question); 0 for any refused clause (D66) |
 | Autonomous cycle | 0–1 | optional brief; citations are retrieval-only |
 | **CrewAI full case** | **measured 16–30 requests, ~1 min** | budgeted ~12–17 successful calls (Extraction 4–5 · Prediction 2–3 · RAG 3 · Inventory 2–3 · Action 2–3 · Orchestrator 1); the rest are rate-limited retries (D42) |
 | MCP `explain_prediction` | 1 | other MCP tools: 0 |

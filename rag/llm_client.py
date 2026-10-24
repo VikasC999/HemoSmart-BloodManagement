@@ -33,11 +33,12 @@ def _increment(*_args, **_kwargs) -> None:
         _call_count += 1
 
 
-def llm_call_count() -> int:
+def llm_call_count(hook: bool = True) -> int:
     """Total LLM calls in this process so far; diff two readings to
-    measure a workflow."""
+    measure a workflow. hook=False skips importing LiteLLM (slow), for
+    callers that never go through it, like the supply loop."""
     global _litellm_hooked
-    if not _litellm_hooked:
+    if hook and not _litellm_hooked:
         try:
             import litellm
             litellm.success_callback.append(_increment)

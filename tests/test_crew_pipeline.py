@@ -44,3 +44,22 @@ def test_dispatch_guard_rejects_unverified_and_duplicates(monkeypatch):
 def test_crewai_cache_marker_is_neutralised():
     import crewai.llms.cache as cache
     assert "cache_breakpoint" not in cache.mark_cache_breakpoint({"role": "system", "content": "x"})
+
+
+def test_incomplete_report_without_confirmed_values_asks_for_them(monkeypatch):
+    # A plain CBC: no INR, no surgery type. Without the clinician's values
+    # the case stops with a clear message instead of guessing.
+    monkeypatch.setattr(crew, "report_fields", lambda path: {
+        "hemoglobin": 8.4, "platelets": 96000, "INR": None, "age": 47, "surgery_type": None, "blood_group": "A-"})
+    with pytest.raises(ValueError, match="INR, surgery_type"):
+        crew.run_full_pipeline("x.pdf")
+
+
+def test_case_route_rejects_invalid_confirmed_values():
+    from fastapi import HTTPException
+    from backend.routes.cases import _confirmed_values
+    with pytest.raises(HTTPException) as err:
+        _confirmed_values('{"hemoglobin": 99, "platelets": 96000, "INR": 1.1, "age": 47, "surgery_type": "General"}')
+    assert err.value.status_code == 422
+    assert _confirmed_values('{"hemoglobin": 8.4, "platelets": 96, "INR": 1.1, "age": 47, '
+                             '"surgery_type": "General", "blood_group": "A-"}')["platelets"] == 96000

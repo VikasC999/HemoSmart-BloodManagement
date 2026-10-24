@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from bloodbank.forecast import get_forecaster
 from bloodbank.outlook import compute_outlook
 from bloodbank.stock import utcnow
-from backend.dependencies.rbac import require_role
+from backend.dependencies.rbac import require_permission
 from backend.services.cache import cache_get, cache_set
 from db.database import get_db
 
@@ -15,7 +15,7 @@ router = APIRouter()
 FORECAST_CACHE_TTL_SECONDS = 6 * 60 * 60
 
 
-@router.get("/api/forecast", dependencies=[Depends(require_role("Blood Bank Manager", "Auditor"))])
+@router.get("/api/forecast", dependencies=[Depends(require_permission("forecast:read"))])
 def forecast(days: int = Query(7, ge=1, le=30), db: Session = Depends(get_db)):
     """Demand forecast per component plus the demand-supply gap per blood
     group x component: projected shortages and units projected to expire

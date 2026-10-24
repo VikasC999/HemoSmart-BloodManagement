@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy.orm import Session
 
-from backend.dependencies.rbac import get_current_user, require_role
+from backend.dependencies.rbac import get_current_user, require_permission
 from backend.services.auth import create_access_token, hash_password, verify_password
 from db.database import get_db
 from db.models import User
@@ -32,7 +32,7 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
-@router.post("/api/auth/register", response_model=UserOut, dependencies=[Depends(require_role("Admin"))])
+@router.post("/api/auth/register", response_model=UserOut, dependencies=[Depends(require_permission("users:manage"))])
 def register(payload: RegisterRequest, request: Request, db: Session = Depends(get_db)):
     # Admin-only: this endpoint assigns roles, including Admin itself,
     # so open self-registration would let anyone grant themselves full

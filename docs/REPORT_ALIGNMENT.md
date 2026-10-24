@@ -91,7 +91,8 @@ The Phase I report describes one system in which "specialized AI agents … coor
 | FR-06 | Sufficient / Low / Critical colour status; alert below par | Yes | ✅ | D23 |
 | FR-07 *(numbered "3.5.6" twice — fix)* | — | — | ✏️ | The RBAC section is labelled 3.5.6 but should be 3.5.7, and FR-07 is skipped (FR-06 → FR-08). Renumber. |
 | FR-08 | Roles: Health Professional, Lab Technician, Blood Bank Officer, Hospital Administrator, **Donor** | Admin, Blood Bank Manager, Hospital Staff, Donor Coordinator, Auditor. No donor login. | ✏️ | Use the implemented roles; the mapping is below. |
-| FR-08 | Restrict by role; deny with an error | Server-side RBAC on every route (403) plus role dashboards | ✅ | Tests: [tests/test_auth_rbac.py](../tests/test_auth_rbac.py) |
+| FR-08 | Restrict by role; deny with an error | Server-side RBAC on every route (403) from one shared permission matrix, plus role dashboards (D65) | ✅ | Tests: [tests/test_auth_rbac.py](../tests/test_auth_rbac.py) |
+| FR-08 | (assistant) | The assistant is available to every role and answers only what that role's pages allow. Each question is checked in code before any data is read or the LLM is called; a refusal says "Not authorised" and lists what the role can ask. Refusals are audit-logged (D66–D68). | ✅ | "The AI assistant is available to all roles and is restricted by the same permission matrix as the dashboard; access is decided in code, never by the language model." Tests: [tests/test_chat_rbac.py](../tests/test_chat_rbac.py) |
 | FR-08 | **Terminate sessions after 15 min of inactivity** | JWT valid for 12 h; no idle timeout (kept deliberately for testing, D60) | ✏️ | Drop it or list it as future work. |
 | — | Secure logout | Sign Out clears the token (stateless JWT, no server-side revocation) | ✅ | |
 
@@ -144,7 +145,7 @@ Drop OAuth 2.0 (there's no third-party login).
 |---|---|---|
 | 4.1 | The system is called "**HemoAssist**" | Typo: HemoSmart. |
 | 4.1 step 5 | "The **XGBoost model predicts blood demand**" | Wrong. XGBoost predicts **patient transfusion need**; **Prophet** forecasts demand. |
-| 4.1 steps 4, 7 | "LangChain agent decides DB/RAG/forecast"; "**Mistral 7B** synthesizes" | The chat agent routes by intent (keywords first, LLM only when unclear); the LLM is gpt-oss-20b. Redraw Fig 4.1 with the two agent layers (§ 1). |
+| 4.1 steps 4, 7 | "LangChain agent decides DB/RAG/forecast"; "**Mistral 7B** synthesizes" | The chat agent routes by intent (keywords first, LLM only when unclear); the LLM is gpt-oss-20b. Every routed intent passes a role permission check first (D66). Redraw Fig 4.1 with the two agent layers (§ 1). |
 | 4.3.3 | "XGBoost **and Random Forest**"; estimates **unit quantity** | No RF; units from protocol rules (D11). |
 | 4.3.4 | "**7, 14 and 30-day**" forecasts | API supports 1–30 days; the Planner uses 7. ✅ |
 | 4.3.4 | "Adjusts for seasonal disease patterns **and surgery schedules**" | Seasonality yes (dengue), surgery schedules no. |
@@ -155,11 +156,13 @@ Drop OAuth 2.0 (there's no third-party login).
 | 4.3.6 | Eligibility "interval **and donation type**" | ✅ D47 (whole blood 90 d; apheresis 28 d). |
 | 4.3.7 | Explainability | ✅ plus the protocol-vs-WHO wording (D52). |
 | 4.3.8 | Orchestrator delegates to "**Prediction**, Forecast, Inventory, Donor, Explanation" agents | The supply loop has Inventory, Forecast, Planner, Donor, Logistics, Explanation; Prediction lives in the case pipeline. Describe both (§ 1). |
+| 4.3.8 | Agent monitoring (new) | ✅ Add: a live **Agent monitor** shows each agent's status (working / waiting / degraded / failed / idle), time per step, a scheduler heartbeat, stuck-step and orphaned-cycle detection, and a "Needs attention" queue. Every step reports an allow-listed, patient-data-free event (D71–D75). |
+| 4.3.8 | Failure recovery (new evidence) | ✅ Shown live: a rate-limited CrewAI agent shows "Waiting · retry in N s", then continues; a failed supply-loop step shows "Failed", the cycle "degraded", and the dependent steps "skipped". |
 | 4.3.8 | "**Without human intervention**" | True for the hourly loop. The patient pipeline only *recommends* dispatch unless the user is a manager (`dispatch_allowed`). Mention the human-in-the-loop for clinical decisions. That's a plus. |
 | 4.3.9 | MCP "eliminates custom connectors", "plug-and-play" | Overclaim. Use the adapter wording (§ 2, 1.5 MCP row). |
 | 4.3.10 | AES-256 / TLS 1.3 / "full DPDP compliance" | § 5. |
 | 4.4 | DFDs | Redraw from the implemented flow (both layers + redistribution). |
-| 4.5 #2 | "**Parallel** execution" of agents | Agents run sequentially on a blackboard (each reads the previous one's output). Say "independent, sequentially coordinated". |
+| 4.5 #2 | "**Parallel** execution" of agents | Agents run sequentially on a blackboard (each reads the previous one's output). Say "independent, sequentially coordinated". The Agent monitor's run timeline makes the sequential order visible. |
 | 4.5 #6 | "**Continuous learning** improves prediction and forecasting" | Only the donor bandit learns online. "The donor-selection model learns continuously from every response; predictive models are retrained offline." |
 
 ---

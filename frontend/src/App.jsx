@@ -1,9 +1,33 @@
-import { useCallback, useEffect, useState } from "react";
+import { Component, useCallback, useEffect, useState } from "react";
 import { auth } from "./api";
 import AppShell, { PageHeader } from "./components/layout/AppShell";
 import LoginScreen from "./components/LoginScreen";
 import { ErrorState, Skeleton } from "./components/ui";
 import { NAVIGATION, sectionsFor } from "./navigation";
+
+// One page crashing must not blank the whole app: show where it failed,
+// keep the navigation usable. Keyed by section, so moving away resets it.
+class SectionBoundary extends Component {
+  state = { error: null };
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error) {
+    console.error("Section crashed:", error);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <ErrorState what="This page hit an error and couldn't be shown." error={this.state.error}
+                    stillValid="The rest of HemoSmart still works; pick another page or reload." />
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // The current section lives in the URL hash (#inventory), so a refresh
 // or the Back button keeps you where you were -- without a router.
@@ -80,10 +104,10 @@ export default function App() {
   } else {
     content = (
       <div className={`page layout-${active.layout}`} key={active.id}>
-        {active.ownHeader ? active.render(active.props) : (
+        {active.ownHeader ? <SectionBoundary>{active.render(active.props)}</SectionBoundary> : (
           <>
             <PageHeader title={active.title} description={active.description} />
-            <div className="page-body">{active.render(active.props)}</div>
+            <div className="page-body"><SectionBoundary>{active.render(active.props)}</SectionBoundary></div>
           </>
         )}
       </div>

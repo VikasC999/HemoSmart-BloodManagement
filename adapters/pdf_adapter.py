@@ -87,15 +87,21 @@ class PDFReportAdapter(BaseAdapter):
 
         return json.loads(cleaned)
 
-    def parse(self, raw_input: str) -> List[PatientRecord]:
-        """raw_input: path to the uploaded PDF file."""
+    def extract_fields(self, pdf_path: str) -> dict:
+        """
+        Whatever the report states, field by field; anything absent or
+        out of physiological range is None. A real CBC usually has no INR
+        (a coagulation test) and never a surgery type, so the dashboard's
+        confirm step (FR-03) shows these values and asks the clinician to
+        fill the gaps -- rather than rejecting the whole report.
+        """
         if self.llm_client is None:
             raise RuntimeError(
                 "PDFReportAdapter requires an llm_client (Ollama/Groq) "
                 "to convert extracted text into structured fields."
             )
 
-        report_text = self.extract_text(raw_input)
+        report_text = self.extract_text(pdf_path)
         prompt = EXTRACTION_PROMPT.format(report_text=report_text)
         response_text = self.llm_client.generate(prompt)
 
@@ -106,6 +112,19 @@ class PDFReportAdapter(BaseAdapter):
                 f"LLM did not return valid JSON: {exc}. "
                 f"Raw response: {response_text[:200]}"
             )
+        return {
+            "hemoglobin": _in_range(fields.get("hemoglobin"), 2.0, 22.0, float),
+            "platelets": _platelets(fields.get("platelets")),
+            "INR": _in_range(fields.get("INR"), 0.5, 10.0, float),
+            "age": _in_range(fields.get("age"), 0, 120, int),
+            "surgery_type": _surgery_type(fields.get("surgery_type")),
+            "blood_group": _blood_group(fields.get("blood_group")),
+        }
+
+    def parse(self, raw_input: str) -> List[PatientRecord]:
+        """raw_input: path to the uploaded PDF file. Strict: every model
+        input must be in the report (one-shot API, MCP, CrewAI)."""
+        fields = self.extract_fields(raw_input)
 
         missing = [k for k in
                    ("hemoglobin", "platelets", "INR", "age", "surgery_type")
@@ -126,3 +145,36 @@ class PDFReportAdapter(BaseAdapter):
             source_format=self.source_format,
         )
         return [record]
+
+
+def _number(v):
+    try:
+        return float(str(v).replace(",", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _in_range(v, low, high, cast):
+    n = _number(v)
+    return cast(n) if n is not None and low <= n <= high else None
+
+
+def _platelets(v):
+    n = _number(v)
+    if n is not None and 0 < n < 1000:  # reported in x10^3/uL (D6)
+        n *= 1000
+    return int(round(n)) if n is not None and 1000 <= n <= 1_000_000 else None
+
+
+def _surgery_type(v):
+    from schema.patient_schema import VALID_SURGERY_TYPES
+    text = str(v or "").lower()
+    return next((t for t in VALID_SURGERY_TYPES if t.lower() in text), None)
+
+
+def _blood_group(v):
+    from bloodbank.catalog import BLOOD_GROUPS
+    if not v:
+        return None
+    cleaned = str(v).strip().upper().replace("POS", "+").replace("NEG", "-").replace(" ", "")
+    return cleaned if cleaned in BLOOD_GROUPS else None
