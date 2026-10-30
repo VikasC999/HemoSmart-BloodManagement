@@ -314,20 +314,20 @@ def latest_autonomy_cycle(db=None):
 
 
 def recent_audit_entries(limit: int = 100, action: str = None, db=None) -> list:
-    from db.models import AuditLog
+    from db.models import AuditLog, User
 
     with _session(db) as s:
-        q = s.query(AuditLog)
+        q = s.query(AuditLog, User.email).outerjoin(User, User.id == AuditLog.user_id)
         if action:
             q = q.filter(AuditLog.action == action)
         rows = q.order_by(AuditLog.timestamp.desc()).limit(limit).all()
         return [
             {
-                "id": r.id, "user_id": r.user_id, "action": r.action, "resource_type": r.resource_type,
-                "resource_id": r.resource_id, "ip_address": r.ip_address,
+                "id": r.id, "user_id": r.user_id, "user_email": email, "action": r.action,
+                "resource_type": r.resource_type, "resource_id": r.resource_id, "ip_address": r.ip_address,
                 "timestamp": r.timestamp.isoformat(), "details": r.details,
             }
-            for r in rows
+            for r, email in rows
         ]
 
 

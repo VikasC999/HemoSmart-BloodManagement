@@ -123,5 +123,6 @@ INTENT_CAPABILITY = {
     "audit": "audit:read",
     "guidelines": "guidelines:read",
     "help": "chat:use",
+    "smalltalk": "chat:use",
     "unclear": "chat:use",
 }

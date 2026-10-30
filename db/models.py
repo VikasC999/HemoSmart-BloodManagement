@@ -52,6 +52,8 @@ class Donor(Base):
     last_donation_date = Column(Date, nullable=False)
     # "whole_blood" | "apheresis"; None (older rows) is treated as whole blood
     last_donation_type = Column(String, nullable=True)
+    # "M" | "F"; sets the whole-blood interval (NBTC: 90 / 120 days). None -> 90.
+    sex = Column(String, nullable=True)
     alerts_sent = Column(Integer, nullable=False, default=0)
     alerts_responded = Column(Integer, nullable=False, default=0)
     # SIMULATION ONLY: each synthetic donor's hidden true probability of

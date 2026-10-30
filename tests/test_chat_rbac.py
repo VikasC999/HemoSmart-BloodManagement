@@ -283,6 +283,40 @@ def test_explanation_falls_back_to_protocol_checks(users, tools, monkeypatch):
     assert body["degraded"] is True and "Rule-based protocol checks" in body["reply"]
 
 
+@pytest.mark.parametrize("message, intent", [
+    ("why should platelets be given below 10000?", "guidelines"),
+    ("when is plasma indicated, and why?", "guidelines"),
+    ("why?", "explain"),
+    ("why does the prediction give platelets below 10000?", "explain"),
+])
+def test_general_clinical_why_is_a_guideline_question(message, intent):
+    assert chat_agent.keyword_intent(message) == intent
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_small_talk_is_answered_for_every_role_without_tools(users, tools, role):
+    for message in ("hi", "thanks!", "who are you?"):
+        part = ask(users[role], message)["parts"][0]
+        assert part["intent"] == "smalltalk" and part["allowed"]
+    assert tools["calls"] == [] and tools["llm"].calls == 0
+
+
+def test_forecast_follow_ups_keep_the_horizon(users, tools, monkeypatch):
+    horizons = []
+    monkeypatch.setattr(chat_agent, "get_supply_outlook", lambda days: horizons.append(days) or {
+        "component_forecast": {"PRBC": [{"date": "2026-11-04", "units": 3}] * days},
+        "shortages": [], "wastage_risks": []})
+    first = ask(users["Blood Bank Manager"], "forecast for the next 4 days")
+    split = ask(users["Blood Bank Manager"], "give me a split for each day", first["session_id"])
+    assert horizons == [4, 4] and split["reply"].count("Wed 4 Nov") == 4
+    assert "Totals for the next 4 days" in split["follow_ups"]
+
+
+def test_follow_up_chips_only_offer_what_the_role_may_ask(users, tools):
+    body = ask(users["Hospital Staff"], PROMPTS["inventory"])
+    assert body["follow_ups"] and not any("shortage" in q.lower() or "donor" in q.lower() for q in body["follow_ups"])
+
+
 def test_unclear_question_uses_the_llm_label_from_a_closed_set(users, tools):
     tools["llm"].answer = "audit"
     body = ask(users["Hospital Staff"], "who has been looking at things lately")

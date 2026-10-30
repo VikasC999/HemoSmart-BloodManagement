@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Activity, ArrowLeft, ArrowRight, Circle, CircleAlert, CircleCheck, Database, Hourglass, Play, RotateCw, Sparkles,
-  TriangleAlert,
+  Activity, ArrowLeft, ArrowRight, BookOpen, Building2, CalendarRange, Circle, CircleAlert, CircleCheck, Clock,
+  Database, Droplets, FileSearch, HeartHandshake, Hourglass, MessageCircle, Play, RotateCw, Send, Stethoscope,
+  TrendingUp, TriangleAlert, Truck, Workflow,
 } from "lucide-react";
 import { api } from "../api";
 import AgentRunTimeline from "./AgentRunTimeline";
@@ -83,9 +84,17 @@ function roomCounts(layer, openRun) {
 // ---------------------------------------------------------------------
 // Office floor
 // ---------------------------------------------------------------------
+// One recognisable icon per agent; LLM agents are marked by the gold ring (see legend).
+const DESK_ICON = {
+  Donor: HeartHandshake, Inventory: Droplets, Forecast: TrendingUp, Planner: CalendarRange, Logistics: Truck,
+  Explanation: BookOpen, Extraction: FileSearch, Prediction: Stethoscope, RAG: BookOpen, Action: Send,
+  Orchestrator: Workflow, Scheduler: Clock, "Mock hospital": Building2, Assistant: MessageCircle,
+};
+
 function Desk({ name, status, note, selected, onClick, kind }) {
   const s = STATUS[status] || STATUS.idle;
   const Icon = s.icon;
+  const AgentIcon = DESK_ICON[name] || Activity;
   return (
     <li>
       <button className={`desk s-${status} ${selected ? "selected" : ""} ${kind === "llm" ? "llm" : ""}`}
@@ -93,7 +102,7 @@ function Desk({ name, status, note, selected, onClick, kind }) {
               aria-label={`${name} agent: ${s.label}${note ? `, ${note}` : ""}`}>
         <span className="desk-top" aria-hidden="true"><span className="desk-screen" /></span>
         <span className="desk-avatar" aria-hidden="true">
-          {kind === "llm" ? <Sparkles size={13} /> : name.slice(0, 2)}
+          <AgentIcon size={14} />
         </span>
         <span className="desk-name">{name}</span>
         <span className="desk-state"><Icon size={12} aria-hidden="true" />{s.label}</span>
@@ -212,7 +221,7 @@ function Floor({ data, wastage, selected, onSelect }) {
 
       <Room id="case" tone="ai" title="Case pipeline" count={cases.cards.length} roomRef={rooms.case_pipeline}
             active={active.case_pipeline} counts={roomCounts(cases, openRun("case_pipeline"))}
-            stats={[["Answers verified · 7 d", pct(steps.verified, steps.total)],
+            stats={[["Verified · 7 d", pct(steps.verified, steps.total)],
               ["LLM calls today", `${calls} / ${limit.toLocaleString()}`]]}>
         {agentDesks(cases)}
       </Room>

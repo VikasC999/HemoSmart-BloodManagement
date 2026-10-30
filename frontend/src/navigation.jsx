@@ -3,13 +3,12 @@
 // did; only the page they appear on changed. The backend still enforces
 // access on every call -- this decides what each role is shown.
 import {
-  Activity, Bot, ClipboardList, Droplets, FileUp, HeartHandshake, LayoutDashboard, MessageSquareText, Send,
+  Activity, Bot, ClipboardList, Droplets, FileUp, HeartHandshake, LayoutDashboard, Send,
   ShieldCheck, Stethoscope, Users,
 } from "lucide-react";
 import AgentMonitor from "./components/AgentMonitor";
 import AuditLogCard from "./components/AuditLogCard";
 import AutonomyCard from "./components/AutonomyCard";
-import ChatCard from "./components/ChatCard";
 import Overview from "./components/dashboard/Overview";
 import DonorAlertCard from "./components/DonorAlertCard";
 import DonorManagementCard from "./components/DonorManagementCard";
@@ -45,12 +44,6 @@ const SECTIONS = {
     title: "CBC report upload",
     description: "Upload a CBC report or a batch export. You check the extracted values before anything is predicted.",
     render: () => <UploadCard />,
-  },
-  assistant: {
-    label: "AI assistant", icon: MessageSquareText, layout: "focus",
-    title: "AI assistant",
-    description: "Ask in plain language about the data your role can see.",
-    render: () => <ChatCard />,
   },
   stock: {
     label: "Inventory", icon: Droplets, layout: "stack",
@@ -128,7 +121,6 @@ export const NAVIGATION = {
       item("predict", { canAlertDonors: true }),
       item("donorOutreach"),
       item("patients"),
-      item("assistant"),
     ],
   }],
   "Hospital Staff": [{
@@ -136,16 +128,15 @@ export const NAVIGATION = {
       item("predict", { canAlertDonors: false }),
       item("upload"),
       item("patients"),
-      item("assistant"),
     ],
   }],
   "Donor Coordinator": [{
-    items: [item("donorResponses"), item("donorOutreach"), item("donors"), item("stock"), item("assistant")],
+    items: [item("donorResponses"), item("donorOutreach"), item("donors"), item("stock")],
   }],
   "Auditor": [{
     items: [
       item("agents", { canRun: false }), item("agentMonitor", { canRun: false, links: MONITOR_LINKS.Auditor }),
-      item("audit"), item("patients"), item("assistant"),
+      item("audit"), item("patients"),
     ],
   }],
   "Admin": [
@@ -153,7 +144,6 @@ export const NAVIGATION = {
     { label: "Clinical", items: [item("predict", { canAlertDonors: true }), item("upload"), item("patients")] },
     { label: "Donors", items: [item("donorResponses"), item("donorOutreach"), item("donors")] },
     { label: "Oversight", items: [item("agentMonitor", { canRun: true, links: MONITOR_LINKS.Admin }), item("audit")] },
-    { label: "Assistant", items: [item("assistant")] },
   ],
 };
 

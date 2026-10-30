@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from bloodbank.catalog import BLOOD_GROUPS, COMPONENTS, SHELF_LIFE_DAYS
+from bloodbank.catalog import BLOOD_GROUPS, COMPONENTS, PLANNING_DEMAND_QUANTILE, SHELF_LIFE_DAYS
 from bloodbank.forecast import get_forecaster, routine_inflow
 from bloodbank.projection import project
 from bloodbank.stock import available_units
@@ -29,7 +29,8 @@ def compute_outlook(db: Session, now: datetime, days: int = DEFAULT_HORIZON_DAYS
     totals = totals or forecaster.component_forecast(start, days)
     by_key = forecaster.group_forecast(start, days, totals)
     units = available_units(db, now)
-    projections = project(units, by_key, now, inflow=routine_inflow(), shelf_life=SHELF_LIFE_DAYS)
+    projections = project(units, by_key, now, inflow=routine_inflow(), shelf_life=SHELF_LIFE_DAYS,
+                          demand_quantile=PLANNING_DEMAND_QUANTILE)
 
     rows = []
     for group in BLOOD_GROUPS:

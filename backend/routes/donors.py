@@ -23,6 +23,7 @@ class DonorOut(BaseModel):
     name: str
     phone: str  # masked to the last 4 digits (NFR-03)
     blood_type: str
+    sex: Optional[str] = None  # "M" | "F"; sets the whole-blood interval (NBTC: 90 / 120 days)
     last_donation_date: str
     alerts_sent: int
     alerts_responded: int

@@ -1,0 +1,101 @@
+{
+  "meta": {
+    "generated_at": "2026-10-30 22:35",
+    "nhanes_cycle": "2021-2023 (L)"
+  },
+  "hemoglobin_preop": {
+    "M": {
+      "synthetic": {
+        "n": 2539,
+        "mean": 14.0,
+        "sd": 1.62,
+        "p5": 11.33,
+        "p50": 13.99,
+        "p95": 16.66,
+        "below_cutoff": 0.262
+      },
+      "nhanes": {
+        "n": 2703,
+        "mean": 14.84,
+        "sd": 1.22,
+        "p5": 12.8,
+        "p50": 14.9,
+        "p95": 16.6,
+        "below_cutoff": 0.056
+      },
+      "ks": 0.315
+    },
+    "F": {
+      "synthetic": {
+        "n": 2461,
+        "mean": 12.32,
+        "sd": 1.56,
+        "p5": 9.77,
+        "p50": 12.35,
+        "p95": 14.91,
+        "below_cutoff": 0.418
+      },
+      "nhanes": {
+        "n": 3301,
+        "mean": 13.18,
+        "sd": 1.24,
+        "p5": 11.0,
+        "p50": 13.3,
+        "p95": 15.0,
+        "below_cutoff": 0.132
+      },
+      "ks": 0.307
+    }
+  },
+  "platelets": {
+    "synthetic": {
+      "n": 5000,
+      "mean": 234765.57,
+      "sd": 84502.47,
+      "p5": 73487.0,
+      "p50": 241012.0,
+      "p95": 362908.0,
+      "below_cutoff": 0.153
+    },
+    "nhanes": {
+      "n": 6004,
+      "mean": 257057.6,
+      "sd": 66668.82,
+      "p5": 165000.0,
+      "p50": 250000.0,
+      "p95": 375301.02,
+      "below_cutoff": 0.025
+    },
+    "ks": 0.139
+  },
+  "blood_groups": {
+    "O": {
+      "hemosmart": 38.0,
+      "agrawal_2014": 37.12,
+      "diff": 0.88
+    },
+    "B": {
+      "hemosmart": 32.5,
+      "agrawal_2014": 32.26,
+      "diff": 0.24
+    },
+    "A": {
+      "hemosmart": 22.0,
+      "agrawal_2014": 22.88,
+      "diff": -0.88
+    },
+    "AB": {
+      "hemosmart": 7.5,
+      "agrawal_2014": 7.74,
+      "diff": -0.24
+    },
+    "Rh-": {
+      "hemosmart": 5.0,
+      "agrawal_2014": 5.39,
+      "diff": -0.39
+    }
+  },
+  "synthetic_preop_anaemia": 0.339,
+  "synthetic_sex_share_female": 0.492,
+  "nhanes_n": 6004
+}

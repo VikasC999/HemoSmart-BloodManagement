@@ -38,6 +38,18 @@ def expected_demand(dates) -> dict:
     return {c: base * weekday_factor * component_factor[c] for c, base in BASE_DAILY_UNITS.items()}
 
 
+# Routine donations fall in the summer holidays (college donors away). A Mumbai
+# hospital reported 30-40% fewer donors in Apr-May 2016 (news report, Medical
+# Dialogues); a moderate 20% dip is an assumption, not a measured rate.
+# {month: share of normal routine supply}; set to {} to switch it off.
+SUPPLY_SEASONAL_FACTOR = {4: 0.8, 5: 0.8}
+
+
+def supply_factor(dates) -> np.ndarray:
+    """Share of normal routine supply arriving on each date."""
+    return np.array([SUPPLY_SEASONAL_FACTOR.get(m, 1.0) for m in pd.DatetimeIndex(dates).month])
+
+
 def sample_demand(dates, rng: np.random.Generator) -> dict:
     """{(group, component): array of units demanded per day}. Draw order
     (component, then group) is fixed, so a given rng is reproducible."""

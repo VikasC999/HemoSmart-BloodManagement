@@ -14,6 +14,7 @@ router = APIRouter()
 class AuditLogOut(BaseModel):
     id: int
     user_id: Optional[int]
+    user_email: Optional[str] = None
     action: str
     resource_type: Optional[str]
     resource_id: Optional[str]

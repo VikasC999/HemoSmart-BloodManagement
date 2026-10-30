@@ -32,6 +32,9 @@ const SEVERITY_ORDER = { critical: 0, high: 1, moderate: 2 };
 
 // What needs attention, worst first. Every item says what is wrong and
 // where to act (HemoSmart §12: icon + label + sentence).
+// Worst items first; the rest stay one click away so the overview fits a screen.
+const ATTENTION_PREVIEW = 6;
+
 function attentionItems(inventory, outlook) {
   const items = [];
   for (const s of inventory?.low_stock || []) {
@@ -114,6 +117,7 @@ export default function Overview({ canRun = false }) {
   const alerts = useLoad(loadAlerts);
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   const runCycle = async () => {
     setRunning(true);
@@ -182,7 +186,7 @@ export default function Overview({ canRun = false }) {
               <StatusCell label="Projected shortages · 7 days" loading={!out} value={out?.shortages.length}
                           unit={out?.shortages.length === 1 ? "group" : "groups"}
                           context={out && (out.shortages.length
-                            ? `${out.shortages.reduce((s, x) => s + x.projected_shortage, 0)} units short in total`
+                            ? ((n) => `${n} ${n === 1 ? "unit" : "units"} short in total`)(out.shortages.reduce((s, x) => s + x.projected_shortage, 0))
                             : "None projected")}>
                 {out && out.shortages.length > 0 && <SeverityBadge level="high" className="status-badge" />}
               </StatusCell>
@@ -223,7 +227,7 @@ export default function Overview({ canRun = false }) {
                 </p>
               )}
               <ul className="attention-list">
-                {items.map((it) => (
+                {(showAll ? items : items.slice(0, ATTENTION_PREVIEW)).map((it) => (
                   <li key={it.key} className={`attention-item level-${it.level}`}>
                     <SeverityBadge level={it.level} className="attention-badge" />
                     <p><strong className="attention-subject">{it.subject}</strong> {it.text}</p>
@@ -234,6 +238,11 @@ export default function Overview({ canRun = false }) {
                   </li>
                 ))}
               </ul>
+              {items.length > ATTENTION_PREVIEW && (
+                <button className="ghost attention-more" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
+                  {showAll ? "Show fewer" : `Show all ${items.length}`}
+                </button>
+              )}
               </>
             )}
           </section>

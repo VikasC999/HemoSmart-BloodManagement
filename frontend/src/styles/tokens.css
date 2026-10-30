@@ -54,7 +54,7 @@
   --color-info-chart: #5E7184;
 
   /* Surfaces */
-  --color-background: #FFFFFF;
+  --color-background: #FAF9F6;
   --color-surface: #FFFFFF;
   --color-raised: #FFFFFF;
   --color-beige: #F3F2EF;
@@ -78,8 +78,8 @@
   --radius-sm: 6px;
   --radius-md: 9px;
   --radius-lg: 12px;
-  --shadow-card: none;
-  --shadow-pop: 0 8px 28px rgba(41, 38, 33, 0.12);
+  --shadow-card: 0 1px 2px rgba(41, 38, 33, 0.04);
+  --shadow-pop: 0 12px 32px rgba(41, 38, 33, 0.14);
   --color-scrim: rgba(41, 38, 33, 0.42);
   --shadow-control: 0 1px 2px rgba(41, 38, 33, 0.08);
 

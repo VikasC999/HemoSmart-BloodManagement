@@ -54,7 +54,7 @@ export default function DonorManagementCard() {
         reply history. Phone numbers are never shown here.
       </p>
       {error && <ErrorState what="Couldn't load donors." error={error} onRetry={() => load()} />}
-      {loading && !donors && <SkeletonTable rows={8} cols={5} label="Loading donors" />}
+      {loading && !donors && <SkeletonTable rows={8} cols={6} label="Loading donors" />}
       {donors && donors.length === 0 && (
         bloodType ? (
           <EmptyState icon={HeartHandshake} title={`No ${bloodType} donors`}
@@ -68,7 +68,7 @@ export default function DonorManagementCard() {
           <table>
             <thead>
               <tr>
-                <th>Donor</th><th>Name</th><th>Group</th><th>Last donation</th>
+                <th>Donor</th><th>Name</th><th>Group</th><th>Sex</th><th>Last donation</th>
                 <th className="num">Replies</th><th className="num">Learned reply rate</th>
               </tr>
             </thead>
@@ -78,6 +78,9 @@ export default function DonorManagementCard() {
                   <td className="nowrap">{d.donor_id}</td>
                   <td>{d.name}</td>
                   <td>{d.blood_type}</td>
+                  <td title="Donation gap: 90 days for men, 120 for women (NBTC)">
+                    {d.sex === "F" ? "Female" : d.sex === "M" ? "Male" : <span className="muted" aria-label="Not recorded">—</span>}
+                  </td>
                   <td className="nowrap tabular">{d.last_donation_date}</td>
                   <td className="num">{d.alerts_responded} of {d.alerts_sent}</td>
                   <td className="num">
