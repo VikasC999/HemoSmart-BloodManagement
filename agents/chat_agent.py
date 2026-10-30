@@ -33,11 +33,12 @@ Run (as Admin, the CLI has no login):
 """
 
 import sys, os, re
+from datetime import date
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from schema.patient_schema import PatientRecord
 from schema.permissions import (
-    INTENT_CAPABILITY, LABELS, chat_topics_for, denial, is_permitted, suggestions_for,
+    INTENT_CAPABILITY, LABELS, SUGGESTIONS, chat_topics_for, denial, is_permitted, suggestions_for,
 )
 from agents.tools import (
     predict_transfusion,
@@ -59,6 +60,38 @@ VALID_BLOOD_TYPES = set(BLOOD_GROUPS)
 _COMPONENT_WORDS = {"platelet": "Platelets", "plasma": "FFP", "ffp": "FFP", "red cell": "PRBC", "prbc": "PRBC"}
 _FORECAST_WORDS = ("forecast", "demand", "next week", "shortage", "outlook", "waste", "wastage", "expire",
                    "how much blood will")
+# Natural-conversation turns: greetings, thanks, goodbyes, "who are you".
+_SMALLTALK = re.compile(
+    r"\s*(hi|hello|hey|hiya|yo|good (morning|afternoon|evening)|thanks?( you)?( so much)?|thank you|thx|ty|cheers"
+    r"|great|perfect|nice|cool|awesome|got it|bye|goodbye|see you|who are you|what('?s| is) your name"
+    r"|how are you)\b[\s!.,?a-z]*",
+    re.I,
+)
+# A follow-up asking for the forecast day by day ("split for each day").
+_DAILY = re.compile(r"\b(each|per|every) day\b|\bdaily\b|day[- ]by[- ]day|\bbreak ?(it )?down\b|\bsplit\b", re.I)
+# "and O+?", "what about platelets?" -- the same question about something else.
+_SAME_AGAIN = re.compile(r"\s*(and|what about|how about|same for|now)\b", re.I)
+_SHORT = {"Platelets": "PLT"}  # daily rows must fit the chat panel; PLT is the standard abbreviation
+_WORD_NUMBERS = {w: i for i, w in enumerate(
+    "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen".split())}
+
+
+def _days_in(text: str):
+    """A forecast horizon named in the text, in days, or None."""
+    lowered = text.lower()
+    m = re.search(r"(\d+|" + "|".join(_WORD_NUMBERS) + r")\s*-?\s*(day|week)s?\b", lowered)
+    if m:
+        n = int(m.group(1)) if m.group(1).isdigit() else _WORD_NUMBERS[m.group(1)]
+        return n * 7 if m.group(2) == "week" else n
+    if "tomorrow" in lowered:
+        return 1
+    if "fortnight" in lowered:
+        return 14
+    if re.search(r"\b(next|this|a) week\b", lowered):
+        return 7
+    return None
+
+
 _LAB_VALUES = re.compile(r"(?:h(?:ae|e)moglobin|hb)\s*[:=]?\s*\d", re.I)
 _YES = re.compile(r"(yes|y|yeah|yep|confirm|send( it)?|go ahead|ok(ay)?)[.!]?", re.I)
 _NO = re.compile(r"(no|n|nope|cancel|stop|don'?t)[.!]?", re.I)
@@ -69,6 +102,21 @@ _INJECTION = re.compile(
     r"|\bas (an? |the )?(admin|administrator|auditor)\b",
     re.I,
 )
+
+FOLLOW_UPS = {
+    "inventory": [("forecast:read", "Any shortages in the next 7 days?"), ("donors:read", "Any pending donor responses?")],
+    "forecast": [("forecast:read", "Split it by day"), ("forecast:read", "What about the next 14 days?"),
+                 ("autonomy:read", "What did the last agent cycle do?")],
+    "predict": [("explain:run", "Why?"), ("patients:read", "Show the most recent patients")],
+    "explain": [("guidelines:read", "What does WHO say about platelet transfusion thresholds?")],
+    "patients": [("predict:run", "Hemoglobin 7.2, platelets 65000, INR 1.9, age 58, Emergency surgery")],
+    "donors": [("donors:read", "Any pending donor responses?"), ("inventory:read", "How much O- blood do we have?")],
+    "donor_responses": [("donor_alerts:send", "Alert O- donors"), ("inventory:read", "How much O- blood do we have?")],
+    "action": [("donors:read", "Any pending donor responses?")],
+    "autonomy": [("forecast:read", "Any shortages in the next 7 days?"), ("audit:read", "Show refused chat requests")],
+    "audit": [("audit:read", "Show refused chat requests"), ("autonomy:read", "What did the last agent cycle do?")],
+    "guidelines": [("guidelines:read", "When is plasma indicated?")],
+}
 
 INTENTS = ("predict", "explain", "inventory", "forecast", "action", "donors", "donor_responses",
            "patients", "autonomy", "audit", "guidelines", "help")
@@ -81,6 +129,15 @@ def _find_blood_group(message: str):
         if re.search(rf"(?<![A-Z]){re.escape(bt)}", upper):
             return bt
     return None
+
+
+def _day_label(iso):
+    """'2026-11-04' -> 'Wed 4 Nov', or None if it isn't a date."""
+    try:
+        d = date.fromisoformat(str(iso)[:10])
+    except (TypeError, ValueError):
+        return None
+    return f"{d:%a} {d.day} {d:%b}"
 
 
 def _find_component(message: str):
@@ -120,9 +177,17 @@ def keyword_intent(text: str):
     if re.search(r"what can (i|you)|\bhelp\b|capabilit|what do you do", lowered):
         return "help"
     if re.search(r"\b(why|explain|reason)", lowered):
+        # "why?" after a prediction explains it; a general clinical "why"
+        # ("why are platelets given below 10000?") is a guideline question.
+        if (re.search(r"platelet|h(a)?emoglobin|\bffp\b|plasma|\bprbc\b|red cell|transfus", lowered)
+                and re.search(r"\b(should|when|below|above|under|over|given|indicated)\b|\d", lowered)
+                and not re.search(r"\b(this|the|my) (patient|prediction|case)\b", lowered)):
+            return "guidelines"
         return "explain"
     if any(k in lowered for k in ["hemoglobin", "platelet", "inr", "transfusion need", "predict"]):
         return "predict"
+    if _SMALLTALK.fullmatch(text) and len(text.split()) <= 6:
+        return "smalltalk"
     return None
 
 
@@ -183,6 +248,9 @@ class ChatSession:
         self.last_patient: PatientRecord = None
         self.last_prediction: bool = None
         self.pending_action: dict = None
+        # What the conversation is about, so follow-ups don't repeat it:
+        # {"last_intent", "forecast_days"}. Persisted by session_store.
+        self.context: dict = {}
         self._reset_turn()
 
     def _reset_turn(self):
@@ -213,9 +281,15 @@ class ChatSession:
     # Intent routing
     # ------------------------------------------------------------
     def classify_intent(self, message: str) -> str:
+        last = self.context.get("last_intent")
+        if (last in ("inventory", "forecast") and _SAME_AGAIN.match(message)
+                and (_find_blood_group(message) or _find_component(message) or _days_in(message))):
+            return last
         intent = keyword_intent(message)
         if intent:
             return intent
+        if last == "forecast" and (_DAILY.search(message) or _days_in(message)):
+            return "forecast"
         response = self._generate(INTENT_CLASSIFICATION_PROMPT.format(message=message))
         if not response:
             return "unclear"
@@ -291,7 +365,10 @@ class ChatSession:
         if capability is None or not is_permitted(self.role, capability):
             return self._part(intent, denial(self.role, capability), allowed=False)
         try:
-            return self._part(intent, getattr(self, f"_do_{intent}")(clause))
+            part = self._part(intent, getattr(self, f"_do_{intent}")(clause))
+            if intent not in ("help", "unclear", "smalltalk"):
+                self.context["last_intent"] = intent
+            return part
         except Exception as exc:
             return self._part(intent, f"Sorry, I couldn't get {LABELS.get(capability, 'that')} right now "
                                       f"({exc.__class__.__name__}).")
@@ -315,7 +392,23 @@ class ChatSession:
             "injection_suspected": injection,
             "action_taken": self._action_taken,
             "can_ask_about": chat_topics_for(self.role),
+            "follow_ups": self._follow_ups(parts),
         }
+
+    def _follow_ups(self, parts: list) -> list:
+        """Next questions to offer as chips, only ones this role may ask."""
+        answered = [p["intent"] for p in parts if p["allowed"]]
+        if not answered or answered[-1] in ("help", "unclear", "smalltalk"):
+            return suggestions_for(self.role)[:3]
+        if answered[-1] == "forecast" and is_permitted(self.role, "forecast:read"):
+            days = self.context.get("forecast_days", 7)
+            return [f"Totals for the next {days} days" if self.context.get("forecast_daily") else "Split it by day",
+                    "What about the next 14 days?" if days != 14 else "What about the next 7 days?",
+                    *[q for cap, q in FOLLOW_UPS["forecast"][2:] if is_permitted(self.role, cap)]][:3]
+        options = [q for cap, q in FOLLOW_UPS.get(answered[-1], []) if is_permitted(self.role, cap)]
+        # Nothing specific this role may ask next: offer its own starters instead of nothing.
+        asked = SUGGESTIONS.get(INTENT_CAPABILITY.get(answered[-1]))
+        return (options or [q for q in suggestions_for(self.role) if q != asked])[:3]
 
     # ------------------------------------------------------------
     # One handler per intent. Each runs only after the permission check.
@@ -327,6 +420,21 @@ class ChatSession:
         return f"{note}As {self.role}, you can ask me about:\n{topics}\n\nFor example:\n{examples}"
 
     _do_unclear = _do_help
+
+    def _do_smalltalk(self, clause: str) -> str:
+        lowered = clause.lower()
+        if re.search(r"thank|thx|\bty\b|cheers|great|perfect|nice|cool|awesome|got it", lowered):
+            return "You're welcome. Anything else I can check for you?"
+        if re.search(r"bye|see you", lowered):
+            return "Take care. I'm here whenever you need me."
+        if re.search(r"who are you|your name", lowered):
+            return (f"I'm HemoBuddy, HemoSmart's assistant. I answer from the same live data and models as the "
+                    f"dashboard, limited to what a {self.role} can see.")
+        if "how are you" in lowered:
+            return "All systems running, thanks for asking. What can I look up for you?"
+        topics = chat_topics_for(self.role)
+        some = ", ".join(topics[:3]) + (" and more" if len(topics) > 3 else "")
+        return f"Hi! I'm HemoBuddy. Ask me about {some}. What would you like to know?"
 
     def _do_predict(self, clause: str) -> str:
         values = self._extract_lab_values_from_text(clause)
@@ -368,7 +476,7 @@ class ChatSession:
         bt_match = _find_blood_group(clause)
         if bt_match:
             result = check_inventory(bt_match, _find_component(clause))
-            return f"{bt_match} stock:\n" + "\n".join(
+            return f"Here's {bt_match} stock right now:\n" + "\n".join(
                 f"  {c}: {cell['available']} units ({cell['status']}, {cell['near_expiry']} near expiry)"
                 for c, cell in result["components"].items()
             )
@@ -386,22 +494,44 @@ class ChatSession:
         )
 
     def _do_forecast(self, clause: str) -> str:
-        days_match = re.search(r"(\d+)\s*-?\s*day", clause, re.I)
-        days = int(days_match.group(1)) if days_match else 7  # report specifies 7-day forecast by default
+        # A horizon named now wins; otherwise keep the one we were discussing ("split that by day").
+        days = _days_in(clause) or self.context.get("forecast_days") or 7  # report specifies 7 days by default
         days = min(max(days, 1), 30)
+        self.context["forecast_days"] = days
         result = get_supply_outlook(days)
-        totals = {
-            c: round(sum(d["units"] for d in daily), 1) for c, daily in result["component_forecast"].items()
-        }
-        lines = [f"{days}-day demand forecast: " + ", ".join(f"{c} {n}" for c, n in totals.items()) + " units."]
-        for s in result["shortages"]:
-            lines.append(f"  SHORTAGE {s['blood_group']} {s['component']}: {s['projected_shortage']} unit(s) "
-                         f"from {s['first_shortage_date']}")
-        for w in result["wastage_risks"]:
-            lines.append(f"  WASTAGE RISK {w['blood_group']} {w['component']}: "
-                         f"{w['projected_wastage']} unit(s) may expire unused")
-        if len(lines) == 1:
-            lines.append("No shortages or wastage risks projected.")
+        follow_up = bool(_SAME_AGAIN.match(clause))
+        # "and O+?" after "platelets for 2 weeks" keeps platelets; a fresh question starts over.
+        component = _find_component(clause) or (self.context.get("forecast_component") if follow_up else None)
+        group = _find_blood_group(clause) or (self.context.get("forecast_group") if follow_up else None)
+        self.context.update(forecast_component=component, forecast_group=group, forecast_daily=bool(_DAILY.search(clause)))
+        forecast = {c: d for c, d in result["component_forecast"].items() if not component or c == component}
+        shortages = [x for x in result["shortages"] if (not group or x["blood_group"] == group)
+                     and (not component or x["component"] == component)]
+        risks = [x for x in result["wastage_risks"] if (not group or x["blood_group"] == group)
+                 and (not component or x["component"] == component)]
+        span = "tomorrow" if days == 1 else f"the next {days} days"
+
+        if _DAILY.search(clause):
+            lines = [f"Here's the daily demand for {span} (units):"]
+            for i in range(max(len(d) for d in forecast.values())):
+                day = next(d[i] for d in forecast.values() if i < len(d))
+                label = _day_label(day.get("date")) or f"Day {i + 1}"
+                lines.append(f"  {label}: " + " · ".join(f"{_SHORT.get(c, c)} {d[i]['units']:.1f}" for c, d in forecast.items()
+                                                       if i < len(d)))
+        else:
+            totals = [f"{c} {round(sum(x['units'] for x in d), 1)}" for c, d in forecast.items()]
+            lines = [f"Here's the hospital-wide demand outlook for {span}: {', '.join(totals)} units in total."]
+        for s in shortages:
+            n = s["projected_shortage"]
+            lines.append(f"Heads-up: {s['blood_group']} {s['component']} may run {n} unit{'s' if n != 1 else ''} short "
+                         f"from {_day_label(s['first_shortage_date']) or s['first_shortage_date']}.")
+        for w in risks:
+            n = w["projected_wastage"]
+            lines.append(f"Wastage risk: {n} {w['blood_group']} {w['component']} unit{'s' if n != 1 else ''} "
+                         f"may expire unused.")
+        if not shortages and not risks:
+            scope = " ".join(x for x in (group, component) if x)
+            lines.append(f"Good news: no {scope + ' ' if scope else ''}shortages or wastage risks are projected.")
         return "\n".join(lines)
 
     def _do_action(self, clause: str) -> str:

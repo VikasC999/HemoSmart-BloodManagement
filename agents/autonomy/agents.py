@@ -20,6 +20,7 @@ handbook via RAG and writes the cycle brief.
 
 import math
 import random
+import re
 from datetime import timedelta
 
 from agents.donor_module import (
@@ -31,7 +32,8 @@ from agents.donor_module import (
     simulate_responses,
 )
 from bloodbank.allocation import is_near_expiry
-from bloodbank.catalog import BLOOD_GROUPS, COMPONENTS, OUTREACH_WINDOW_DAYS, SAFETY_STOCK_DAYS, SHELF_LIFE_DAYS
+from bloodbank.catalog import (BLOOD_GROUPS, COMPONENTS, OUTREACH_WINDOW_DAYS, PLANNING_DEMAND_QUANTILE,
+                               SAFETY_STOCK_DAYS, SHELF_LIFE_DAYS)
 from bloodbank.forecast import load_demand_profile, routine_inflow
 from bloodbank.projection import project
 from bloodbank.stock import available_units, stock_summary, sweep_expired, transfer_units
@@ -199,13 +201,14 @@ class ForecastAgent:
 
 class PlannerAgent:
     name = "Planner"
+    DEMAND_QUANTILE = PLANNING_DEMAND_QUANTILE  # class attribute so the simulation sweep can vary it
 
     def run(self, bb, db) -> None:
         if bb.forecast_by_key is None:
             raise RuntimeError("no forecast available to plan against")
         units = available_units(db, bb.now)
-        bb.projections = project(units, bb.forecast_by_key, bb.now,
-                                 inflow=routine_inflow(), shelf_life=SHELF_LIFE_DAYS)
+        bb.projections = project(units, bb.forecast_by_key, bb.now, inflow=routine_inflow(),
+                                 shelf_life=SHELF_LIFE_DAYS, demand_quantile=self.DEMAND_QUANTILE)
 
         for (group, component), p in bb.projections.items():
             if p["projected_shortage"] > 0:
@@ -332,7 +335,10 @@ class ExplanationAgent:
 
     BRIEF_PROMPT = """You are briefing a hospital Blood Bank Manager on one cycle of an automated
 blood supply system. Write 3-4 plain sentences summarizing what happened and
-what needs attention. Use ONLY these verified facts -- do not invent numbers:
+what needs attention, as one paragraph: no bullet points, no markdown. Use ONLY
+these verified facts -- do not invent numbers. Do not restate or paraphrase the
+guideline sources (no temperatures, shelf lives or doses from them); only put
+their bracketed number, e.g. [1], after the fact a source supports:
 {facts}
 
 Guideline sources you may cite with their bracketed numbers:
@@ -360,6 +366,7 @@ Guideline sources you may cite with their bracketed numbers:
                 cites = self.retriever.cite(query, k=1)
                 for c in cites:
                     c["ref"] = len(sources) + 1
+                    c["topic"] = label
                     sources.append(c)
                 bb.log(self.name, "explain", f"Grounded {label} in the WHO handbook.",
                        citations=[{"ref": c["ref"], "page": c["page"], "excerpt": c["excerpt"]} for c in cites])
@@ -368,10 +375,15 @@ Guideline sources you may cite with their bracketed numbers:
         bb.brief = self._template_brief(facts)
         if self.llm is not None:
             try:
-                bb.brief = self.llm.generate(self.BRIEF_PROMPT.format(
+                raw = self.llm.generate(self.BRIEF_PROMPT.format(
                     facts="\n".join(f"- {f}" for f in facts),
-                    sources="\n".join(f"[{s['ref']}] p.{s['page']}: {s['excerpt']}" for s in sources) or "(none)",
-                )).strip()
+                    # Topic only, never the excerpt text: given the text, the model paraphrased it
+                    # wrongly (e.g. platelets "stored at -20 °C"). It may cite, not restate.
+                    sources="\n".join(f"[{s['ref']}] WHO handbook p.{s['page']}, on {s['topic']}" for s in sources) or "(none)",
+                ))
+                # Models still slip into bullets; keep the brief one clean paragraph.
+                flat = re.sub(r"\s+", " ", re.sub(r"(?m)^\s*[-*•]\s+", "", raw)).strip()
+                bb.brief = self.strip_guideline_claims(flat) or bb.brief
             except Exception as exc:
                 bb.log(self.name, "fallback", f"LLM brief failed ({exc.__class__.__name__}) -- using the template brief.")
         bb.log(self.name, "explain", "Cycle brief written.", brief=bb.brief)
@@ -403,6 +415,17 @@ Guideline sources you may cite with their bracketed numbers:
         if not bb.shortages and not bb.wastage_risks:
             facts.append("No shortages or wastage risks projected.")
         return facts
+
+    _GUIDELINE_CLAIM = re.compile(r"\b(WHO|guidelines?|recommend\w*|handbook|protocols?|best practice)\b", re.I)
+
+    @classmethod
+    def strip_guideline_claims(cls, brief: str) -> str:
+        """Drops sentences where the model characterises the guidelines
+        itself ("follows WHO recommendations for ..."): it may cite [n],
+        not speak for the handbook (D77). The cited excerpts are in the
+        cycle's events, so nothing a manager needs is lost."""
+        sentences = re.split(r"(?<=[.!?])\s+", brief)
+        return " ".join(x for x in sentences if not cls._GUIDELINE_CLAIM.search(x)).strip()
 
     @staticmethod
     def _template_brief(facts: list) -> str:

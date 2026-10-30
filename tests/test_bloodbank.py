@@ -8,7 +8,7 @@ import pytest
 
 from bloodbank.allocation import choose_units, is_near_expiry, rank_units
 from bloodbank.catalog import compatible_donor_groups
-from bloodbank.projection import project, project_component
+from bloodbank.projection import project, project_component, quantile_demand
 from schema.clinical_thresholds import recommended_units, urgency
 
 NOW = datetime(2026, 10, 13, 8, 0)
@@ -118,6 +118,27 @@ def test_project_covers_every_group_of_each_component():
     assert len([k for k in result if k[1] == "PRBC"]) == 8
 
 
+def test_quantile_demand_is_on_the_running_total():
+    mean = [1.0] * 7
+    assert quantile_demand(mean) == mean and quantile_demand(mean, 0.5) == mean
+    q90 = quantile_demand(mean, 0.9)
+    z = 1.2815515655446004
+    assert sum(q90) == pytest.approx(7 + z * math.sqrt(7))      # 90th pct of the week, not 7 bad days
+    assert q90[0] == pytest.approx(1 + z) and all(d >= 0 for d in q90)
+    assert quantile_demand([0.0, 0.0], 0.9) == [0.0, 0.0]
+
+
+def test_projection_at_a_quantile_projects_more_shortage_but_reports_the_mean():
+    stock = [unit("B+", days_left=40) for _ in range(7)]
+    mean = project_component("PRBC", stock, {"B+": [1.0] * 7}, NOW)["B+"]
+    upper = project_component("PRBC", stock, {"B+": [1.0] * 7}, NOW, demand_quantile=0.9)["B+"]
+    assert mean["projected_shortage"] == 0 and upper["projected_shortage"] > 0
+    assert upper["forecast_demand"] == mean["forecast_demand"] == 7.0
+    assert upper["planned_demand"] > 7.0 == mean["planned_demand"]
+    by_key = project(stock, {("B+", "PRBC"): [1.0] * 7}, NOW, demand_quantile=0.9)
+    assert by_key[("B+", "PRBC")]["projected_shortage"] == upper["projected_shortage"]
+
+
 # ----------------------------------------------------------------------
 # Dose + urgency rules
 # ----------------------------------------------------------------------
@@ -139,3 +160,12 @@ def test_urgency():
     assert urgency(7.5, 250_000, 1.0, "General", True) == "Moderate"
     assert urgency(6.5, 250_000, 1.0, "General", True) == "Critical"
     assert urgency(9.5, 250_000, 1.0, "Emergency", True) == "Critical"
+
+
+def test_supply_dips_in_april_and_may_only():
+    import pandas as pd
+
+    from data.demand_process import SUPPLY_SEASONAL_FACTOR, supply_factor
+    f = supply_factor(pd.to_datetime(["2026-03-31", "2026-04-15", "2026-05-31", "2026-06-01"]))
+    assert list(f) == [1.0, SUPPLY_SEASONAL_FACTOR[4], SUPPLY_SEASONAL_FACTOR[5], 1.0]
+    assert all(0 < v < 1 for v in SUPPLY_SEASONAL_FACTOR.values())

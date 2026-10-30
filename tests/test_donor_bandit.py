@@ -1,11 +1,18 @@
 import random
 from datetime import datetime, timedelta
 
+from collections import Counter
+
+import pytest
+
 from agents.donor_module import (
     MIN_DONATION_INTERVAL_DAYS,
+    RESPONSE_RATE_PRIOR,
     filter_eligible_donors,
     is_eligible,
+    required_interval_days,
     select_top_donors,
+    simulate_donors,
     update_donor_response,
 )
 
@@ -27,6 +34,33 @@ def test_eligibility_requires_matching_type():
 def test_eligibility_enforces_donation_interval():
     assert not is_eligible(_donor("a", days_since=MIN_DONATION_INTERVAL_DAYS - 1), "O-", today=TODAY)
     assert is_eligible(_donor("a", days_since=MIN_DONATION_INTERVAL_DAYS), "O-", today=TODAY)
+
+
+@pytest.mark.parametrize("component, last, sex, days", [
+    ("PRBC", "whole_blood", "M", 90),       # NBTC 2017: whole blood, men
+    ("PRBC", "whole_blood", "F", 120),      # women
+    ("PRBC", None, None, 90),               # unknown history/sex: the men's interval
+    ("FFP", "apheresis", "F", 28),          # whole blood after platelet apheresis
+    ("Platelets", "apheresis", "M", 4),     # 48 h and at most 2 a week
+    ("Platelets", "whole_blood", "M", 28),
+])
+def test_required_interval_follows_nbtc(component, last, sex, days):
+    assert required_interval_days(component, last, sex) == days
+
+
+def test_women_wait_120_days_for_whole_blood():
+    woman = {**_donor("w", days_since=100), "sex": "F"}
+    assert not is_eligible(woman, "O-", today=TODAY)
+    assert is_eligible({**woman, "sex": "M"}, "O-", today=TODAY)
+
+
+def test_simulated_pool_matches_population_mix_and_lower_response():
+    pool = simulate_donors(n=4000, seed=7)
+    types = Counter(d["blood_type"] for d in pool)
+    assert 0.33 < types["O+"] / 4000 < 0.39 and types["O-"] / 4000 < 0.04   # not 12.5% each
+    mean_rate = sum(d["simulated_response_rate"] for d in pool) / 4000
+    assert abs(mean_rate - RESPONSE_RATE_PRIOR[0] / sum(RESPONSE_RATE_PRIOR)) < 0.02
+    assert {d["sex"] for d in pool} == {"F", "M"}
 
 
 def test_filter_keeps_only_eligible():

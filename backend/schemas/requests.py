@@ -51,6 +51,7 @@ class ChatResponse(BaseModel):
     role: str
     degraded: bool  # True when the LLM was unavailable and a fallback answered
     can_ask_about: List[str]
+    follow_ups: List[str] = []  # next questions to offer as chips, already filtered by role
 
 
 class DonorAlertRequest(BaseModel):

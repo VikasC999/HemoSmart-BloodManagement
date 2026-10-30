@@ -95,8 +95,13 @@ def _seed_demo_users() -> None:
 
 # Stock as a multiple of par, per component, before the scenarios below
 STOCK_FACTOR = (0.9, 1.6)
+# The demo's first cycle must show outreach. O- PRBC alone can't: its demand
+# (~0.4 units/day) is nearly covered by routine supply, so even 0 units
+# projects no shortage. O+ PRBC (~7 units/day) at 2 units projects one on
+# every start date tried (docs/DESIGN_DECISIONS.md D86).
 SCENARIOS = {
-    ("O-", "PRBC"): 1,        # critical: one unit left
+    ("O-", "PRBC"): 0,        # critical: the universal red-cell donor group is out
+    ("O+", "PRBC"): 2,        # critical: projected to run out within the week -> donor outreach
     ("A+", "Platelets"): 1,   # thin cover going into the week
 }
 NEAR_EXPIRY_SURPLUS = {("O+", "Platelets"): 5, ("B+", "Platelets"): 4}  # ~4.3 days old

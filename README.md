@@ -39,7 +39,7 @@ Blood banks face two failures at once: patients can wait on shortages, while scr
 
 ## Results
 
-All results are on **synthetic data**; every number is reproducible with one command (see [Evaluation](#evaluation)).
+All results are on **synthetic data**, except two real-data checks (donor response; patient Hb/platelets against NHANES); every number is reproducible with one command (see [Evaluation](#evaluation)).
 
 ![90-day simulation: expired units and unmet demand across four configurations](docs/figures/fig_simulation.png)
 
@@ -47,11 +47,15 @@ All results are on **synthetic data**; every number is reproducible with one com
 
 | What | Result |
 |---|---|
-| **Wastage and shortages** (90 days vs a manual blood bank) | Units short 96 → **43** (−55%). Units expired on site 46.7 → **11.0** (−76%). Total units not used here (expired + redistributed) stays level (46.7 → 47.7), so no extra collection is hidden by shipping it out. |
-| **Prediction** (vs a static threshold rule) | F1 0.654 → **0.705** (PRBC) and 0.685 → **0.783** (platelets): the model learns the surgery-dependent thresholds the static rule ignores, within ~0.01 of the best possible on this data. No gain on FFP. Random Forest performs equivalently. |
+| **Wastage and shortages** (90 days vs a manual blood bank) | Units short 324 → **98** (−70%); demand met 90.0% → **97.0%**. Units expired on site 30.7 → **10.0** (−67%). Units not used here (expired + redistributed) stay about level (30.7 → 32.3). HemoSmart sends more alerts per donation (5.4 → 6.2), because it alerts to close gaps and tired donors reply less. Platelet expiry in the manual baseline is 3.7% of units, below the 8–18% Indian hospitals report ([D83](docs/DESIGN_DECISIONS.md)). |
+| **Shortage warning** (the Planner as a detector, 90 days) | 65% of real shortages were projected in advance, 64% at least 2 days ahead, mean lead 5.6 days. 22% of projected shortages happened; outreach prevents some of the rest. Planning on the 70th percentile of demand instead of the mean cuts units short 98 → 82 (within seed noise), but raises units expired or shipped out 32 → 46, so the mean stays the default ([D81](docs/DESIGN_DECISIONS.md)). |
+| **Prediction** (vs a static threshold rule) | F1 0.790 → **0.846** (PRBC) and 0.684 → **0.759** (platelets): the model learns the surgery-dependent thresholds the static rule ignores. XGBoost reaches **92–98% of the best possible F1** (the label process's own probabilities). On FFP it is *worse* than the rule (0.557 vs 0.596). Logistic regression and Random Forest are as good or slightly better (PRBC 0.860 / 0.862). Accuracy alone is misleading: answering "no" for everyone already scores 0.81 (PRBC). |
+| **At 90% sensitivity** (threshold chosen on training folds only) | Any transfusion: sensitivity 0.91, specificity 0.74, PPV 0.59. PRBC: specificity 0.91, PPV 0.72. Platelets and FFP fall to specificity 0.39–0.44: they are rare (5–7%) and 18% / 5% of their positives are simulated record noise that no model, the ceiling included, can find cheaply. |
+| **Patient data realism** (vs NHANES 2021–23, survey-weighted) | Pre-op Hb is ~0.85 g/dL below US adults in both sexes, with 26% (men) / 42% (women) anaemic vs 6% / 13%: intended, to match Indian surgical patients (NFHS-5, ISOS 30%). PRBC rates by surgery sit in published ranges (cardiac 48%, emergency 21%, ortho 14%, general 8%). Blood groups match Indian donors to within 0.9 points. See the [data card](data/DATA_CARD.md). |
 | **Forecasting** (7-day MAE) | Prophet is within 0.07–0.15 units/day of the noise floor. Platelets in dengue season: 2.87 vs 3.35 for a 4-week weekday mean. The LSTM is no better than Prophet. |
-| **Response times** | Prediction 0.01 s, forecast ≤ 0.35 s, RAG explanation 2.05 s median (one free-tier Groq call took 17 s). |
-| **Donor selection** | Thompson sampling gives 19% more donations than random calls. Plain greedy is ~2% better still, an open decision recorded in [D53](docs/DESIGN_DECISIONS.md). |
+| **Response times** | Prediction 0.01 s (p95, target < 2 s), forecast ≤ 0.36 s (target < 10 s), RAG explanation 2.3 s median; its p95 of 13 s misses the 5 s target because of one slow free-tier Groq call, and the explanation falls back to the code-computed threshold facts if the LLM fails. Re-measured 2026-10-30. |
+| **Donor selection** (realistic donors: contact fatigue, new joiners) | Thompson sampling with a 7-day contact cooldown gives 23% more donations than random calls, **81% of an oracle** that knows every donor's fatigued rate (random 66%). Greedy and ε-greedy tie with it (within 1%). Without the cooldown Thompson beats greedy by 7%, because greedy keeps alerting the same donors (up to 24 alerts to one donor vs 12). The cooldown also cuts the 90-day simulation's alerts by a third without adding shortages ([D85](docs/DESIGN_DECISIONS.md)). |
+| **Donor response, real data** (748 UCI donors) | The bandit's Beta posterior, built from donation history, ranks who donates next with **AUROC 0.74** (logistic regression 0.75); its top decile donates at 2.2× the base rate. Real donors respond at 24%; the simulated donors now average 23% (they averaged 50% before this check, [D83](docs/DESIGN_DECISIONS.md)). |
 | **RAG** | Plasma-guideline retrieval hit@2 0.00 → 1.00 after switching to handbook vocabulary. A small sample, so read it as a direction of travel rather than a significant result. |
 
 ## Architecture
@@ -171,25 +175,31 @@ npm run dev      # http://localhost:5173, talking to the backend at :8000
 
 ```bash
 pip install -r backend/requirements-dev.txt
-python -m pytest        # 285 tests
+python -m pytest        # 331 tests
 ```
 
 Tests run against a throwaway SQLite database, never your Postgres. They cover the permission matrix for every role and route, the autonomous loop end to end, the agent monitor's events, redaction and alert rules, clinical thresholds, and the donor bandit.
 
 ## Evaluation
 
-Each claim is measured by a script in `evaluation/` that writes its tables to `evaluation/results/` (`.md` and `.json`) on a throwaway database. Methods and caveats are in [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md) (D45–D54).
+Each claim is measured by a script in `evaluation/` that writes its tables to `evaluation/results/` (`.md` and `.json`) on a throwaway database. Methods and caveats are in [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md) (D45–D54, D80–D86).
 
 ```bash
 python -m evaluation.simulate               # 90-day wastage/shortage ablation, 3 seeds (~1.5 min)
+python -m evaluation.simulate --planning-sweep  # Planner on mean vs 70/80/90th-percentile demand (~2 min)
+python -m evaluation.simulate --cooldown-sweep  # donor contact cooldown 0/3/7/14 days (~2 min)
 python -m evaluation.sensitivity            # outreach window x alert cap sweep (~8 min)
 python -m evaluation.prediction_benchmark   # model vs threshold rule, 5-fold CV (~30 s)
 python -m evaluation.forecast_backtest      # Prophet vs baselines vs LSTM, rolling origin (~3 min)
 python -m evaluation.bandit_regret          # Thompson vs random/greedy/oracle donor selection (~15 s)
+python -m evaluation.donor_real_data        # donor posterior on the real UCI dataset (downloads 748 rows once, ~2 s)
+python -m evaluation.data_realism           # synthetic patients vs NHANES 2021-23 and Indian blood groups (downloads ~4 MB once)
 python -m evaluation.rag_faithfulness       # retrieval hit@2/MRR; add --llm for faithfulness (20 Groq calls)
 python -m evaluation.latency                # NFR-01 response times through the real app (5 Groq calls; --no-llm to skip)
 python -m evaluation.figures                # report figures -> docs/figures/
 ```
+
+Beyond F1 and AUROC, the scripts report the numbers a reviewer should ask for. **Share of ceiling** divides a model's score by the best any method could get on this data. **The 90% sensitivity operating point** reflects that a missed transfusion is worse than an extra crossmatch; the threshold is chosen inside cross-validation, never on the test fold. **% of oracle** compares donor selection with a policy that knows every donor's true rate. **Shortage detection** asks whether each real shortage in the simulation was projected 1 or 2 days earlier. **The UCI check** found the simulated donors twice as responsive as real ones; their reply rates were lowered to match (D83). **The NHANES check** compares the synthetic patients' Hb and platelets with real adults; every generator parameter and its source is in [data/DATA_CARD.md](data/DATA_CARD.md).
 
 <details>
 <summary>More figures (prediction, forecast, donor selection, sensitivity)</summary>
@@ -221,11 +231,12 @@ Clinical thresholds, doses and urgency rules live in one place, `schema/clinical
 
 HemoSmart is a research prototype, and it says where it is simulated:
 
-- **All data is synthetic.** Patient labels are simulated clinician decisions (surgery-dependent thresholds, a soft boundary, 1% noise), so prediction metrics measure how well the model recovers that process, not clinical validity.
+- **All data is synthetic.** Patient labels are simulated clinician decisions (surgery-dependent thresholds, a soft boundary, 1% noise), so prediction metrics measure how well the model recovers that process, not clinical validity. Hb and platelet distributions are checked against NHANES and transfusion rates by surgery are calibrated to published figures ([data card](data/DATA_CARD.md)), but no real patient-level transfusion data is used; INR has no real-data check.
+- **Simulated donors are anchored, not measured.** Hidden reply rates are Beta(1.5, 5), mean 23%, set to match the UCI donors' 24% monthly rate; no published rate exists for active donors answering an emergency alert. Contact fatigue (each alert ×0.7, halving every 14 days) and 100 new donors a year are assumptions; no study of alert frequency against response was found. Blood types follow the population mix and intervals follow NBTC 2017 (women 120 days); the 10% share of women donors is not sourced.
 - **Some thresholds are local protocol, not WHO.** INR > 1.5 for FFP and platelets < 100k for cardiac surgery are not in the handbook the explanations cite, so explanations call them "HemoSmart protocol thresholds".
 - **Donor alert dispatch is a print/log stub.** Donor selection and its feedback loop are real; with `HEMOSMART_SIMULATE_DONOR_RESPONSES=1` (default) replies are sampled from each synthetic donor's hidden response rate, which the bandit never sees.
 - **The partner hospital is a mock** whose acceptance policy is simulated. Redistribution benefit assumes the partner uses what it accepts.
-- **Routine supply** in the gap projection is a fixed share of average demand (`ROUTINE_SUPPLY_SHARE`).
+- **Routine supply** in the gap projection is a fixed share of average demand (`ROUTINE_SUPPLY_SHARE`). The simulated world adds an assumed 20% April–May dip (from one news report of 30–40%) that the Planner doesn't know about, and the default August–October run doesn't reach it.
 - **RAG evaluation is small**: 4 query families with hand-labelled pages and 10 LLM cases checked by regex.
 - **Decision support, not diagnosis.** Predictions and explanations inform a clinician; they never decide.
 
@@ -290,6 +301,7 @@ The first request after the Space has been idle is slow (container wake-up plus 
 | Document | What it covers |
 |---|---|
 | [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md) | Every design choice (D1–D75): what, why, alternatives, trade-offs, and how to revert |
+| [data/DATA_CARD.md](data/DATA_CARD.md) | How each synthetic patient variable is generated, its published source, the realism checks, and the assumptions with no source |
 | [docs/REPORT_ALIGNMENT.md](docs/REPORT_ALIGNMENT.md) | The Phase I report's claims, checked one by one against the code |
 | [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md) | A ~12-minute viva walkthrough with likely examiner questions and answers |
 | [docs/2dvision.md](docs/2dvision.md) | The agent monitor's design: events, redaction, status rules, build plan |

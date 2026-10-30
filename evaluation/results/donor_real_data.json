@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "generated_at": "2026-10-30 22:41",
+    "folds": 5,
+    "source": "https://archive.ics.uci.edu/ml/machine-learning-databases/blood-transfusion/transfusion.data"
+  },
+  "summary": {
+    "random": {
+      "auroc": {
+        "mean": 0.5479,
+        "std": 0.0312
+      },
+      "precision_top_decile": {
+        "mean": 0.2133,
+        "std": 0.0267
+      },
+      "lift": {
+        "mean": 0.8961,
+        "std": 0.1078
+      }
+    },
+    "posterior": {
+      "auroc": {
+        "mean": 0.7354,
+        "std": 0.0458
+      },
+      "precision_top_decile": {
+        "mean": 0.5333,
+        "std": 0.152
+      },
+      "lift": {
+        "mean": 2.2403,
+        "std": 0.6365
+      }
+    },
+    "logistic": {
+      "auroc": {
+        "mean": 0.753,
+        "std": 0.0285
+      },
+      "precision_top_decile": {
+        "mean": 0.6267,
+        "std": 0.0904
+      },
+      "lift": {
+        "mean": 2.6316,
+        "std": 0.368
+      }
+    }
+  },
+  "n": 748,
+  "response_rate": 0.238,
+  "mean_posterior": 0.4732,
+  "clamped": 38
+}

@@ -102,13 +102,13 @@ def fig_simulation():
     a1.set_ylabel("units, mean of 3 seeds")
     a1.legend(handles=[plt.Rectangle((0, 0), 1, 1, color=BLUE), plt.Rectangle((0, 0), 1, 1, color=ORANGE)],
               labels=["Expired on site", "Redistributed to partner"], loc="upper left")
-    a1.set_ylim(0, 70)
+    a1.set_ylim(0, max(e + m for e, m in zip(expired, moved)) * 1.35)  # headroom for the legend
 
     short = [s[p]["shortage_units"]["mean"] for p in policies]
     err = [s[p]["shortage_units"]["std"] for p in policies]
     _bars(a2, x, short, INK_2, 0.6, err=err)
     a2.set_title("Units short — unmet demand (90 days)")
-    a2.set_ylim(0, 120)
+    a2.set_ylim(0, max(v + d for v, d in zip(short, err)) * 1.15)
     for ax in (a1, a2):
         ax.set_xticks(x, names, fontsize=8)
         ax.grid(axis="x", visible=False)
@@ -159,7 +159,7 @@ def fig_prediction():
     ceil = [s["ceiling"][t]["f1"]["mean"] for t in targets]
     ax.hlines(ceil, x - 2 * width, x + 2 * width, colors=INK, lw=1.2, linestyles="--", label="Ceiling (best possible)")
     ax.set_xticks(x, ["PRBC", "Platelets", "FFP", "Any transfusion"])
-    ax.set_ylim(0.5, 0.86)
+    ax.set_ylim(0.5, 0.95)
     ax.set_ylabel("F1 score (5-fold CV)")
     ax.set_title("Transfusion prediction vs a static threshold rule")
     ax.legend(ncol=3, loc="upper left", fontsize=7.5)
@@ -198,12 +198,13 @@ def fig_forecast():
 
 
 def fig_bandit():
-    b = _load("bandit_regret")["history"]
+    b = _load("bandit_regret")["fatigue_new"]  # the realistic donor model that decides the policy (D85)
     oracle = np.array(b["oracle"]["mean_curve"])
     days = np.arange(1, len(oracle) + 1)
     fig, ax = plt.subplots(figsize=(6.6, 3.6))
-    series = [("random", NEUTRAL, "Random calls"), ("epsilon_greedy", ORANGE, "ε-greedy"),
-              ("greedy", AQUA, "Greedy"), ("thompson", BLUE, "Thompson sampling (HemoSmart)")]
+    # every policy with the production cooldown, so the comparison is like for like
+    series = [("random+cooldown7", NEUTRAL, "Random calls"), ("epsilon_greedy+cooldown7", ORANGE, "ε-greedy"),
+              ("greedy+cooldown7", AQUA, "Greedy"), ("thompson+cooldown7", BLUE, "Thompson sampling (HemoSmart)")]
     ends = []
     for key, color, label in series:
         regret = oracle - np.array(b[key]["mean_curve"])
@@ -222,7 +223,7 @@ def fig_bandit():
     ax.set_ylabel("cumulative regret (donations)")
     ax.legend(loc="upper left")
     ax.grid(axis="x", visible=False)
-    fig.text(0.01, -0.04, "400 donors, 5 alerts/day, 20 seeds, prior history as deployed. "
+    fig.text(0.01, -0.04, "400 donors + new joiners, contact fatigue, 7-day contact cooldown, 5 alerts/day, 20 seeds. "
              "Source: evaluation/results/bandit_regret.md", fontsize=7, color=INK_2)
     _save(fig, "fig_bandit")
 

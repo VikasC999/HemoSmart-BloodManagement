@@ -36,6 +36,7 @@ Each entry: **Decision** · **Why** · **Alternatives considered** ·
 - [P3 — Report alignment](#p3--report-alignment) (D55–D63) · frontend design system (D64)
 - [Role-aware assistant (FR-08)](#role-aware-assistant-fr-08) (D65–D70)
 - [Agent monitor](#agent-monitor) (D71–D75)
+- [Pre-submission review](#pre-submission-review) (D76–D86)
 - [LLM call budget](#llm-call-budget)
 - [Known limitations](#known-limitations)
 
@@ -478,6 +479,7 @@ The agents collected platelets for gaps a week away (which expired before they w
 - **How the report should state it:** the model recovers context-dependent decision patterns from data without being given them. It does **not** beat a hand-written context-aware rule, because on this synthetic data that rule *is* the ceiling. Accuracy (~89–98%) is no longer the headline: with 6% PRBC prevalence, accuracy mostly reflects the negatives.
 - **Trade-off:** the context adjustments are the benchmark's design, so "the model beats the static rule" is partly built in. What the benchmark really shows is that the model *finds* them, and how close it gets.
 - **Revert:** `git show HEAD:data/create_dataset.py`, then regenerate and retrain.
+- **Updated in [D82](#d82-synthetic-patients-are-calibrated-to-published-data-and-checked-against-nhanes):** the generator now draws sex-specific Hb, a peri-operative drop and a skewed INR; the numbers above are from the old data.
 
 ### Forecasting
 
@@ -829,6 +831,116 @@ Owner decisions (2026-10-24, all the plan's recommended defaults): a new `agents
 - **Tune:** the thresholds are constants at the top of `agent_monitor.py`.
 
 ---
+
+## Pre-submission review
+
+#### D76. The assistant is a floating panel, not a page
+- **Decision:** the role-aware assistant moved from its own sidebar section to an "Ask HemoSmart" launcher, bottom right, on every page ([ChatWidget.jsx](../frontend/src/components/ChatWidget.jsx)). It stays mounted while closed, so the conversation survives navigation; on phones it opens full screen.
+- **Why:** a question about O- stock shouldn't cost the page the user was working on. Access rules are unchanged (D65–D70); only where the chat is shown moved.
+
+#### D77. The cycle brief cites the handbook but never restates it
+- **Decision:** the brief prompt gets each source as *"[1] WHO handbook p.49, on Platelets shelf life"*, never the excerpt text. Citation markers are normalised to `[n]` once in the LLM client (the model emits `【n】`), and stray bullets are flattened into one paragraph.
+- **Why:** given the excerpt, the model paraphrased it wrongly in a live run ("blood stored at -20 °C can be retained for up to seven days", which mixes up plasma and platelet storage). A prompt instruction not to restate didn't stop it; removing the text did. The full excerpts still go to the cycle's event log for the UI.
+
+#### D78. A general clinical "why" is a guideline question
+- **Decision:** "why should platelets be given below 10000?" routes to the WHO guideline answer, not to "explain my last prediction". A "why" stays an explanation when it's bare ("why?") or names the prediction or case.
+
+#### D79. HemoBuddy: the assistant holds a conversation, still decided in code
+- **Decision:** the assistant is named HemoBuddy, with its own mark (the brand drop as a friendly character on a round ink badge). Conversation turns are handled without the LLM: greetings, thanks and "who are you" (intent `smalltalk`, capability `chat:use`); follow-ups reuse the session's context (`last_intent`, forecast horizon, component and blood group), so "split for each day", "what about 14 days?" and "and O+?" keep the thread; each reply offers up to three follow-up chips, filtered by the same permission matrix.
+- **Why:** in a review, "give me a split for each day" after a 4-day forecast returned a 7-day total. Context lives in the Redis session next to the last patient (D67), so it is per user and dropped on a role change.
+
+#### D80. Accuracy is reported against a ceiling, an operating point and one real dataset
+- **Decision:** the evaluation scripts now report, next to the existing numbers: each model's F1/AUROC as a **share of the ceiling** (the label process's own probabilities) and the **"always no" accuracy** ([prediction_benchmark.py](../evaluation/prediction_benchmark.py)); a **sensitivity ≥ 0.90 operating point**, its threshold chosen on out-of-fold predictions inside each training fold, never on the test fold; **% of oracle donations** for every bandit policy ([bandit_regret.py](../evaluation/bandit_regret.py)); the Planner as a **shortage detector** in the 90-day simulation, recall at 1+/2+ days of lead, precision within the 7-day horizon and mean lead time, read from each cycle's Planner events ([simulate.py](../evaluation/simulate.py)); and a **real-data check of the donor posterior** on the public UCI Blood Transfusion Service Center dataset ([donor_real_data.py](../evaluation/donor_real_data.py), data in `data/external/`).
+- **Why:** with 6–24% prevalence, raw accuracy is high for a model that never recommends blood, and an F1 of 0.70 means little without knowing that 0.71 is the best possible. A missed transfusion costs more than an extra crossmatch, so a deployment would run at high sensitivity, not at 0.5. The UCI data is the only real-world check in the project.
+- **What the numbers said when D80 was written** (before the D82/D83 recalibration): at 90% sensitivity specificity dropped to ~0.33 (PRBC) and ~0.36 (platelets), because ~20% of those positives were the label process's record noise. **Current numbers** (after D82): specificity at 90% sensitivity is 0.91 for PRBC (noise share now 4%), 0.39 for platelets and 0.44 for FFP (rare components, 18% and 5% noise), 0.74 for any transfusion; see [prediction_benchmark.md](../evaluation/results/prediction_benchmark.md). The Planner projects ~44% of real shortages and ~7–8% of its projected shortages happen, partly because outreach prevents them (unchanged after D83). On real donors the posterior ranks with AUROC ~0.74 (logistic regression on RFT ~0.75); real donors respond at ~24%, which D83 now uses as the simulator's mean.
+- **Not changed:** label noise, seeds, the data generators and the donor simulator. The new metrics are additions; no existing number moved.
+
+#### D81. The Planner can plan on an upper quantile of demand; the default stays the mean
+- **Decision:** the gap projection takes an optional `demand_quantile` ([projection.py](../bloodbank/projection.py) `quantile_demand`, set by `PLANNING_DEMAND_QUANTILE` in [catalog.py](../bloodbank/catalog.py), read by the Planner and the outlook so they agree). At quantile q each blood group's *cumulative* demand through day d is M(d) + z·√M(d), a normal approximation to Poisson counts, and the replay serves its daily increments. Safety stock and the reported `forecast_demand` stay on the mean. The default is `None`, the mean.
+- **Why this form:** Prophet's 80% band is per component, and a band on a total can't be split by group share. A per-day quantile summed over the week would plan for seven bad days in a row; the running-total quantile doesn't. Simulated demand is Poisson by construction, so the approximation fits the simulation exactly but would be too low for overdispersed real demand, and it ignores error in the forecast mean.
+- **Rule and result:** a level replaces the mean only if units short fall by more than the mean's seed-to-seed std, and units not used here (expired + redistributed), alerts sent and alerts per donation each rise by at most 10%. In the sweep ([planning_quantile.md](../evaluation/results/planning_quantile.md), 90 days, 3 seeds), units short / not used here went: mean 43.0 / 47.7, 70th 12.3 / 91.7, 80th 7.7 / 109.3, 90th 3.3 / 170.0. Alerts sent rose 9–33%. No level passes, so the mean stays.
+- **Open judgement:** D45's cost rule (3 × units short + units not used) would pick the 70th percentile (128.7 vs 176.7 for the mean). The two rules disagree because they price a unit short differently against a wasted donation; that is a clinical call, so it is recorded here rather than buried in a default. To switch, set `PLANNING_DEMAND_QUANTILE = 0.7`.
+
+#### D82. Synthetic patients are calibrated to published data and checked against NHANES
+- **Finding:** the patient generator had no sex, surgery changed only the threshold and never the patient's Hb, and INR was N(1.1, 0.35). So cardiac PRBC was 7.8% (TRICS III: 52–73%), 13% of patients had INR > 1.5, and FFP (15.4%) was the most-ordered component, the opposite of real practice.
+- **Decision** ([create_dataset.py](../data/create_dataset.py), every parameter and source in [DATA_CARD.md](../data/DATA_CARD.md)):
+  - **sex** (50/50, assumption) and pre-op Hb by sex, men N(14.0, 1.6), women N(12.3, 1.6): NHANES shifted down to Indian anaemia levels (NFHS-5 men 25%; ISOS pre-op 30%). Not a model input; stored as `sex` and `hemoglobin_preop` for the realism check;
+  - a **surgery-specific peri-operative Hb drop** (Gamma; mean cardiac 4.0, ortho 3.0, general 2.0, emergency 1.2 g/dL). `hemoglobin` is now the value at the transfusion decision. PRBC rates: cardiac 47.7%, emergency 20.9%, ortho 14.3%, general 8.3%, all inside the published ranges;
+  - **INR** right-skewed (shifted lognormal, median 1.02): 3.9% above 1.5, an estimate with no clean published figure; platelets clip raised to 450k.
+- **Not changed:** the label process (soft boundary, 1% noise), the thresholds (local protocol, D52), the model's five inputs, the API and the seeds; `blood_demand.csv` and `component_demand.csv` are byte-identical.
+- **Benchmark moved** ([prediction_benchmark.md](../evaluation/results/prediction_benchmark.md); D50's table is the old data). XGBoost F1: PRBC 0.705 → 0.846, platelets 0.783 → 0.759, FFP 0.721 → 0.557, any 0.753 → 0.815; share of ceiling 96–99% → 92–98%. At 90% sensitivity, PRBC specificity 0.33 → 0.91 and FFP 0.78 → 0.44. PRBC got easier (19% prevalence, only 4% of positives are noise, was 20%); FFP got harder (now 7% prevalence). Logistic regression and Random Forest now edge XGBoost on PRBC (0.860 / 0.862), and the static rule's gap widened (PRBC context cases 36 → 179), because the static rule ignores the cardiac threshold, which now matters for half the cardiac patients. None of this is a better model, only a different simulated population.
+- **Realism check** ([data_realism.py](../evaluation/data_realism.py), [data_realism.md](../evaluation/results/data_realism.md)): against NHANES 2021–23 adults, survey-weighted. Pre-op Hb is ~0.85 g/dL lower in both sexes with a wider spread, and 26% / 42% anaemic vs 5.6% / 13.2%, intended; the 95th percentiles agree within 0.1 g/dL. Platelets agree in the upper half; the lower tail is heavier by design (the 8% thrombocytopenic subgroup, unsourced). Blood groups are within 0.9 points of Agrawal 2014.
+- **Trade-off:** the drop sizes are calibrated to hit published transfusion rates, not measured, and the RAG facts still compare the decision-time Hb with the protocol threshold. No real patient-level transfusion data is used; INR isn't checked against any.
+- **Revert:** `git checkout HEAD -- data/create_dataset.py`, regenerate, retrain, re-run the benchmark.
+
+#### D83. Donors and routine supply follow published figures where they exist
+- **Decision** ([donor_module.py](../agents/donor_module.py), [demand_process.py](../data/demand_process.py)):
+  - **Blood types** of simulated donors are drawn with `GROUP_SHARE` (Agrawal et al. 2014), not uniformly. O- was 12.5% of donors, against ~2% in India.
+  - **Reply rates** are Beta(1.5, 5), mean 23%, instead of Beta(2, 2), mean 50%. This is an assumption anchored to the UCI donors' 23.8% monthly rate (D80) and bracketed by 8% re-donation after recalling lapsed donors (Ou-Yang et al. 2020).
+  - **Intervals** follow the NBTC 2017 donor selection rules (via slides; the official PDF wasn't retrieved): whole blood 90 days for men, 120 for women; platelet apheresis to apheresis 4 days, the shortest whole-day gap that keeps NBTC's 48 h and at most 2 a week; whole blood after apheresis 28 days. Apheresis after whole blood stays 28 days (from D47, unsourced). The 24-a-year apheresis cap isn't enforced. This supersedes D47's 28 days for apheresis after apheresis.
+  - **Donor sex:** simulated donors get one at an assumed 10% women. The research found no Indian donor sex mix, so the 10% is not sourced. The `Donor` table has no sex column (db/ was out of scope), so database donors, and therefore `evaluation.simulate`, use the men's 90 days for everyone; only `evaluation.bandit_regret` applies the 120-day rule.
+  - **Routine supply** dips to 80% in April–May (`SUPPLY_SEASONAL_FACTOR`). One news report (Mumbai, 2016) gave 30–40% fewer donors, so a moderate 20% is used, labelled an assumption. The Planner still assumes a flat rate, and the default August–October simulation doesn't reach the dip.
+- **Effect** (90 days, 3 seeds, before → after; [simulation.md](../evaluation/results/simulation.md)):
+  - Manual baseline: units short 96 → 249, service level 97.0% → 92.3%, alerts per donation 2.28 → 4.70.
+  - HemoSmart: units short 43 → 46, expired 11 → 15, not used here 47.7 → 52.7, alerts per donation 2.36 → 3.57.
+  - The relative gain grew because the manual policy can't make up for a less responsive pool. Units not used here now rise against the baseline (36.7 → 52.7), where before they held level.
+  - Thompson sampling fell from 90% to 76% of the oracle, and greedy's lead over it grew from ~2% to ~7%, which strengthens the open question in D53.
+  - The D81 sweep conclusion holds: the 70th percentile cuts units short 46 → 19 but raises units not used here 53 → 86. In the outreach sweep, window 5 still has the lowest cost; alert cap 8 now edges cap 16 within seed noise (184.9 vs 189.8), so the cap stays 16.
+- **Against Indian wastage:** the manual baseline expires 4.1% of platelet units and 0.2% of PRBC. Indian hospitals report 7.9% (Gaude 2026) to 18% (Haran 2024, 97% expiry) for platelets, and 1.7% for PRBC (half of it not expiry). The simulated baseline wastes less than real Indian banks, partly because it runs short instead (92% of demand met). The parameters were not tuned to close the gap, so HemoSmart's wastage reduction is measured against a baseline that already wastes less than real banks.
+- **Revert:** restore `rng.choice(BLOOD_GROUPS)` and `betavariate(2, 2)` in `simulate_donors`, the old `required_interval_days`, and set `SUPPLY_SEASONAL_FACTOR = {}`.
+
+#### D84. Gaps closed for submission: notifier plugin, CI, demo database, clearer audit and prediction pages
+- **Donor notifier is a plugin** ([integrations/notify/base.py](../integrations/notify/base.py)): `alert_donors()` sends through a `DonorNotifier`; the default `LogNotifier` records and prints with the phone masked. SMS or WhatsApp is a class plus one `NOTIFIERS` entry and `HEMOSMART_NOTIFIER=<name>`. A provider failure still records the alert (as `log`), so no contact is lost. Real sending is deliberately left open (owner decision, 2026-10-30).
+- **CI** ([.github/workflows/ci.yml](../.github/workflows/ci.yml)): pytest and the frontend build on every push. This reverses the earlier "no CI" choice, approved as part of the 2026-10-30 gap list.
+- **Demo database:** the demo runs on its own `hemosmart_demo` database, reset and seeded on the day ([DEMO_SCRIPT.md](DEMO_SCRIPT.md)); the development database stays additive-only (D62).
+- **Scheduler:** the demo script now offers "scheduler on" (live heartbeat, shows autonomy) or "off" (full control); the default interval is unchanged.
+- **Audit log** hides page loads (GETs) by default, shows the user's email, drops false/empty detail fields; **prediction page** explains what the result will contain before the first prediction.
+- **Research sources** behind D82/D83 are kept in [research/DATA_SOURCES.md](research/DATA_SOURCES.md).
+
+#### D85. Donor policy judged under contact fatigue and new donors; Thompson stays, with a 7-day contact cooldown
+- **Donor model** (simulation only, [donor_module.py](../agents/donor_module.py)):
+  - **Contact fatigue:** each earlier alert multiplies a donor's hidden reply rate by 0.7, and that effect halves every 14 days (`DONOR_FATIGUE`; `None` reproduces the old results).
+  - **New donors:** 100 a year join with no history (`NEW_DONORS_PER_YEAR`). Donors leaving the registry isn't modelled.
+  - **Sources:** none for either. A quick search found no study of alert frequency against response; the closest, Ou-Yang 2020, found contact barely changes lapsed donors' return (8.1% phone, 8.5% SMS, 7.4% none). Both values are assumptions.
+- **Bandit evaluation** ([bandit_regret.md](../evaluation/results/bandit_regret.md), 365 days, 20 seeds; donations, % of an oracle that knows the fatigued rates):
+
+  | Scenario | Random | Greedy | Thompson | Greedy + 7-day cooldown | Thompson + 7-day cooldown |
+  |---|---|---|---|---|---|
+  | No fatigue (D53) | 381 | **527** | 491 | — | — |
+  | Fatigue | 353 | 399 | 439 | 442 | **449** |
+  | Fatigue + new donors | 363 | 422 | 451 | 459 | 457 (81%) |
+
+  Without a cooldown, greedy keeps alerting the same high-posterior donors (up to 24 alerts to one donor in a year vs 12 for Thompson) and loses 6–9% to Thompson. With the cooldown the learners tie: ε-greedy 462, greedy 459, Thompson 457.
+- **Policy rule (stated before the run):** in the fatigue + new donors scenario, the most donations wins (alerts per day are fixed there, so that is also the fewest alerts per donation). Thompson, the incumbent, is kept unless the winner beats it by more than one seed std. Result: ε-greedy + cooldown leads by 5 donations against a std of 22, so **Thompson + 7-day cooldown** stays. It also spreads alerts most evenly (max 11 to one donor vs 18–19).
+  - With a 14-day cooldown in a first run, greedy led by 12 donations, still inside the rule's margin, but in 17 of 20 paired seeds.
+- **The cooldown in production:** a donor alerted in the last `CONTACT_COOLDOWN_DAYS` = 7 days isn't alerted again by any policy ([catalog.py](../bloodbank/catalog.py), applied in `eligible_candidates`).
+  - The 14 days first tried came from the bandit evaluation, where alerts per day are fixed. In the 90-day simulation, where outreach is sized to gaps, it starved small blood groups: units short 104 → 169.
+  - So the length was chosen by `evaluation.simulate --cooldown-sweep` ([cooldown_sweep.md](../evaluation/results/cooldown_sweep.md)) with a rule written after that first run: the longest cooldown whose units short don't exceed no cooldown's.
+
+    | Cooldown (days) | Units short | Alerts sent |
+    |---|---|---|
+    | 0 | 104 | 4,760 |
+    | 3 | 93 | 3,826 |
+    | 7 | 98 | 3,106 |
+    | 14 | 169 | 2,171 |
+
+    7 days wins: a third fewer alerts and no extra shortages.
+- **90-day simulation, D83 → D85/86** (fatigue, new donors, cooldown, women at 120 days, new demo seed):
+  - HemoSmart: units short 46 → 98, service level 98.6% → 97.0%, expired 15 → 10, alerts per donation 3.6 → 6.2.
+  - Manual baseline: units short 249 → 324, service level 92.3% → 90.0%.
+  - Shortage detection recall rose to 65% and precision to 22%, because shortages are more frequent.
+- **D81 and D45 still hold.** No demand quantile passes D81's rule; the 70th percentile cuts units short 98 → 82, inside one std (19), while units not used here go 32 → 46. D45's cost rule would again prefer the 70th percentile (292 vs 325). In the outreach sweep, window 5 with cap 16 has the lowest cost again (325.4; 7 days 327.7).
+- **Revert:** `CONTACT_COOLDOWN_DAYS = 0`, `DONOR_FATIGUE = None`, `NEW_DONORS_PER_YEAR = 0`.
+
+#### D86. Donor sex is stored; the demo opens with a shortage that triggers outreach
+- **Donor sex:** `Donor.sex` ("M" / "F", nullable) is a new column, added to existing databases by `_add_missing_columns` (checked on a database created without it). Seeded donors get it at the assumed 10% women (D83, not sourced).
+  - `required_interval_days` now reads it from the database, so production and the 90-day simulation both apply NBTC's 120 days for women. `None`, for rows seeded before the column, keeps 90 days. This supersedes D83's note that only the bandit evaluation applied the rule.
+  - `GET /api/donors` returns it as `sex`.
+- **Demo seed** ([seed.py](../scripts/seed.py)): `SCENARIOS` sets O- PRBC to 0 units (was 1, which was only "Low") and adds O+ PRBC at 2 units, both Critical.
+  - O- alone can't trigger outreach: its demand (~0.4 units/day) is nearly covered by routine supply, so even at 0 units no shortage is projected.
+  - On a throwaway database seeded this way, one cycle projected 1 shortage, alerted 16 donors and redistributed 6 units. Nine start dates were tried (seven consecutive days, 1 Aug and 15 Sep); every one gave shortages ≥ 1, alerts ≥ 16 and transfers ≥ 1.
+  - `evaluation.simulate` shares this starting stock, so its results include the change.
+- **Revert:** restore the old `SCENARIOS`. The column is harmless if unused.
 
 ## LLM call budget
 

@@ -13,6 +13,7 @@ Usage:
 
 from abc import ABC, abstractmethod
 import os
+import re
 import threading
 
 # ----------------------------------------------------------------------
@@ -55,6 +56,11 @@ class BaseLLMClient(ABC):
         raise NotImplementedError
 
 
+def _tidy(text: str) -> str:
+    """gpt-oss cites as 【3】; every prompt here asks for [3], so normalise it once for all callers."""
+    return re.sub(r"【\s*(\d+)\s*】", r"[\1]", text or "")
+
+
 class OllamaClient(BaseLLMClient):
     """Local, offline LLM via Ollama. Requires `ollama pull llama3.2` first."""
 
@@ -68,7 +74,7 @@ class OllamaClient(BaseLLMClient):
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
         )
-        return response["message"]["content"]
+        return _tidy(response["message"]["content"])
 
 
 class GroqClient(BaseLLMClient):
@@ -92,7 +98,7 @@ class GroqClient(BaseLLMClient):
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
         )
-        return response.choices[0].message.content
+        return _tidy(response.choices[0].message.content)
 
 
 def get_llm_client(provider: str = "ollama", **kwargs) -> BaseLLMClient:

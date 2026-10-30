@@ -47,6 +47,7 @@ def get_or_create_session(session_id: Optional[str], user) -> Tuple[str, ChatSes
                 session.last_patient = PatientRecord(**data["last_patient"])
             session.last_prediction = data.get("last_prediction")
             session.pending_action = data.get("pending_action")
+            session.context = data.get("context") or {}
 
     return new_id, session
 
@@ -57,5 +58,6 @@ def save_session(session_id: str, session: ChatSession, user) -> None:
         "last_patient": session.last_patient.model_dump() if session.last_patient else None,
         "last_prediction": session.last_prediction,
         "pending_action": session.pending_action,
+        "context": session.context,
     }
     cache_set(_key(user.id, session_id), json.dumps(data), SESSION_TTL_SECONDS)

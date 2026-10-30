@@ -51,12 +51,28 @@ ROUTINE_SUPPLY_SHARE = {"PRBC": 0.85, "Platelets": 0.8, "FFP": 0.85}
 # the component's shelf life, capped by the 7-day forecast horizon. A
 # unit donated now can cover any gap inside its shelf life; alerting for
 # gaps beyond it collects units that expire first. Chosen by
-# evaluation/sensitivity.py: for platelets, windows of 2-4 days left
-# 66-118 units short over 90 days, 5 days (= shelf life) cut that to
-# 43. 6 days tied on the cost rule (175.6 vs 176.7) but doubled the
-# units expiring or shipped out (94 vs 48), and 7 days nearly tripled
-# them -- so the window stops at the shelf life. (docs/DESIGN_DECISIONS.md D45)
+# evaluation/sensitivity.py: for platelets (alert cap 16), windows of
+# 2-4 days left 56-87 units short over 90 days, 5 days (= shelf life)
+# cut that to 46. 6 days cost more (200.8 vs 189.8) and nearly doubled
+# the units expiring or shipped out (94 vs 53); 7 days went to 132 --
+# so the window stops at the shelf life. (docs/DESIGN_DECISIONS.md D45;
+# re-run with the D83 donor pool)
 OUTREACH_WINDOW_DAYS = {"PRBC": 7, "Platelets": 5, "FFP": 7}
+
+# Demand level the gap projection plans for: None = the forecast mean;
+# a quantile q (e.g. 0.8) = cumulative demand that q of days stay under,
+# by a Poisson approximation per blood group (bloodbank/projection.py,
+# quantile_demand). Chosen by evaluation/simulate.py --planning-sweep
+# (docs/DESIGN_DECISIONS.md D81).
+PLANNING_DEMAND_QUANTILE = None
+
+# A donor alerted in the last CONTACT_COOLDOWN_DAYS days isn't alerted again,
+# whatever the selection policy. Chosen by evaluation/simulate.py
+# --cooldown-sweep as the longest cooldown that doesn't raise units short
+# against no cooldown; 14 days, which helped in the fixed-budget bandit
+# evaluation, starved outreach to small blood groups in the 90-day
+# simulation (docs/DESIGN_DECISIONS.md D85). 0 switches it off.
+CONTACT_COOLDOWN_DAYS = 7
 
 # Safety stock, in days of forecast demand: outreach also fires when
 # projected stock dips below this, not only when it would hit zero --

@@ -1,6 +1,7 @@
 import { Component, useCallback, useEffect, useState } from "react";
 import { auth } from "./api";
 import AppShell, { PageHeader } from "./components/layout/AppShell";
+import ChatWidget from "./components/ChatWidget";
 import LoginScreen from "./components/LoginScreen";
 import { ErrorState, Skeleton } from "./components/ui";
 import { NAVIGATION, sectionsFor } from "./navigation";
@@ -117,6 +118,7 @@ export default function App() {
   return (
     <AppShell user={user} groups={groups} activeId={active?.id} onLogout={logout}>
       {content}
+      {user && <ChatWidget role={user.role} />}
     </AppShell>
   );
 }

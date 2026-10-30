@@ -29,25 +29,58 @@ REAL units are ever reported as at risk, since only they can be moved.
 Forecasts are fractional expected units; each group's fraction carries
 over day to day, so 0.4 units/day consumes a unit every 2-3 days
 instead of rounding to zero forever.
+
+Optionally (demand_quantile) the replay serves an upper quantile of
+demand instead of the mean, so shortages from busier-than-average days
+are projected too -- see quantile_demand(). Safety stock and the
+reported forecast_demand stay on the mean, so buffers aren't stacked.
 """
 
 import math
 from datetime import datetime, timedelta
+from statistics import NormalDist
 from types import SimpleNamespace
 
 from bloodbank.allocation import rank_units
 from bloodbank.catalog import BLOOD_GROUPS, COMPONENTS, compatible_donor_groups
 
 
+def quantile_demand(daily: list, quantile: float = None) -> list:
+    """
+    Daily demand whose running total is the `quantile` of cumulative
+    demand, by a normal approximation to Poisson demand:
+        C(d) = M(d) + z * sqrt(M(d)),  M(d) = expected units through day d.
+    Applied to the running total, not day by day: summing daily upper
+    quantiles would plan for every day of the week being a bad day.
+    Poisson because group-level demand is a count with no group-level
+    Prophet band (the band is per component, and a band can't be split by
+    group share); it ignores forecast error in the mean itself.
+    None (or 0.5) returns the mean unchanged.
+    """
+    if quantile is None or quantile == 0.5:
+        return list(daily)
+    z = NormalDist().inv_cdf(quantile)
+    out, previous, running = [], 0.0, 0.0
+    for units in daily:
+        running += units
+        upper = max(running + z * math.sqrt(running), previous)  # z < 0 must not make it shrink
+        out.append(upper - previous)
+        previous = upper
+    return out
+
+
 def project_component(component: str, units: list, demand: dict, now: datetime,
-                      inflow: dict = None, shelf_life_days: int = None) -> dict:
+                      inflow: dict = None, shelf_life_days: int = None, demand_quantile: float = None) -> dict:
     """
     units: available units of this component (with blood_group, expires_at)
     demand: {recipient group: [expected units per day]}, day 0 = next 24h
     inflow: {group: expected routine units/day}; shelf_life_days required with it
+    demand_quantile: plan for this quantile of demand (None = the mean)
     Returns {group: projection}.
     """
     inflow = inflow or {}
+    mean_demand = demand
+    demand = {g: quantile_demand(d, demand_quantile) for g, d in demand.items()}
     horizon = max((len(v) for v in demand.values()), default=0)
     stock = [u for u in units if u.expires_at > now]
     own_supply = {g: sum(u.blood_group == g for u in stock) for g in BLOOD_GROUPS}
@@ -101,11 +134,12 @@ def project_component(component: str, units: list, demand: dict, now: datetime,
 
     out = {}
     for g in BLOOD_GROUPS:
-        total = sum(demand.get(g, []))
+        total = sum(mean_demand.get(g, []))
         avg = total / horizon if horizon else 0.0
         out[g] = {
             "supply_now": own_supply[g],
             "forecast_demand": round(total, 1),
+            "planned_demand": round(sum(demand.get(g, [])), 1),
             "projected_shortage": shortage[g],
             "projected_wastage": len(wasted[g]),
             "at_risk_units": sorted(wasted[g], key=lambda u: u.expires_at),
@@ -117,12 +151,14 @@ def project_component(component: str, units: list, demand: dict, now: datetime,
     return out
 
 
-def project(units, forecast: dict, now: datetime, inflow: dict = None, shelf_life: dict = None) -> dict:
+def project(units, forecast: dict, now: datetime, inflow: dict = None, shelf_life: dict = None,
+            demand_quantile: float = None) -> dict:
     """
     units: available units (objects with blood_group/component/expires_at)
     forecast: {(group, component): [daily expected units]}
     inflow: {(group, component): expected routine units/day}, optional
     shelf_life: {component: days}, required with inflow
+    demand_quantile: plan for this quantile of demand (None = the mean)
     Returns {(group, component): projection} for every group of every
     component that appears in the forecast or in stock.
     """
@@ -140,6 +176,7 @@ def project(units, forecast: dict, now: datetime, inflow: dict = None, shelf_lif
             now,
             inflow={g: v for (g, comp), v in inflow.items() if comp == c},
             shelf_life_days=shelf_life[c] if shelf_life else None,
+            demand_quantile=demand_quantile,
         )
         for g, p in per_group.items():
             result[(g, c)] = p

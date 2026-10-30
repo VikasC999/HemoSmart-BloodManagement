@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { BookOpen, ClipboardList, PackageCheck, Sparkles, Stethoscope } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardList, PackageCheck, Sparkles, Stethoscope } from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES, SURGERY_TYPES } from "../constants";
 import { formatPercent } from "./ui/format";
 import {
-  AIPanel, EmptyState, ErrorState, SeverityBadge, SkeletonLines, urgencySeverity,
+  AIPanel, ErrorState, SeverityBadge, SkeletonLines, urgencySeverity,
 } from "./ui";
 
 const FEATURE_LABELS = {
@@ -183,9 +183,18 @@ export default function PredictionCard({ canAlertDonors = false }) {
 
       <div className="predict-results">
         {!result && error?.step !== "predict" && (
-          <EmptyState icon={ClipboardList} title="No prediction yet">
-            Enter the patient's lab values and choose Predict. The result shows which blood components they're likely to need, how many units, and why.
-          </EmptyState>
+          <section className="predict-preview" aria-labelledby="preview-title">
+            <ClipboardList size={20} aria-hidden="true" />
+            <h2 id="preview-title">No prediction yet</h2>
+            <p>Enter the patient's lab values and choose Predict. You'll see:</p>
+            <ul>
+              <li><PackageCheck size={16} aria-hidden="true" /><span><strong>Components and units</strong> for red cells, platelets and plasma, each with its probability</span></li>
+              <li><Stethoscope size={16} aria-hidden="true" /><span><strong>Urgency</strong>, from Low to Critical</span></li>
+              <li><BarChart3 size={16} aria-hidden="true" /><span><strong>What drove it</strong>: each lab value's contribution</span></li>
+              <li><BookOpen size={16} aria-hidden="true" /><span><strong>A cited explanation</strong> from the WHO handbook, on request</span></li>
+            </ul>
+            <p className="decision-support">Decision support. Review before acting.</p>
+          </section>
         )}
 
         {result && (

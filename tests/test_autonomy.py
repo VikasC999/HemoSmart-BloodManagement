@@ -190,6 +190,14 @@ def test_forecast_failure_falls_back_and_cycle_completes():
     assert cycle["brief"]
 
 
+def test_brief_drops_sentences_that_speak_for_the_guidelines():
+    from agents.autonomy.agents import ExplanationAgent
+    brief = ("Six near-expiry units were transferred [1]. The transfer follows WHO recommendations for "
+             "platelet redistribution [1]. Monitor AB+ platelets. Per the handbook, stock rotates.")
+    assert ExplanationAgent.strip_guideline_claims(brief) == \
+        "Six near-expiry units were transferred [1]. Monitor AB+ platelets."
+
+
 def test_quiet_when_nothing_to_do():
     now = utcnow()
     _add("O+", "PRBC", 10, age_days=1, now=now)

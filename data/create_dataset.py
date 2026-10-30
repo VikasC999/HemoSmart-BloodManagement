@@ -10,8 +10,8 @@ Generates the datasets since real hospital patient data cannot be used
 3. component_demand.csv  -> daily units used per blood group x component,
                             for the forecasting + gap projection pipeline
 
-Both are simulated using medically plausible ranges (based on WHO
-reference ranges), NOT real patient records.
+All are simulated, NOT real patient records. Every patient parameter, its
+source and the realism checks against NHANES are in data/DATA_CARD.md.
 
 Run:
     python data/create_dataset.py
@@ -34,13 +34,35 @@ np.random.seed(42)
 # ----------------------------------------------------------------------
 N_PATIENTS = 5000
 
-# Most patients are clinically "normal" with a minority presenting
-# abnormal values -> use normal distributions centered on healthy
-# reference values (clipped to valid physiological ranges), instead
-# of uniform, which unrealistically overloads the abnormal end.
-hemoglobin = np.clip(np.random.normal(12.5, 2.2, N_PATIENTS), 5.0, 16.0)
-platelets = np.clip(np.random.normal(250000, 70000, N_PATIENTS), 50000, 400000).astype(int)
-inr = np.clip(np.random.normal(1.1, 0.35, N_PATIENTS), 0.8, 4.0)
+# Calibration targets and sources: data/DATA_CARD.md. The global
+# np.random calls below consume exactly the same draws as before (one
+# normal for Hb, one for platelets, one for INR, then age and surgery), so
+# blood_demand.csv further down is unchanged; the new variables (sex, the
+# peri-operative drop) come from their own RNG.
+_periop_rng = np.random.default_rng(17)
+
+# Sex: generator-internal for Hb, stored for the realism check, NOT a model
+# input (transfusion thresholds aren't sex-specific). 50/50 is an assumption:
+# no source found for the sex mix of Indian surgical patients.
+sex = np.where(_periop_rng.random(N_PATIENTS) < 0.5, "M", "F")
+
+# Pre-operative Hb by sex. NHANES 2021-23 adults are M 14.4-15.0, F 13.0-13.3
+# g/dL (SD ~1.2-1.4); we shift down to Indian levels: targets are anaemia
+# (WHO 2024 cut-offs M<13, F<12) ~25% in men (NFHS-5: 25.0%) and ~30-35%
+# overall (ISOS, Fowler 2018: 30.1%, LMIC 32.5%). Women land at ~43%, below
+# NFHS-5's 57% (women 15-49, general population). The shift is our
+# calibration, not a published number.
+HB_PREOP_MEAN = {"M": 14.0, "F": 12.3}
+HB_PREOP_SD = 1.6
+hemoglobin_preop = np.clip(
+    np.vectorize(HB_PREOP_MEAN.get)(sex) + HB_PREOP_SD * np.random.normal(0, 1, N_PATIENTS), 6.0, 18.5
+)
+platelets = np.clip(np.random.normal(250000, 70000, N_PATIENTS), 50000, 450000).astype(int)  # NHANES 256k (68k), 95th pct ~370-430k
+# INR: right-skewed, a healthy core of 0.8-1.2 with a tail (anticoagulants,
+# liver disease). Shifted lognormal, median 1.02, ~4% above 1.5. That share
+# is an ESTIMATE: no clean published figure for pre-op INR > 1.5 was found
+# (one Mexican elective cohort: abnormal PT 9.5%).
+inr = np.clip(0.75 + np.exp(np.log(0.27) + 0.58 * np.random.normal(0, 1, N_PATIENTS)), 0.8, 4.0)
 age = np.random.randint(18, 90, N_PATIENTS)
 surgery_type = np.random.choice(
     ["Cardiac", "Orthopedic", "General", "Emergency"],
@@ -48,12 +70,28 @@ surgery_type = np.random.choice(
     p=[0.20, 0.25, 0.40, 0.15],  # Emergency should be a minority of cases
 )
 
+# Peri-operative Hb drop (blood loss, haemodilution on bypass): the stored
+# `hemoglobin` is the value at the transfusion decision, pre-op Hb minus a
+# surgery-specific drop, so surgery changes the patient's Hb, not only the
+# threshold. Gamma draws (never negative, right-skewed: most patients lose a
+# little, a few bleed a lot). Mean/SD in g/dL, tuned so PRBC rates land in
+# the published ranges with the protocol thresholds (9 cardiac, 8 elective,
+# 10 emergency): cardiac 40-60% (TRICS III 52-73%), orthopaedic 10-20%
+# (NSQIP THA 22%, TKA 18%; with TXA ~16%), general 5-15% (Indian MSBOS ~15%),
+# emergency 15-25% (level-I trauma ~17%). The drop sizes are calibrated to
+# those rates; only the cardiac 3-4 g/dL is close to a reported figure.
+HB_DROP = {"Cardiac": (4.0, 1.0), "Orthopedic": (3.0, 0.8), "General": (2.0, 1.0), "Emergency": (1.2, 1.5)}
+_drop_mean = np.vectorize(lambda s: HB_DROP[s][0])(surgery_type)
+_drop_sd = np.vectorize(lambda s: HB_DROP[s][1])(surgery_type)
+hb_drop = _periop_rng.gamma((_drop_mean / _drop_sd) ** 2, _drop_sd ** 2 / _drop_mean)
+hemoglobin = np.clip(hemoglobin_preop - hb_drop, 4.0, 18.5)
+
 # A thrombocytopenic subgroup (e.g. dengue, chemotherapy, liver disease).
 # The healthy-centered draw above is clipped at 50,000/uL, so without
 # this no patient would ever fall below the platelet threshold and the model
 # could never learn the platelet criterion. Drawn from a separate RNG so
 # the global sequence -- and therefore blood_demand.csv below -- is
-# unchanged.
+# unchanged. The 8% share has no published source (NHANES <150k: 2-4%).
 _subgroup_rng = np.random.default_rng(7)
 thrombocytopenic = _subgroup_rng.random(N_PATIENTS) < 0.08
 platelets[thrombocytopenic] = _subgroup_rng.integers(
@@ -75,6 +113,8 @@ transfusion_needed = (needs_prbc | needs_platelets | needs_ffp).astype(int)
 
 patient_data = pd.DataFrame({
     "hemoglobin": hemoglobin,
+    "hemoglobin_preop": np.round(hemoglobin_preop, 2),  # not a model input; realism check only
+    "sex": sex,                                          # not a model input; realism check only
     "platelets": platelets,
     "INR": inr,
     "age": age,

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "frontend/src/index.css"
+        ],
+        "createdAt": "2026-10-30T13:23:56.541Z",
+        "reason": "Sanctioned AI-content treatment: HemoSmart design skill §10 and docs/DESIGN_DECISIONS.md D64 (3px primary left border marks LLM output)"
+      }
+    ]
+  }
+}

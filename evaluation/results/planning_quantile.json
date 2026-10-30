@@ -1,0 +1,360 @@
+{
+  "meta": {
+    "days": 90,
+    "start": "2026-08-01",
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "generated_at": "2026-10-30 23:41"
+  },
+  "rows": [
+    {
+      "quantile": null,
+      "summary": {
+        "expired": {
+          "mean": 10.0,
+          "std": 3.559
+        },
+        "wastage_rate": {
+          "mean": 0.0032,
+          "std": 0.0012
+        },
+        "transferred": {
+          "mean": 22.3333,
+          "std": 2.4944
+        },
+        "not_used_here": {
+          "mean": 32.3333,
+          "std": 5.7927
+        },
+        "shortage_units": {
+          "mean": 97.6667,
+          "std": 19.3276
+        },
+        "service_level": {
+          "mean": 0.9697,
+          "std": 0.0061
+        },
+        "donor_alerts": {
+          "mean": 3106.0,
+          "std": 227.9751
+        },
+        "donations": {
+          "mean": 503.0,
+          "std": 29.3371
+        },
+        "alerts_per_donation": {
+          "mean": 6.1733,
+          "std": 0.1746
+        },
+        "expired_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 10.0,
+          "FFP": 0.0
+        },
+        "shortage_by_component": {
+          "PRBC": 15.7,
+          "Platelets": 66.7,
+          "FFP": 15.3
+        },
+        "wastage_rate_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 0.0104,
+          "FFP": 0.0
+        },
+        "shortage_detection": {
+          "shortages": {
+            "mean": 73.3333,
+            "std": 11.8977
+          },
+          "warnings": {
+            "mean": 458.3333,
+            "std": 27.0103
+          },
+          "recall_0d": {
+            "mean": 0.6519,
+            "std": 0.0733
+          },
+          "recall_1d": {
+            "mean": 0.6445,
+            "std": 0.0628
+          },
+          "recall_2d": {
+            "mean": 0.6408,
+            "std": 0.0576
+          },
+          "precision": {
+            "mean": 0.2242,
+            "std": 0.0613
+          },
+          "mean_lead_days": {
+            "mean": 5.6033,
+            "std": 0.0544
+          }
+        }
+      }
+    },
+    {
+      "quantile": 0.7,
+      "summary": {
+        "expired": {
+          "mean": 20.3333,
+          "std": 3.6818
+        },
+        "wastage_rate": {
+          "mean": 0.0064,
+          "std": 0.0012
+        },
+        "transferred": {
+          "mean": 25.3333,
+          "std": 1.6997
+        },
+        "not_used_here": {
+          "mean": 45.6667,
+          "std": 4.9889
+        },
+        "shortage_units": {
+          "mean": 82.0,
+          "std": 18.6726
+        },
+        "service_level": {
+          "mean": 0.9746,
+          "std": 0.0058
+        },
+        "donor_alerts": {
+          "mean": 3392.6667,
+          "std": 203.5851
+        },
+        "donations": {
+          "mean": 540.6667,
+          "std": 23.471
+        },
+        "alerts_per_donation": {
+          "mean": 6.2733,
+          "std": 0.253
+        },
+        "expired_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 20.3,
+          "FFP": 0.0
+        },
+        "shortage_by_component": {
+          "PRBC": 14.7,
+          "Platelets": 56.7,
+          "FFP": 10.7
+        },
+        "wastage_rate_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 0.0206,
+          "FFP": 0.0
+        },
+        "shortage_detection": {
+          "shortages": {
+            "mean": 62.3333,
+            "std": 11.4698
+          },
+          "warnings": {
+            "mean": 626.0,
+            "std": 65.8635
+          },
+          "recall_0d": {
+            "mean": 0.9066,
+            "std": 0.0426
+          },
+          "recall_1d": {
+            "mean": 0.9066,
+            "std": 0.0426
+          },
+          "recall_2d": {
+            "mean": 0.9011,
+            "std": 0.0439
+          },
+          "precision": {
+            "mean": 0.254,
+            "std": 0.0409
+          },
+          "mean_lead_days": {
+            "mean": 5.8,
+            "std": 0.0616
+          }
+        }
+      }
+    },
+    {
+      "quantile": 0.8,
+      "summary": {
+        "expired": {
+          "mean": 28.6667,
+          "std": 4.4969
+        },
+        "wastage_rate": {
+          "mean": 0.009,
+          "std": 0.0015
+        },
+        "transferred": {
+          "mean": 21.6667,
+          "std": 3.3993
+        },
+        "not_used_here": {
+          "mean": 50.3333,
+          "std": 6.1283
+        },
+        "shortage_units": {
+          "mean": 82.3333,
+          "std": 15.3261
+        },
+        "service_level": {
+          "mean": 0.9745,
+          "std": 0.0049
+        },
+        "donor_alerts": {
+          "mean": 3539.0,
+          "std": 155.5721
+        },
+        "donations": {
+          "mean": 554.3333,
+          "std": 32.8261
+        },
+        "alerts_per_donation": {
+          "mean": 6.39,
+          "std": 0.102
+        },
+        "expired_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 28.7,
+          "FFP": 0.0
+        },
+        "shortage_by_component": {
+          "PRBC": 12.7,
+          "Platelets": 60.0,
+          "FFP": 9.7
+        },
+        "wastage_rate_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 0.0289,
+          "FFP": 0.0
+        },
+        "shortage_detection": {
+          "shortages": {
+            "mean": 61.0,
+            "std": 12.2474
+          },
+          "warnings": {
+            "mean": 735.6667,
+            "std": 85.1365
+          },
+          "recall_0d": {
+            "mean": 0.9142,
+            "std": 0.0482
+          },
+          "recall_1d": {
+            "mean": 0.9142,
+            "std": 0.0482
+          },
+          "recall_2d": {
+            "mean": 0.9142,
+            "std": 0.0482
+          },
+          "precision": {
+            "mean": 0.2512,
+            "std": 0.0231
+          },
+          "mean_lead_days": {
+            "mean": 5.85,
+            "std": 0.086
+          }
+        }
+      }
+    },
+    {
+      "quantile": 0.9,
+      "summary": {
+        "expired": {
+          "mean": 47.0,
+          "std": 8.9815
+        },
+        "wastage_rate": {
+          "mean": 0.0146,
+          "std": 0.0029
+        },
+        "transferred": {
+          "mean": 17.0,
+          "std": 0.8165
+        },
+        "not_used_here": {
+          "mean": 64.0,
+          "std": 9.4163
+        },
+        "shortage_units": {
+          "mean": 76.3333,
+          "std": 22.5733
+        },
+        "service_level": {
+          "mean": 0.9764,
+          "std": 0.0071
+        },
+        "donor_alerts": {
+          "mean": 3890.3333,
+          "std": 286.3964
+        },
+        "donations": {
+          "mean": 577.6667,
+          "std": 15.9652
+        },
+        "alerts_per_donation": {
+          "mean": 6.73,
+          "std": 0.3718
+        },
+        "expired_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 47.0,
+          "FFP": 0.0
+        },
+        "shortage_by_component": {
+          "PRBC": 11.0,
+          "Platelets": 52.7,
+          "FFP": 12.7
+        },
+        "wastage_rate_by_component": {
+          "PRBC": 0.0,
+          "Platelets": 0.0465,
+          "FFP": 0.0
+        },
+        "shortage_detection": {
+          "shortages": {
+            "mean": 57.0,
+            "std": 9.6264
+          },
+          "warnings": {
+            "mean": 842.3333,
+            "std": 100.3605
+          },
+          "recall_0d": {
+            "mean": 0.9639,
+            "std": 0.0058
+          },
+          "recall_1d": {
+            "mean": 0.9569,
+            "std": 0.015
+          },
+          "recall_2d": {
+            "mean": 0.9569,
+            "std": 0.015
+          },
+          "precision": {
+            "mean": 0.239,
+            "std": 0.0265
+          },
+          "mean_lead_days": {
+            "mean": 5.83,
+            "std": 0.1499
+          }
+        }
+      }
+    }
+  ],
+  "chosen": null,
+  "current_default": null
+}
