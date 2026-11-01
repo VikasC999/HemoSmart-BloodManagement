@@ -11,12 +11,10 @@ Run after setup_rag.py:
 """
 
 import os
+import sys
 
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
-
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "faiss_index")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from rag.explain import GuidelineRetriever, citation_label  # noqa: E402
 
 # A few realistic test queries mirroring what the Prediction Agent
 # would actually send -- covering the main clinical scenarios.
@@ -29,18 +27,13 @@ TEST_QUERIES = [
 
 
 def test_retrieval(k=3):
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-    vectorstore = FAISS.load_local(
-        INDEX_PATH, embeddings, allow_dangerous_deserialization=True
-    )
-
+    retriever = GuidelineRetriever()  # the same retriever (and reranker) production uses
     for query in TEST_QUERIES:
         print("=" * 70)
         print("QUERY:", query)
         print("-" * 70)
-        results = vectorstore.similarity_search(query, k=k)
-        for i, doc in enumerate(results, 1):
-            print(f"[{i}] {doc.page_content[:150]}...")
+        for c in retriever.cite(query, k=k):
+            print(f"[{c['ref']}] {citation_label(c)}: {c['excerpt'][:150]}...")
         print()
 
 

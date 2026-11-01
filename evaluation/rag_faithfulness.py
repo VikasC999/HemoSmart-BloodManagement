@@ -19,6 +19,11 @@ Two questions about the explanation pipeline (rag/explain.py):
      unsupported     uses a number that's in neither the patient data,
                      the protocol checks, nor the retrieved excerpts
      bad citation    cites [n] for a source that wasn't provided
+   plus an NLI check (evaluation only, offline): each sentence that cites
+   [n] is judged against the passage(s) it cites by a natural-language-
+   inference cross-encoder (NLI_MODEL) as entailed / contradicted /
+   neutral. Regex checks catch numbers; NLI catches qualitative claims a
+   passage doesn't support, but it is itself a small model and errs.
    Each case costs one LLM call per prompt version (Groq).
 
 Compares the first version ("legacy": generic American-spelling queries,
@@ -46,6 +51,7 @@ from rag.explain import EXPLANATION_PROMPT_TEMPLATE, ExplanationGenerator, Guide
 from schema.clinical_thresholds import describe_threshold_facts, guideline_flags
 from schema.patient_schema import PatientRecord
 
+NLI_MODEL = "cross-encoder/nli-deberta-v3-base"  # labels: contradiction, entailment, neutral
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESULTS_DIR = os.path.join(REPO_ROOT, "evaluation", "results")
 SURGERY_TYPES = ("General", "Orthopedic", "Cardiac", "Emergency")
@@ -231,6 +237,37 @@ def check(explanation: str, record: dict, facts: str, sources: list) -> dict:
     }
 
 
+_nli = None
+
+
+def nli_support(explanation: str, sources: list, predict=None) -> dict:
+    """Judges each sentence that cites [n] against the cited passage(s).
+    A sentence is entailed if any cited passage entails it, contradicted
+    if one contradicts it and none entails it. `predict` maps
+    [(premise, hypothesis)] to labels (default: NLI_MODEL)."""
+    global _nli
+    if predict is None:
+        if _nli is None:
+            from sentence_transformers import CrossEncoder
+            _nli = CrossEncoder(NLI_MODEL)
+        labels = _nli.model.config.id2label
+        predict = lambda pairs: [labels[int(i)] for i in _nli.predict(pairs).argmax(axis=1)]  # noqa: E731
+    out = {"cited_sentences": 0, "entailed": 0, "contradicted": 0, "judgements": []}
+    for sentence in _sentences(explanation):
+        refs = [int(n) for n in _CITE.findall(sentence) if 1 <= int(n) <= len(sources)]
+        if not refs:
+            continue
+        hypothesis = _CITE.sub("", sentence).strip()
+        verdicts = predict([(sources[n - 1], hypothesis) for n in refs])
+        verdict = "entailment" if "entailment" in verdicts else "contradiction" if "contradiction" in verdicts \
+            else "neutral"
+        out["cited_sentences"] += 1
+        out["entailed"] += verdict == "entailment"
+        out["contradicted"] += verdict == "contradiction"
+        out["judgements"].append({"sentence": hypothesis, "verdict": verdict})
+    return out
+
+
 def _generate(generator: ExplanationGenerator, record: PatientRecord, prediction: bool, retries: int = 6) -> dict:
     for attempt in range(retries):
         try:
@@ -255,7 +292,7 @@ def _score(version: str, explanations: list, retriever: GuidelineRetriever) -> d
         record = PatientRecord(**case)
         sources = [d.page_content for d in generator.retrieve_sources_per_parameter(record)]
         checks = check(explanation, case, describe_threshold_facts(record), sources)
-        rows.append({"case": case, "explanation": explanation, **checks})
+        rows.append({"case": case, "explanation": explanation, **checks, "nli": nli_support(explanation, sources)})
         print(f"{version:<8} {case['surgery_type']:<10} Hb {case['hemoglobin']:<5} -> "
               f"misattr {checks['misattributed']} unsupported {checks['unsupported']} "
               f"contra {checks['contradictions']}", flush=True)
@@ -266,6 +303,9 @@ def _score(version: str, explanations: list, retriever: GuidelineRetriever) -> d
         "with_contradiction": sum(bool(r["contradictions"]) for r in rows),
         "with_bad_citation": sum(bool(r["bad_citations"]) for r in rows),
         "citing_a_source": sum(r["cites_any"] for r in rows),
+        "cited_sentences": sum(r["nli"]["cited_sentences"] for r in rows),
+        "nli_entailed": sum(r["nli"]["entailed"] for r in rows),
+        "nli_contradicted": sum(r["nli"]["contradicted"] for r in rows),
         "rows": rows,
     }
 
@@ -321,8 +361,22 @@ def to_markdown(result: dict, meta: dict) -> str:
                            ("with_bad_citation", "a citation to a source that wasn't provided"),
                            ("citing_a_source", "at least one [n] citation (higher is better)")):
             lines.append(f"| {label} | {f['legacy'][key]} | {f['current'][key]} |")
-        lines += ["", "Checks are regex-based and conservative: they catch numeric misattribution, not every "
-                      "unsupported qualitative claim. Example explanations are in the .json file."]
+        lines += [
+            "",
+            f"**NLI check** (`{NLI_MODEL}`, evaluation only): each sentence citing [n] judged against the passage "
+            "it cites.",
+            "",
+            "| Cited sentences… | Legacy | Current |",
+            "|---|---|---|",
+        ]
+        for key, label in (("nli_entailed", "entailed by their passage (higher is better)"),
+                           ("nli_contradicted", "contradicted by their passage"),
+                           ("cited_sentences", "total")):
+            lines.append(f"| {label} | {f['legacy'][key]} | {f['current'][key]} |")
+        lines += ["", "Regex checks are conservative: they catch numeric misattribution, not every unsupported "
+                      "qualitative claim. The NLI model is small and errs both ways (in a probe it called "
+                      "\"stored at room temperature\" a contradiction of \"20°C to 24°C\"), so read its counts "
+                      "as a screen, not a verdict. Explanations and per-sentence verdicts are in the .json file."]
     return "\n".join(lines) + "\n"
 
 

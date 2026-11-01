@@ -21,10 +21,15 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from llm_client import get_llm_client
-from schema.clinical_thresholds import describe_threshold_facts
+from schema.clinical_thresholds import describe_threshold_facts, guideline_flags
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 INDEX_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "faiss_index")
+# Retrieval (D89, chosen in evaluation/rag_retrieval.py): the index holds
+# section-aware chunks; FAISS returns RERANK_CANDIDATES and a cross-encoder
+# re-scores them. ~110 ms per query on CPU.
+RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+RERANK_CANDIDATES = 20
 
 # Two kinds of grounding, kept apart on purpose: HemoSmart's protocol
 # thresholds (computed in code, schema/clinical_thresholds.py) and the
@@ -47,6 +52,7 @@ AI Prediction: {prediction_text}
 HemoSmart protocol checks (computed in code -- treat as fact, do not
 recompute or re-judge them):
 {threshold_facts}
+Summary: {verdicts}
 
 Numbered WHO handbook excerpts:
 {context}
@@ -59,7 +65,23 @@ Write a 2-3 sentence clinical explanation of the prediction. Rules:
    e.g. [1], and only say what the excerpt itself says.
 3. Do not state that any value crosses a threshold unless the protocol
    checks say it does. Do not invent criteria, numbers or sources.
+4. Discuss each lab value in its own sentence or clause. Never group
+   values in one phrase ("platelets and INR are above their
+   thresholds"), because their results can differ. A value that does
+   not cross is "within HemoSmart's protocol threshold", or left out.
 """
+
+
+def threshold_verdicts(patient_record) -> str:
+    """One-line crosses / within summary from the same code checks, so the
+    LLM has nothing to infer (it used to merge values with different results)."""
+    flags = guideline_flags(patient_record.hemoglobin, patient_record.platelets,
+                            patient_record.INR, patient_record.surgery_type)
+    names = {"rbc": "hemoglobin", "platelets": "platelets", "ffp": "INR"}
+    crosses = [names[k] for k, v in flags.items() if v]
+    within = [names[k] for k, v in flags.items() if not v]
+    return (f"crosses HemoSmart's protocol threshold: {', '.join(crosses) or 'none'}; "
+            f"within it: {', '.join(within) or 'none'}.")
 
 
 def parameter_queries(surgery_type: str) -> list:
@@ -85,8 +107,14 @@ def _citation(doc, ref: int, excerpt_chars: int = 320) -> dict:
         "ref": ref,
         "source": doc.metadata.get("source", "guideline"),
         "page": doc.metadata.get("page"),
+        "section": doc.metadata.get("section"),
         "excerpt": text[:excerpt_chars] + ("..." if len(text) > excerpt_chars else ""),
     }
+
+
+def citation_label(c: dict) -> str:
+    """'WHO, The Clinical Use of Blood (Handbook), p.51, Platelet concentrates'"""
+    return f"{c['source']}, p.{c['page']}" + (f", {c['section']}" if c.get("section") else "")
 
 
 class GuidelineRetriever:
@@ -97,17 +125,42 @@ class GuidelineRetriever:
     Explanation agent to ground each automated action in the handbook.
     """
 
-    def __init__(self, vectorstore=None):
+    def __init__(self, vectorstore=None, reranker=True):
+        """reranker: True loads RERANKER_MODEL, False searches dense-only,
+        or pass a rag.retrieval.Reranker."""
         if vectorstore is None:
+            _check_index_info()
             embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
             vectorstore = FAISS.load_local(INDEX_PATH, embeddings, allow_dangerous_deserialization=True)
         self.vectorstore = vectorstore
+        if reranker is True:
+            try:
+                from rag.retrieval import Reranker
+                reranker = Reranker(RERANKER_MODEL)
+            except Exception as exc:  # e.g. offline with no cached model: still answer, dense-only
+                print(f"[rag] reranker unavailable ({exc.__class__.__name__}); using dense retrieval only")
+                reranker = None
+        self.reranker = reranker or None
 
     def search(self, query: str, k: int = 2) -> list:
-        return self.vectorstore.similarity_search(query, k=k)
+        if not self.reranker:
+            return self.vectorstore.similarity_search(query, k=k)
+        candidates = self.vectorstore.similarity_search(query, k=max(k, RERANK_CANDIDATES))
+        return self.reranker.rerank(query, candidates)[:k]
 
     def cite(self, query: str, k: int = 2) -> list:
         return [_citation(d, i + 1) for i, d in enumerate(self.search(query, k))]
+
+
+def _check_index_info() -> None:
+    """The index records how it was built (rag/setup_rag.py); a mismatch
+    with this code would silently return worse passages."""
+    import json
+    path = os.path.join(INDEX_PATH, "index_info.json")
+    info = json.load(open(path)) if os.path.exists(path) else {}
+    if info.get("embedding_model") != EMBEDDING_MODEL:
+        print(f"[rag] {INDEX_PATH} was built with {info.get('embedding_model', 'an older setup')}; "
+              f"rebuild it with `python rag/setup_rag.py`.")
 
 
 class ExplanationGenerator:
@@ -179,11 +232,18 @@ class ExplanationGenerator:
             surgery_type=patient_record.surgery_type,
             prediction_text=prediction_text,
             threshold_facts=threshold_facts,
+            verdicts=threshold_verdicts(patient_record),
             context=context,
         )
 
+        # The model occasionally returns no text: retry once, then fail so callers
+        # fall back to the protocol checks instead of showing an empty explanation.
+        explanation = (self.llm.generate(prompt) or "").strip() or (self.llm.generate(prompt) or "").strip()
+        if not explanation:
+            raise ValueError("The LLM returned an empty explanation.")
+
         return {
-            "explanation": self.llm.generate(prompt),
+            "explanation": explanation,
             "threshold_facts": threshold_facts,
             "citations": citations,
         }
@@ -192,7 +252,7 @@ class ExplanationGenerator:
         """Text-only form, for callers that just need the explanation
         (chat, MCP, CrewAI): the explanation followed by its sources."""
         result = self.explain_with_sources(patient_record, prediction, verbose)
-        sources = "\n".join(f"[{c['ref']}] {c['source']}, p.{c['page']}" for c in result["citations"])
+        sources = "\n".join(f"[{c['ref']}] {citation_label(c)}" for c in result["citations"])
         return f"{result['explanation']}\n\nSources:\n{sources}"
 
 

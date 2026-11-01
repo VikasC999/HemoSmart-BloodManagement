@@ -1,0 +1,444 @@
+{
+ "description": "Frozen retrieval test set for the WHO Clinical Use of Blood handbook (rag/who_guidelines.pdf). Created 2026-11-01 before any retrieval variant was run (docs/DESIGN_DECISIONS.md D88).",
+ "pages": "1-based PDF page numbers, as stored in the index metadata and shown in citations",
+ "labelling": "Pages were chosen by reading the handbook text (pymupdf extraction), not by running a retriever. One labeller (the coding agent); a question's pages are every page that states its answer.",
+ "not_covered": "The handbook (2001) has no dengue section and no donor eligibility intervals, so the set has no such questions.",
+ "split": {
+  "seed": 42,
+  "method": "random.Random(42).shuffle(ids); first 15 = dev",
+  "dev": 15,
+  "test": 30
+ },
+ "items": [
+  {
+   "id": "q01",
+   "topic": "rbc",
+   "question": "At what haemoglobin level should an adult with severe anaemia be considered for red cell transfusion?",
+   "pages": [
+    98
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q02",
+   "topic": "rbc",
+   "question": "What preoperative haemoglobin level is acceptable before elective surgery?",
+   "pages": [
+    160
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q03",
+   "topic": "rbc",
+   "question": "Is it appropriate to transfuse blood just to raise the haemoglobin before surgery or to allow earlier discharge?",
+   "pages": [
+    5,
+    160
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q04",
+   "topic": "rbc",
+   "question": "When should a child with severe anaemia receive a blood transfusion?",
+   "pages": [
+    142,
+    98
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q05",
+   "topic": "rbc",
+   "question": "When should a woman with chronic anaemia in pregnancy be transfused?",
+   "pages": [
+    127,
+    126
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q06",
+   "topic": "rbc",
+   "question": "What is a red cell concentrate and what is it used for?",
+   "pages": [
+    25
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q07",
+   "topic": "platelets",
+   "question": "At what platelet count should prophylactic platelets be given to a stable patient who is not bleeding?",
+   "pages": [
+    102,
+    147
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q08",
+   "topic": "platelets",
+   "question": "When should platelets be given to a patient with microvascular bleeding after a large volume transfusion?",
+   "pages": [
+    77
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q09",
+   "topic": "platelets",
+   "question": "How should platelet concentrates be stored and for how long?",
+   "pages": [
+    27,
+    29,
+    51
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q10",
+   "topic": "platelets",
+   "question": "What is the adult dose of platelet concentrate and how much should it raise the platelet count?",
+   "pages": [
+    28
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q11",
+   "topic": "platelets",
+   "question": "Are platelet transfusions indicated in idiopathic thrombocytopenic purpura?",
+   "pages": [
+    27,
+    162
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q12",
+   "topic": "platelets",
+   "question": "Should a patient with a low platelet count receive platelets before surgery?",
+   "pages": [
+    162,
+    27
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q13",
+   "topic": "compatibility",
+   "question": "Can platelets from an RhD positive donor be given to an RhD negative woman of child-bearing age?",
+   "pages": [
+    28
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q14",
+   "topic": "plasma",
+   "question": "What are the indications for fresh frozen plasma?",
+   "pages": [
+    30
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q15",
+   "topic": "plasma",
+   "question": "How is fresh frozen plasma stored and thawed before use?",
+   "pages": [
+    30,
+    51
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q16",
+   "topic": "plasma",
+   "question": "Is hypovolaemia alone an indication for giving fresh frozen plasma?",
+   "pages": [
+    30
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q17",
+   "topic": "plasma",
+   "question": "What INR should a patient have before surgery starts?",
+   "pages": [
+    162
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q18",
+   "topic": "plasma",
+   "question": "How should a patient taking warfarin be managed before elective surgery?",
+   "pages": [
+    162
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q19",
+   "topic": "plasma",
+   "question": "How is bleeding from warfarin overdose or vitamin K deficiency treated?",
+   "pages": [
+    119
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q20",
+   "topic": "cryo",
+   "question": "What does cryoprecipitate contain?",
+   "pages": [
+    32
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q21",
+   "topic": "cryo",
+   "question": "When is cryoprecipitate indicated?",
+   "pages": [
+    32,
+    118
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q22",
+   "topic": "bleeding",
+   "question": "Which blood products should be given to a bleeding patient with disseminated intravascular coagulation?",
+   "pages": [
+    118
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q23",
+   "topic": "bleeding",
+   "question": "Which laboratory findings suggest disseminated intravascular coagulation?",
+   "pages": [
+    117
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q24",
+   "topic": "storage",
+   "question": "At what temperature should whole blood and red cells be stored?",
+   "pages": [
+    24,
+    51
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q25",
+   "topic": "storage",
+   "question": "How soon must a red cell transfusion be started after the pack leaves the refrigerator, and how long may it take?",
+   "pages": [
+    55,
+    24,
+    51,
+    59
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q26",
+   "topic": "storage",
+   "question": "Why must blood be kept between 2°C and 6°C?",
+   "pages": [
+    51
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q27",
+   "topic": "compatibility",
+   "question": "What does a crossmatch detect and how long does it take?",
+   "pages": [
+    49
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q28",
+   "topic": "compatibility",
+   "question": "Which ABO groups can a group A patient receive red cells from?",
+   "pages": [
+    47
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q29",
+   "topic": "compatibility",
+   "question": "What blood should be given in an emergency when there is no time to crossmatch?",
+   "pages": [
+    185
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q30",
+   "topic": "compatibility",
+   "question": "What details must be checked when collecting blood from the blood bank?",
+   "pages": [
+    50
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q31",
+   "topic": "donors",
+   "question": "Which blood donors carry the lowest risk of transfusion-transmissible infections?",
+   "pages": [
+    4,
+    6
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q32",
+   "topic": "donors",
+   "question": "Which infections should donated blood be screened for?",
+   "pages": [
+    6,
+    7
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q33",
+   "topic": "surgery",
+   "question": "What is a blood ordering schedule?",
+   "pages": [
+    42,
+    172
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q34",
+   "topic": "surgery",
+   "question": "What is intraoperative blood salvage and how is it done?",
+   "pages": [
+    176,
+    177
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q35",
+   "topic": "massive",
+   "question": "What is the definition of a massive transfusion?",
+   "pages": [
+    75
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q36",
+   "topic": "massive",
+   "question": "What complications can follow a large volume transfusion?",
+   "pages": [
+    75,
+    76,
+    77,
+    78
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q37",
+   "topic": "reactions",
+   "question": "How should a moderately severe acute transfusion reaction be managed?",
+   "pages": [
+    64
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "q38",
+   "topic": "reactions",
+   "question": "What is transfusion-associated acute lung injury?",
+   "pages": [
+    71
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q39",
+   "topic": "reactions",
+   "question": "How often should a patient be monitored during a blood transfusion?",
+   "pages": [
+    58
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q40",
+   "topic": "reactions",
+   "question": "How can transfusion-associated graft-versus-host disease be prevented?",
+   "pages": [
+    74,
+    26,
+    101
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q41",
+   "topic": "reactions",
+   "question": "When does a delayed haemolytic transfusion reaction occur and how is it managed?",
+   "pages": [
+    72
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q42",
+   "topic": "fluids",
+   "question": "Are colloids better than crystalloids for treating hypovolaemia?",
+   "pages": [
+    13
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q43",
+   "topic": "fluids",
+   "question": "How are fluid requirements calculated for a burns patient?",
+   "pages": [
+    205
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q44",
+   "topic": "obstetrics",
+   "question": "How should major obstetric haemorrhage be managed?",
+   "pages": [
+    130,
+    131,
+    132
+   ],
+   "split": "test"
+  },
+  {
+   "id": "q45",
+   "topic": "procedures",
+   "question": "Should blood be warmed before it is transfused?",
+   "pages": [
+    56
+   ],
+   "split": "dev"
+  }
+ ]
+}

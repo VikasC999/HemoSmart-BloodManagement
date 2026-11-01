@@ -33,21 +33,22 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-import sys, os
+import json, sys, os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from guideline_reference import TRANSFUSION_GUIDELINES
+from retrieval import section_chunks
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 RAG_DIR = os.path.dirname(os.path.abspath(__file__))
 INDEX_PATH = os.path.join(RAG_DIR, "faiss_index")
 GUIDELINE_PDF_PATH = os.path.join(RAG_DIR, "who_guidelines.pdf")
 
-# Real documents are much longer and denser than the placeholder text,
-# so chunks need to be bigger to hold a complete clinical point, with
-# more overlap so a threshold number doesn't get split away from the
-# sentence that gives it context.
-PDF_CHUNK_SIZE = 800
-PDF_CHUNK_OVERLAP = 120
+# The handbook is chunked at its own headings (rag/retrieval.section_chunks):
+# a chunk never crosses a page or a section, carries the section title,
+# and is at most PDF_CHUNK_SIZE characters. 500 won on the dev questions
+# against 800 and 1200 and against plain 800-char page chunks
+# (evaluation/rag_retrieval.py, docs/DESIGN_DECISIONS.md D89).
+PDF_CHUNK_SIZE = 500
 
 PLACEHOLDER_CHUNK_SIZE = 400
 PLACEHOLDER_CHUNK_OVERLAP = 50
@@ -81,21 +82,18 @@ def load_guideline_documents() -> tuple[list, str]:
 
 
 def build_index():
-    documents, source = load_guideline_documents()
-
-    chunk_size = PDF_CHUNK_SIZE if source == "pdf" else PLACEHOLDER_CHUNK_SIZE
-    chunk_overlap = PDF_CHUNK_OVERLAP if source == "pdf" else PLACEHOLDER_CHUNK_OVERLAP
-
-    print(f"Splitting guideline text into chunks (source={source}, chunk_size={chunk_size})...")
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        separators=["\n\n", "\n", ". ", " "],
-    )
-    chunks = splitter.split_documents(documents)
-    # Drop near-empty chunks (common artifact of PDF extraction: headers,
-    # page numbers, stray whitespace lines)
-    chunks = [c for c in chunks if len(c.page_content.strip()) > 40]
+    if os.path.exists(GUIDELINE_PDF_PATH):
+        source = "pdf"
+        print(f"Chunking {GUIDELINE_PDF_PATH} at its section headings (max {PDF_CHUNK_SIZE} chars)...")
+        chunks = section_chunks(GUIDELINE_PDF_PATH, PDF_CHUNK_SIZE)
+    else:
+        documents, source = load_guideline_documents()
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=PLACEHOLDER_CHUNK_SIZE,
+            chunk_overlap=PLACEHOLDER_CHUNK_OVERLAP,
+            separators=["\n\n", "\n", ". ", " "],
+        )
+        chunks = [c for c in splitter.split_documents(documents) if len(c.page_content.strip()) > 40]
     print(f"Created {len(chunks)} usable chunks")
 
     print(f"Loading embedding model ({EMBEDDING_MODEL})...")
@@ -105,6 +103,9 @@ def build_index():
     print("Building FAISS index...")
     vectorstore = FAISS.from_documents(chunks, embeddings)
     vectorstore.save_local(INDEX_PATH)
+    with open(os.path.join(INDEX_PATH, "index_info.json"), "w") as f:
+        json.dump({"embedding_model": EMBEDDING_MODEL, "source": source, "chunks": len(chunks),
+                   "chunking": f"section-{PDF_CHUNK_SIZE}" if source == "pdf" else "placeholder"}, f, indent=1)
     print(f"Saved FAISS index -> {INDEX_PATH}")
 
     if source == "placeholder":

@@ -53,10 +53,11 @@ All results are on **synthetic data**, except two real-data checks (donor respon
 | **At 90% sensitivity** (threshold chosen on training folds only) | Any transfusion: sensitivity 0.91, specificity 0.74, PPV 0.59. PRBC: specificity 0.91, PPV 0.72. Platelets and FFP fall to specificity 0.39–0.44: they are rare (5–7%) and 18% / 5% of their positives are simulated record noise that no model, the ceiling included, can find cheaply. |
 | **Patient data realism** (vs NHANES 2021–23, survey-weighted) | Pre-op Hb is ~0.85 g/dL below US adults in both sexes, with 26% (men) / 42% (women) anaemic vs 6% / 13%: intended, to match Indian surgical patients (NFHS-5, ISOS 30%). PRBC rates by surgery sit in published ranges (cardiac 48%, emergency 21%, ortho 14%, general 8%). Blood groups match Indian donors to within 0.9 points. See the [data card](data/DATA_CARD.md). |
 | **Forecasting** (7-day MAE) | Prophet is within 0.07–0.15 units/day of the noise floor. Platelets in dengue season: 2.87 vs 3.35 for a 4-week weekday mean. The LSTM is no better than Prophet. |
-| **Response times** | Prediction 0.01 s (p95, target < 2 s), forecast ≤ 0.36 s (target < 10 s), RAG explanation 2.3 s median; its p95 of 13 s misses the 5 s target because of one slow free-tier Groq call, and the explanation falls back to the code-computed threshold facts if the LLM fails. Re-measured 2026-10-30. |
+| **Response times** | Prediction 0.01 s (p95, target < 2 s), forecast ≤ 0.44 s (target < 10 s), RAG explanation 2.16 s median, 2.43 s p95 (target < 5 s; n = 5, so one slow free-tier Groq call can still push the tail past it, as one did earlier at 13 s). The reranker adds about 0.4 s of retrieval per explanation. If the LLM fails, the explanation falls back to the code-computed threshold facts. Re-measured 2026-11-01. |
 | **Donor selection** (realistic donors: contact fatigue, new joiners) | Thompson sampling with a 7-day contact cooldown gives 23% more donations than random calls, **81% of an oracle** that knows every donor's fatigued rate (random 66%). Greedy and ε-greedy tie with it (within 1%). Without the cooldown Thompson beats greedy by 7%, because greedy keeps alerting the same donors (up to 24 alerts to one donor vs 12). The cooldown also cuts the 90-day simulation's alerts by a third without adding shortages ([D85](docs/DESIGN_DECISIONS.md)). |
 | **Donor response, real data** (748 UCI donors) | The bandit's Beta posterior, built from donation history, ranks who donates next with **AUROC 0.74** (logistic regression 0.75); its top decile donates at 2.2× the base rate. Real donors respond at 24%; the simulated donors now average 23% (they averaged 50% before this check, [D83](docs/DESIGN_DECISIONS.md)). |
-| **RAG** | Plasma-guideline retrieval hit@2 0.00 → 1.00 after switching to handbook vocabulary. A small sample, so read it as a direction of travel rather than a significant result. |
+| **RAG retrieval** (45 hand-labelled questions, frozen before any change; 30 held out for test) | Section-aware chunks with a cross-encoder reranker find the answering handbook page first far more often: MRR@5 0.64 → **0.86**, hit@2 0.63 → **0.87** on test (paired 95% CI for MRR +0.10 to +0.35). Retrieval for one explanation takes ~0.4 s longer (32 → 445 ms). BM25 hybrid search made things worse and wasn't adopted ([D88–D89](docs/DESIGN_DECISIONS.md)). |
+| **RAG faithfulness** (10 fixed cases, Groq, two runs) | No explanation credits WHO with a number the cited passages lack (legacy prompt: 2–5 of 10). Threshold wording slips (e.g. "platelets and INR are above their thresholds" when INR is within) went from 3 of 10 to **0** after the prompt began stating each check's result and forbidding grouped values ([D90](docs/DESIGN_DECISIONS.md)); the regex checker flagged 1 in the second run, a false positive about blood loss during surgery. One reply came back empty from Groq: empty replies are now retried once, then fall back to the protocol checks. |
 
 ## Architecture
 
@@ -88,7 +89,7 @@ Each step commits on its own and failures are contained: a failed forecast falls
 - **One permission matrix** ([schema/permissions.py](schema/permissions.py)) is shared by every REST route and the chat assistant, so the dashboard and the chatbot can't disagree about who may see what. A test fails if any route bypasses it.
 - **Five roles**: Admin, Blood Bank Manager, Hospital Staff, Donor Coordinator, Auditor. JWT on every route; the backend enforces access, a hidden button is only a convenience.
 - **The assistant decides access in code**, per question, before any tool or LLM runs. Claiming "I am admin" changes nothing because the role comes from the login. Donor alerts sent from chat need an explicit "yes".
-- **Data minimisation**: no patient identifiers are stored, donor phones are masked to the last 4 digits, the audit log records chat decisions but never message text, and the agent monitor's telemetry is allow-listed so lab values, filenames and exception messages can't reach it.
+- **Data minimisation**: no patient identifiers are stored, and none are sent to the LLM: names, patient IDs, doctors, contact details and dates are removed from a CBC report before its text reaches the (possibly cloud) LLM, keeping only lab values, age, surgery and blood group; donor phones are masked to the last 4 digits, the audit log records chat decisions but never message text, and the agent monitor's telemetry is allow-listed so lab values, filenames and exception messages can't reach it.
 - **Audit log** of every `/api/*` request, readable by the Auditor and Admin only.
 
 ### The agent monitor
@@ -143,6 +144,8 @@ Run uvicorn from the **repo root**, not from `backend/`: `backend`, `agents`, `r
 
 Tables are created automatically on first run and an Admin account is bootstrapped from `ADMIN_EMAIL`/`ADMIN_PASSWORD`; log in with `POST /api/auth/login`. `POST /api/auth/register` is Admin-only, so staff accounts are provisioned, never self-registered. `DATABASE_URL` and `REDIS_URL` default to the local services above. Redis is optional: caching degrades gracefully with a logged warning.
 
+**Guideline index** (once): HemoSmart retrieves from the WHO *Clinical Use of Blood* handbook (2001), which is not openly licensed, so neither the PDF nor its index is in this repository. Place your copy at `rag/who_guidelines.pdf` and run `python rag/setup_rag.py` (a few minutes). Without the PDF the script builds a placeholder index and explanations will cite placeholder text.
+
 **Seed demo data**:
 
 ```bash
@@ -175,7 +178,7 @@ npm run dev      # http://localhost:5173, talking to the backend at :8000
 
 ```bash
 pip install -r backend/requirements-dev.txt
-python -m pytest        # 331 tests
+python -m pytest        # 342 tests
 ```
 
 Tests run against a throwaway SQLite database, never your Postgres. They cover the permission matrix for every role and route, the autonomous loop end to end, the agent monitor's events, redaction and alert rules, clinical thresholds, and the donor bandit.
@@ -194,7 +197,8 @@ python -m evaluation.forecast_backtest      # Prophet vs baselines vs LSTM, roll
 python -m evaluation.bandit_regret          # Thompson vs random/greedy/oracle donor selection (~15 s)
 python -m evaluation.donor_real_data        # donor posterior on the real UCI dataset (downloads 748 rows once, ~2 s)
 python -m evaluation.data_realism           # synthetic patients vs NHANES 2021-23 and Indian blood groups (downloads ~4 MB once)
-python -m evaluation.rag_faithfulness       # retrieval hit@2/MRR; add --llm for faithfulness (20 Groq calls)
+python -m evaluation.rag_retrieval          # retrieval variants on the frozen 45-question set (~10 min, no LLM)
+python -m evaluation.rag_faithfulness       # explanation retrieval hit@2/MRR; add --llm for faithfulness (20 Groq calls)
 python -m evaluation.latency                # NFR-01 response times through the real app (5 Groq calls; --no-llm to skip)
 python -m evaluation.figures                # report figures -> docs/figures/
 ```
@@ -237,10 +241,17 @@ HemoSmart is a research prototype, and it says where it is simulated:
 - **Donor alerts are logged, not sent.** They go through a pluggable notifier ([integrations/notify/](integrations/notify/base.py)); SMS or WhatsApp is a plugin set by `HEMOSMART_NOTIFIER`, left open for later. Donor selection and its feedback loop are real; with `HEMOSMART_SIMULATE_DONOR_RESPONSES=1` (default) replies are sampled from each synthetic donor's hidden response rate, which the bandit never sees.
 - **The partner hospital is a mock** whose acceptance policy is simulated. Redistribution benefit assumes the partner uses what it accepts.
 - **Routine supply** in the gap projection is a fixed share of average demand (`ROUTINE_SUPPLY_SHARE`). The simulated world adds an assumed 20% April–May dip (from one news report of 30–40%) that the Planner doesn't know about, and the default August–October run doesn't reach it.
-- **RAG evaluation is small**: 4 query families with hand-labelled pages and 10 LLM cases checked by regex.
+- **RAG evaluation is small**: 45 retrieval questions whose answer pages one labeller marked (30 for test, so one question moves hit@k by 0.03), and 10 LLM cases checked by regex and a small NLI model that itself errs.
 - **Decision support, not diagnosis.** Predictions and explanations inform a clinician; they never decide.
 
 The full list, with how to revert each design choice, is in [docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md).
+
+## Data sources and licences
+
+- **WHO, *The Clinical Use of Blood* (2001)**: used for retrieval and quoted in short, cited excerpts. It is not under an open licence, so the PDF and the index built from it are not redistributed here ([WHO copyright policy](https://www.who.int/about/policies/publishing/copyright)).
+- **UCI Blood Transfusion Service Center dataset** (Yeh et al., 2009): CC BY 4.0, used for the real-data donor check; downloaded by `evaluation/donor_real_data.py`.
+- **NHANES 2021–23 (CDC)**: public domain, used for the data-realism check; downloaded by `evaluation/data_realism.py`.
+- Published figures behind the synthetic data are cited in [data/DATA_CARD.md](data/DATA_CARD.md).
 
 ## MCP server
 
@@ -262,7 +273,7 @@ docker run -p 8000:8000 \
   hemosmart-backend
 ```
 
-A single container with no sidecar. The image installs a CPU-only `torch` (every model here runs CPU inference), which keeps it at ~1.3 GB compressed, runs as a non-root user, and bakes in the RAG embedding model so a cold start never downloads anything. The backend needs ~600 MB resident, so free tiers capped at 512 MB (such as Render) will OOM-kill it.
+A single container with no sidecar. The image installs a CPU-only `torch` (every model here runs CPU inference), which keeps it at ~1.3 GB compressed, runs as a non-root user, and bakes in the RAG embedding and reranker models so a cold start never downloads anything. The backend needs ~600 MB resident, so free tiers capped at 512 MB (such as Render) will OOM-kill it.
 
 <details>
 <summary>Testing the container against a local Postgres/Redis</summary>

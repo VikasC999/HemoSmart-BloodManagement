@@ -35,12 +35,16 @@ ENV HOME=/home/user \
     HF_HOME=/home/user/.cache/huggingface
 USER user
 
-# Bake the RAG embedding model (rag/explain.py's EMBEDDING_MODEL) into
-# the image. Otherwise the first request after every cold start would
-# download it from the Hub -- slow, and it needs a writable cache dir.
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+# Bake the RAG models (rag/explain.py's EMBEDDING_MODEL and RERANKER_MODEL)
+# into the image. Otherwise the first request after every cold start would
+# download them from the Hub -- slow, and it needs a writable cache dir.
+RUN python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
 
 COPY --chown=user . .
+
+# The WHO handbook and its index aren't in git (licence): build the index from
+# rag/who_guidelines.pdf if it is in the build context, else from placeholder text.
+RUN python rag/setup_rag.py
 
 EXPOSE 8000
 
