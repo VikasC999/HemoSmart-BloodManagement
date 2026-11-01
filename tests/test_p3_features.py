@@ -163,3 +163,23 @@ def test_checker_flags_misattribution_and_contradiction(faithfulness):
     good = faithfulness.check("HemoSmart's protocol threshold for INR is 1.5; the INR of 1.1 is at or below it.",
                               case, facts, sources)
     assert good["misattributed"] == [] and good["contradictions"] == []
+
+
+@pytest.mark.parametrize("pdf, names", [
+    ("sample_cbc_report.pdf", ["John Doe", "CGH-2026-004821", "A. Rao", "12-Jul-2026"]),
+    ("sample_cbc_report_2.pdf", ["Priya Menon", "SDC-88213", "S. Iyer", "03-Aug-2026"]),
+    ("demo_cbc_report.pdf", ["DEMO PATIENT 01", "24-Oct-2026"]),
+])
+def test_report_identity_never_reaches_the_llm(pdf, names):
+    from adapters.pdf_adapter import PDFReportAdapter
+
+    class Capture:
+        prompt = ""
+
+        def generate(self, prompt):
+            Capture.prompt = prompt
+            return '{"hemoglobin": 7.2, "platelets": 65000, "INR": 1.9, "age": 58, "surgery_type": "Emergency"}'
+
+    PDFReportAdapter(llm_client=Capture()).extract_fields(os.path.join("adapters", pdf))
+    assert not [n for n in names if n in Capture.prompt]
+    assert "g/dL" in Capture.prompt and ("Age" in Capture.prompt or "Sex/Age" in Capture.prompt)

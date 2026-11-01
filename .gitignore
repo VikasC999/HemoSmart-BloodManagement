@@ -33,3 +33,9 @@ frontend/.env.production.local
 graphify-out/
 # NHANES lab files; evaluation/data_realism.py downloads them
 data/external/*.xpt
+
+# WHO 2001 handbook: not openly licensed, so it is not redistributed here.
+# Supply your own copy and build the index locally (README: Data sources and licences).
+rag/who_guidelines.pdf
+rag/faiss_index/
+data/external/*.pdf

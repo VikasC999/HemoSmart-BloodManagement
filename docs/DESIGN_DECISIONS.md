@@ -36,7 +36,7 @@ Each entry: **Decision** · **Why** · **Alternatives considered** ·
 - [P3 — Report alignment](#p3--report-alignment) (D55–D63) · frontend design system (D64)
 - [Role-aware assistant (FR-08)](#role-aware-assistant-fr-08) (D65–D70)
 - [Agent monitor](#agent-monitor) (D71–D75)
-- [Pre-submission review](#pre-submission-review) (D76–D86)
+- [Pre-submission review](#pre-submission-review) (D76–D91)
 - [LLM call budget](#llm-call-budget)
 - [Known limitations](#known-limitations)
 
@@ -941,6 +941,67 @@ Owner decisions (2026-10-24, all the plan's recommended defaults): a new `agents
   - On a throwaway database seeded this way, one cycle projected 1 shortage, alerted 16 donors and redistributed 6 units. Nine start dates were tried (seven consecutive days, 1 Aug and 15 Sep); every one gave shortages ≥ 1, alerts ≥ 16 and transfers ≥ 1.
   - `evaluation.simulate` shares this starting stock, so its results include the change.
 - **Revert:** restore the old `SCENARIOS`. The column is harmless if unused.
+
+#### D87. CBC report text is redacted before it reaches the LLM
+- **Decision:** `redact_identifiers()` in [adapters/pdf_adapter.py](../adapters/pdf_adapter.py) removes identity lines (patient name and ID, UHID/MRN, referring or verifying doctor, contact details, address, dates of birth and of sample or report) and inline identifiers (doctor names, ID codes like `CGH-2026-004821`, emails, phone numbers) from the extracted report text before the extraction prompt is built. A label alone on its line also drops the next line, where some layouts put the value. Age, sex, blood group, surgery and every lab value are kept. It is the only path that sends report text to an LLM (the upload page and the CrewAI pipeline both use it).
+- **Why:** the full report text, including "Patient Name: John Doe" and the patient ID, was sent to Groq's cloud API. Nothing was stored, but sending identity to a third party contradicts data minimisation (NFR-03) and India's DPDP Act. Extraction results were unchanged on all sample reports.
+- **Limits:** rule-based; a layout with unusual labels, or a name inside free-text clinical notes, can get through. For real deployment use the local Ollama provider or add an NER-based de-identifier.
+
+#### D88. RAG retrieval is measured on a frozen, hand-labelled question set
+- **Decision:** [rag_eval_set.json](../evaluation/rag_eval_set.json) was written on 2026-11-01, before any retrieval variant was run, and not changed after (sha256 `6d064d8b…d2443ce5d0`).
+  - **Questions:** 45 realistic ones covering red cells and Hb thresholds, platelets, plasma/FFP/INR, cryoprecipitate, DIC and bleeding, storage and time limits, ABO compatibility, donors, surgery, massive transfusion, transfusion reactions, fluids, burns and obstetrics.
+  - **Labels:** each question's answering handbook page(s), chosen by reading the extracted PDF text, never by running a retriever.
+  - **Split:** 15 dev / 30 test, by `random.Random(42).shuffle`.
+  - **Not covered:** the 2001 handbook has no dengue section and no donor-eligibility intervals, so the set has no such questions.
+- **Method** ([rag_retrieval.py](../evaluation/rag_retrieval.py)):
+  - **Metrics:** hit@1/2/5, MRR@5 and nDCG@5 on the top 5 chunks (a page counts once), plus CPU retrieval latency per query (median of 3 runs).
+  - **Selection:** settings are chosen on dev only. Only the baseline, the winner and the deployed retriever are scored on test, with a paired bootstrap 95% CI.
+  - **Faithfulness** ([rag_faithfulness.py](../evaluation/rag_faithfulness.py)) keeps its regex checks and adds an offline NLI cross-encoder (`cross-encoder/nli-deberta-v3-base`, evaluation only), which judges each sentence citing [n] against the passage it cites.
+- **Limits:**
+  - One labeller (the coding agent), and 30 test questions: one question is 0.033 of hit@k.
+  - The NLI model is weak on explanation sentences. It called none of them entailed, even before this change, and in a probe it read "room temperature" as contradicting "20°C to 24°C". Its contradiction count is a screen, not a verdict.
+
+#### D89. Retrieval: section-aware chunks + cross-encoder reranking; embeddings unchanged
+- **Decision** ([retrieval.py](../rag/retrieval.py), [explain.py](../rag/explain.py), [setup_rag.py](../rag/setup_rag.py)):
+  - **Chunking:** the handbook is chunked at its own headings (FranklinGothic-Heavy ≥ 10.5 pt, upper-case box titles). Chunks are at most 500 characters and never cross a page, so the cited page is exact. Each carries its section title, prefixed to the text and kept in metadata; citations now read "p.51, Platelet concentrates".
+  - **Retrieval:** `GuidelineRetriever.search` takes the FAISS top 20 and re-scores them with `cross-encoder/ms-marco-MiniLM-L-6-v2`. One retriever serves the explanation generator, `answer_guideline_question` and the autonomy brief.
+  - **Robustness and packaging:** if the reranker can't load (offline, no cache), search falls back to dense-only. `index_info.json` records how the index was built, and a mismatch prints a rebuild hint. The Docker image bakes in the reranker. No new dependencies.
+- **Dev (15 questions), MRR@5:**
+
+  | Config | MRR@5 |
+  |---|---|
+  | Baseline (page-800 chunks, MiniLM, dense) | 0.767 |
+  | Section-500 chunks alone | 0.839 |
+  | Reranker alone | 0.817 |
+  | bge-small embeddings alone | 0.800 |
+  | BM25 hybrid alone | 0.672 (worse) |
+  | **Section-500 + MiniLM + rerank** | **0.889** |
+
+  Section-500 + bge-small + rerank and the hybrid + rerank variants tie at 0.889.
+- **Test (30 questions):** MRR@5 0.642 → **0.861**, hit@1 0.57 → 0.83, hit@2 0.63 → 0.87, nDCG@5 0.59 → 0.83. Paired 95% CI for MRR: +0.10 to +0.35. The deployed retriever reproduces these exactly.
+- **How the tie was broken, in full:** the first run broke dev ties by measured latency. Its latency had one-off stalls and its table was malformed, so I fixed the timing and re-ran.
+  - Between runs, ~10 ms latency differences flipped the tie-break: bge-small first, MiniLM second.
+  - By then both had been scored on test: bge-small + rerank 0.875, MiniLM + rerank 0.844 on the pre-heading-fix index.
+  - The final rule breaks ties deterministically: first prefer no new embedding model, then lower latency. It picks MiniLM, which also saves a 130 MB download.
+  - The choice was not made on test numbers. bge-small scored slightly higher on test, inside the CI.
+- **Cost:** ~110 ms per query on CPU. One explanation runs 4 queries, so its retrieval goes from 32 to 445 ms median (641 max); a guideline question adds ~110 ms.
+  - End to end, `evaluation.latency` measured the explanation at 2.16 s median and 2.43 s p95 (n = 5; before: 2.28 / 13.22 s, a Groq tail).
+  - The cheaper "section-500 chunks, no reranker" (dev 0.839, 6 ms) is the fallback if latency matters more.
+- **Faithfulness** (10 cases, new Groq run):
+  - No number is credited to WHO that the cited passages lack (legacy prompt: 4).
+  - No unsupported numbers and no bad citations.
+  - Regex "threshold contradictions" are 3 (1 in the previous run). All are "platelet count and INR are above their thresholds" style slips about the protocol checks, which the passages don't contain; the legacy prompt shows the same jump (0 → 4), so it looks like LLM run-to-run variation. A prompt fix is a separate change.
+  - NLI flags 2 of 16 cited sentences as contradicted by their passage. Rescoring the pre-change explanations against the original index flagged 0 of 21.
+- **Revert:** `git checkout` `rag/explain.py` and `rag/setup_rag.py`, then `python rag/setup_rag.py`.
+
+#### D90. The explanation prompt states each threshold result; empty LLM replies never reach the clinician
+- **Decision:** the prompt now carries a one-line summary computed from the same code checks ("crosses HemoSmart's protocol threshold: hemoglobin; within it: platelets, INR") and a rule to discuss each lab value on its own, never grouped ([rag/explain.py](../rag/explain.py), `threshold_verdicts`). An empty reply is retried once; a second empty reply raises, so chat falls back to the protocol checks and the explain page shows its error state.
+- **Why:** after D89, 3 of 10 explanations merged values with different results ("platelet count and INR are above their thresholds" with INR within limits). The checks were right; the LLM grouped them. In two runs after the change, real slips were 0 and 0 (the regex flagged one sentence about intra-operative blood loss, a false positive). One of 20 replies in those runs was empty from Groq, which used to show as a blank explanation.
+
+#### D91. The WHO 2001 handbook and its index are no longer redistributed
+- **Decision:** `rag/who_guidelines.pdf` and `rag/faiss_index/` are removed from git and ignored; each install supplies its own copy and builds the index with `python rag/setup_rag.py` (the Docker image runs it at build time). The README's "Data sources and licences" section lists every external source and its terms.
+- **Why:** the 2001 handbook predates WHO's CC BY-NC-SA licensing and carries no open licence; WHO's copyright policy requires permission for reprinting complete works outside that licence. Retrieving from it and quoting short cited excerpts is ordinary academic use; republishing the whole book (and the index, which contains its full text in chunks) in a public repository is not. Earlier commits still contain the files; rewriting history was not done (owner decision).
+- **Next:** the openly licensed WHO 2021 educational modules are being evaluated as an addition or replacement (owner decides on results).
 
 ## LLM call budget
 

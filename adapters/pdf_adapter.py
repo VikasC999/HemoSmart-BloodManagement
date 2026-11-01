@@ -16,6 +16,7 @@ end-to-end, but the LLM prompt/integration is Person B's to build out.
 """
 
 import json
+import re
 from typing import List
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,6 +37,44 @@ Return ONLY the JSON object. No explanation, no markdown formatting.
 Report text:
 {report_text}
 """
+
+
+# The LLM needs lab values, age, surgery and blood group -- never who the
+# patient is. Identity lines are removed before the report text leaves the
+# machine (the LLM may be a cloud API). A label alone on its line ("Patient:")
+# also drops the next line, where some layouts put the value.
+_IDENTITY_LABEL = re.compile(
+    r"^\s*(patient(\s*name)?|name|patient\s*id|uhid|mrn|ip\s*no\.?|reg(istration)?\s*no\.?|lab\s*no\.?"
+    r"|referring\s+(physician|doctor)|referred\s+by|consultant|verified\s+by|signed\s+by|reported\s+by"
+    r"|phone|mobile|contact|address|e-?mail|d\.?o\.?b\.?|date\s+of\s+birth|aadhaar|abha(\s*id)?"
+    r"|report\s*date|sample\s*date|collected|received)\s*[:\-]",
+    re.I,
+)
+_INLINE_IDENTIFIERS = [
+    (re.compile(r"\bDr\.?\s+[A-Z][\w.]*(\s+[A-Z][\w.]*)*"), "[doctor]"),
+    (re.compile(r"\b[A-Z]{2,}-\d[\d-]{3,}\b"), "[id]"),                    # CGH-2026-004821
+    (re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[email]"),
+    (re.compile(r"(\+91[\s-]?)?\b\d{10}\b"), "[phone]"),
+]
+
+
+def redact_identifiers(text: str) -> str:
+    """Report text with patient and staff identity removed, lab content kept."""
+    out, drop_next = [], False
+    for line in text.splitlines():
+        if drop_next and line.strip():
+            drop_next = False
+            out.append("[redacted]")
+            continue
+        m = _IDENTITY_LABEL.match(line)
+        if m:
+            drop_next = not line[m.end():].strip()
+            out.append("[redacted]")
+            continue
+        for pattern, token in _INLINE_IDENTIFIERS:
+            line = pattern.sub(token, line)
+        out.append(line)
+    return "\n".join(out)
 
 
 class PDFReportAdapter(BaseAdapter):
@@ -101,7 +140,7 @@ class PDFReportAdapter(BaseAdapter):
                 "to convert extracted text into structured fields."
             )
 
-        report_text = self.extract_text(pdf_path)
+        report_text = redact_identifiers(self.extract_text(pdf_path))
         prompt = EXTRACTION_PROMPT.format(report_text=report_text)
         response_text = self.llm_client.generate(prompt)
 
