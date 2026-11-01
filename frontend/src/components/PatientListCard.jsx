@@ -11,7 +11,7 @@ function ResultSummary({ prediction }) {
     <span className="result-inline">
       <span>{needed.length ? needed.map((c) => `${c.units} ${c.component}`).join(", ") : "Transfusion needed"}</span>
       {prediction.urgency && (
-        <SeverityBadge level={urgencySeverity(prediction.urgency)} label={prediction.urgency} />
+        <SeverityBadge level={urgencySeverity(prediction.urgency)} label={prediction.urgency} className="quiet" />
       )}
     </span>
   );

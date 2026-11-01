@@ -17,6 +17,7 @@ export default function InventoryCard({ editable = false }) {
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [receiving, setReceiving] = useState(false);
 
   const load = async () => {
     setError(null);
@@ -111,7 +112,14 @@ export default function InventoryCard({ editable = false }) {
         <li className="muted legend-near"><Hourglass size={12} aria-hidden="true" /> = units near expiry</li>
       </ul>
 
-      {editable && (
+      {editable && !receiving && (
+        <div className="receive-toggle">
+          <button type="button" className="secondary" onClick={() => setReceiving(true)}>
+            <PackagePlus size={16} aria-hidden="true" /> Receive units
+          </button>
+        </div>
+      )}
+      {editable && receiving && (
         <form className="receive" onSubmit={(e) => { e.preventDefault(); submitReceive(); }}>
           <h3 className="section-title">Receive units</h3>
           <p className="hint">Log a delivery. Units enter stock now; their expiry dates count from collection.</p>
@@ -143,6 +151,7 @@ export default function InventoryCard({ editable = false }) {
             <button type="submit" disabled={saving}>
               <PackagePlus size={16} aria-hidden="true" /> {saving ? "Adding…" : "Add to stock"}
             </button>
+            <button type="button" className="ghost" onClick={() => { setReceiving(false); setMessage(null); }}>Done</button>
           </div>
           {message && <p className="state empty" role="status">{message}</p>}
         </form>

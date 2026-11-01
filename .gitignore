@@ -38,4 +38,5 @@ data/external/*.xpt
 # Supply your own copy and build the index locally (README: Data sources and licences).
 rag/who_guidelines.pdf
 rag/faiss_index/
+rag/faiss_index_2021exp/
 data/external/*.pdf

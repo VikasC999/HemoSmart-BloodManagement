@@ -78,7 +78,7 @@
   --radius-sm: 6px;
   --radius-md: 9px;
   --radius-lg: 12px;
-  --shadow-card: 0 1px 2px rgba(41, 38, 33, 0.04);
+  --shadow-card: none; /* cards carry a border, so no shadow (one or the other) */
   --shadow-pop: 0 12px 32px rgba(41, 38, 33, 0.14);
   --color-scrim: rgba(41, 38, 33, 0.42);
   --shadow-control: 0 1px 2px rgba(41, 38, 33, 0.08);

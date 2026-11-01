@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CircleAlert, LockKeyhole } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { auth } from "../api";
 import { LogoMark, Wordmark } from "./layout/Logo";
 
@@ -26,16 +26,16 @@ export default function LoginScreen({ onLoggedIn }) {
   };
 
   return (
-    <div className="login-screen">
-      <main className="login-panel">
-        <div className="login-brand">
-          <LogoMark size={44} />
-          <Wordmark />
+    <main className="login-screen">
+      <section className="login-brand-panel" aria-label="HemoSmart">
+        <p className="login-mark"><LogoMark size={24} /><Wordmark /></p>
+        <div className="login-pitch">
+          <h1 className="login-title">Welcome to<br />Hemo<span className="brand-name-accent">Smart</span></h1>
+          <p className="login-tagline">Blood management, done right.</p>
         </div>
-        <h1>Sign in to your workspace</h1>
-        <p className="login-intro">
-          Forecast blood demand, predict transfusion needs and keep stock from expiring unused.
-        </p>
+      </section>
+      <section className="login-panel" aria-labelledby="login-heading">
+        <h2 id="login-heading" className="login-panel-title">Sign in to your workspace</h2>
         <form className="login-form" onSubmit={submit}>
           <label>
             Work email
@@ -58,11 +58,7 @@ export default function LoginScreen({ onLoggedIn }) {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <p className="login-foot">
-          <LockKeyhole size={13} aria-hidden="true" />
-          Your role decides what you see. Every action is recorded in the audit log.
-        </p>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }

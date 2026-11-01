@@ -140,3 +140,20 @@ def test_empty_llm_reply_is_retried_then_refused():
     assert _generator(llm).explain_with_sources(_record(), True)["explanation"] == "Hemoglobin is low [1]."
     with pytest.raises(ValueError):
         _generator(_ScriptedLLM("  ", "")).explain_with_sources(_record(), True)
+
+
+MODULES_PDF = os.path.join(os.path.dirname(PDF), "..", "data", "external", "who_clinical_use_modules_2021.pdf")
+
+
+@pytest.mark.skipif(not os.path.exists(MODULES_PDF), reason="2021 modules PDF not downloaded (evaluation/rag_2021_experiment.py)")
+def test_section_chunks_accept_another_documents_layout():
+    saved = os.environ["DATABASE_URL"]
+    import evaluation.rag_2021_experiment as exp
+    os.environ["DATABASE_URL"] = saved
+    chunks = section_chunks(MODULES_PDF, 500, source="2021 modules", is_heading=exp.modules_heading,
+                            is_header=exp.modules_header)
+    p44 = [c for c in chunks if c.metadata["page"] == 44]
+    assert p44 and all(c.metadata["source"] == "2021 modules" for c in chunks)
+    assert any("Red blood cell transfusion thresholds" in c.metadata["section"] for c in p44)
+    # the running header is dropped from chapter pages (the cover/licence front matter keeps its title)
+    assert not any("EDUCATIONAL MODULES ON CLINICAL USE OF BLOOD" in c.page_content for c in chunks if c.metadata["page"] >= 15)

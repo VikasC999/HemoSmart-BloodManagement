@@ -1,0 +1,429 @@
+{
+ "production (2001)|0|0": {
+  "explanation": "The AI predicts that a transfusion is required because the patient\u2019s hemoglobin of 6.8\u202fg/dL crosses HemoSmart's protocol threshold for general surgery, which requires a minimum of 8.0\u202fg/dL [1].  \nThe platelet count of 210,000\u202f/\u00b5L is within HemoSmart\u2019s protocol threshold for general surgery and therefore does not trigger a platelet transfusion [3].  \nThe INR of 1.1 is within HemoSmart\u2019s protocol threshold for FFP transfusion, so no fresh\u2011frozen plasma is indicated [5].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 168,
+    "section": "HAEMODILUTION METHOD OF ESTIMATING ALLOWABLE BLOOD LOSS",
+    "excerpt": "HAEMODILUTION METHOD OF ESTIMATING ALLOWABLE BLOOD LOSS should be with transfused blood. These methods are simply guides to fluid replacement and transfusion. During surgery, the decision to transfuse will ultimately need to be based on the careful assessment of: Volume of blood loss Rate of blood loss (actual and anti..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   }
+  ]
+ },
+ "production (2001)|0|1": {
+  "explanation": "Platelets are below the HemoSmart threshold of 50\u202f\u00d7\u202f10\u2079/L, so platelet concentrates should be given\u202f[3],\u202f[4].  \nHemoglobin is 12.9\u202fg/dL, which is within HemoSmart's protocol threshold for orthopedic surgery, so no red\u2011cell transfusion is indicated\u202f[1].  \nINR is 1.0, within the threshold for FFP transfusion, so plasma is not required\u202f[5],\u202f[6].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 5,
+    "section": "Appropriate and inappropriate transfusion",
+    "excerpt": "Appropriate and inappropriate transfusion haemoglobin level before surgery or to allow earlier discharge from hospital. These are rarely valid reasons for transfusion. 3 Transfusions of whole blood, red cells or plasma are often given when other treatments, such as the infusion of normal saline or other intravenous rep..."
+   }
+  ]
+ },
+ "production (2001)|0|2": {
+  "explanation": "Hemoglobin is within HemoSmart's protocol threshold for general surgery, consistent with WHO\u2019s statement that a preoperative hemoglobin of 7\u20138\u202fg/dL is usually acceptable for minor surgery in a healthy patient [1].  \nPlatelet count is within HemoSmart's protocol threshold, and WHO notes that platelet transfusion is recommended when the count falls below 50\u202f\u00d7\u202f10\u2079/L or when microvascular bleeding is evident [3][4].  \nINR exceeds HemoSmart's protocol threshold for FFP transfusion, and WHO indicates that fresh frozen plasma should be used to correct clinically important bleeding due to coagulation factor deficiencies, such as warfarin overdose [5][6].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 168,
+    "section": "HAEMODILUTION METHOD OF ESTIMATING ALLOWABLE BLOOD LOSS",
+    "excerpt": "HAEMODILUTION METHOD OF ESTIMATING ALLOWABLE BLOOD LOSS should be with transfused blood. These methods are simply guides to fluid replacement and transfusion. During surgery, the decision to transfuse will ultimately need to be based on the careful assessment of: Volume of blood loss Rate of blood loss (actual and anti..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   }
+  ]
+ },
+ "production (2001)|0|3": {
+  "explanation": "The patient\u2019s hemoglobin of 7.2\u202fg/dL is below HemoSmart\u2019s protocol threshold for emergency surgery and falls into the range that may compromise oxygen delivery during major operations [1].  \nThe platelet count of 45\u202f000\u202f/\u00b5L is below the 50\u202f000 threshold, indicating a risk of microvascular bleeding that would warrant platelet transfusion [3], [4].  \nAn INR of 1.9 exceeds HemoSmart\u2019s threshold for FFP, suggesting a significant coagulopathy that would benefit from plasma replacement [6].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 5,
+    "section": "Appropriate and inappropriate transfusion",
+    "excerpt": "Appropriate and inappropriate transfusion haemoglobin level before surgery or to allow earlier discharge from hospital. These are rarely valid reasons for transfusion. 3 Transfusions of whole blood, red cells or plasma are often given when other treatments, such as the infusion of normal saline or other intravenous rep..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   }
+  ]
+ },
+ "production (2001)|0|4": {
+  "explanation": "The AI predicts a transfusion because the patient\u2019s hemoglobin of 8.6\u202fg/dL is **below HemoSmart's protocol threshold** for cardiac surgery, indicating a need to maintain oxygen delivery [1]. Platelets at 180\u202f000\u202f/\u00b5L are **within HemoSmart's protocol threshold**, so a platelet transfusion is not indicated [3]. INR of 1.0 is **within HemoSmart's protocol threshold** for fresh frozen plasma, so no plasma transfusion is required [5].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 166,
+    "section": "Fluid replacement and transfusion",
+    "excerpt": "Fluid replacement and transfusion occurs. This allows the cardiac output to increase and sustain the oxygen supply if the haemoglobin concentration is falling. 4 The replacement of blood loss with crystalloid or colloid fluids dilutes the blood (haemodilution). This reduces its viscosity and improves both capillary blo..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   }
+  ]
+ },
+ "production (2001)|0|5": {
+  "explanation": "Hemoglobin of 13.0\u202fg/dL is within HemoSmart's protocol threshold for cardiac surgery [1].  \nThe platelet count of 85,000\u202f/\u00b5L crosses HemoSmart's protocol threshold, suggesting a need for platelet concentrates, as indicated for patients with micro\u2011vascular bleeding or low counts [3][4].  \nThe INR of 1.2 is within HemoSmart's protocol threshold for plasma, so fresh frozen plasma is not indicated [5][6].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 166,
+    "section": "Fluid replacement and transfusion",
+    "excerpt": "Fluid replacement and transfusion occurs. This allows the cardiac output to increase and sustain the oxygen supply if the haemoglobin concentration is falling. 4 The replacement of blood loss with crystalloid or colloid fluids dilutes the blood (haemodilution). This reduces its viscosity and improves both capillary blo..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   }
+  ]
+ },
+ "production (2001)|0|6": {
+  "explanation": "The patient\u2019s hemoglobin of 9.4\u202fg/dL crosses HemoSmart's protocol threshold for emergency surgery, indicating a need for transfusion [1]. Platelet count of 150,000\u202f/\u00b5L is within HemoSmart's protocol threshold, as transfusion is reserved for counts below 50,000\u202f/\u00b5L [3][4]. INR of 1.3 is within HemoSmart's protocol threshold, so no FFP transfusion is indicated based on the available evidence [5][6].",
+  "citations": [
+   {
+    "ref": 1,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative haemoglobin level",
+    "excerpt": "Preoperative haemoglobin level Many practitioners will accept a threshold haemoglobin level of approximately 7\u20138 g/dl in a well-compensated and otherwise healthy patient presenting for minor surgery. However, a higher preoperative haemoglobin level will be needed before elective surgery in the following situations. 1 I..."
+   },
+   {
+    "ref": 2,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 160,
+    "section": "Preoperative anaemia",
+    "excerpt": "Preoperative anaemia 1 Patients should be tested preoperatively to detect anaemia. Anaemia should be treated and, if possible, its cause diagnosed and treated before planned surgery. 2 In a patient who is already anaemic, a further reduction in oxygen delivery due to acute blood loss or the effects of anaesthetic agent..."
+   },
+   {
+    "ref": 3,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 77,
+    "section": "Depletion of platelets",
+    "excerpt": "Depletion of platelets Platelet function is rapidly lost during the storage of whole blood and there is virtually no platelet function after 24 hours. Management 1 Give platelet concentrates only when: The patient shows clinical signs of microvascular bleeding: i.e. bleeding and oozing from mucous membranes, wounds, ra..."
+   },
+   {
+    "ref": 4,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 162,
+    "section": "Thrombocytopenia",
+    "excerpt": "Thrombocytopenia A variety of disorders may give rise to a reduced platelet count. Prophylactic measures and the availability of platelet concentrates for transfusion are invariably required for surgery in this group of patients: e.g. splenectomy in a patient with idiopathic thrombocytopenia purpura (ITP). Platelet tra..."
+   },
+   {
+    "ref": 5,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 30,
+    "section": "FRESH FROZEN PLASMA",
+    "excerpt": "FRESH FROZEN PLASMA Replacement of multiple coagulation factor deficiencies: e.g. \u2014 Liver disease \u2014 Warfarin (anticoagulant) overdose \u2014 Depletion of coagulation factors in patients receiving large volume transfusions Disseminated intravascular coagulation (DIC) Thrombotic thrombocytopenic purpura (TTP) Precautions Acut..."
+   },
+   {
+    "ref": 6,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 155,
+    "section": "Fresh frozen plasma",
+    "excerpt": "Fresh frozen plasma Fresh frozen plasma should only be used for specific clinical indications for which it is proved to be effective: The correction of clinically important bleeding tendencies due to deficiency of plasma clotting factors \u2013 and only when a safer, virus-inactivated product is unavailable For infusion or ..."
+   },
+   {
+    "ref": 7,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 5,
+    "section": "Appropriate and inappropriate transfusion",
+    "excerpt": "Appropriate and inappropriate transfusion haemoglobin level before surgery or to allow earlier discharge from hospital. These are rarely valid reasons for transfusion. 3 Transfusions of whole blood, red cells or plasma are often given when other treatments, such as the infusion of normal saline or other intravenous rep..."
+   },
+   {
+    "ref": 8,
+    "source": "WHO, The Clinical Use of Blood (Handbook)",
+    "page": 158,
+    "section": "Surgery & anaesthesia Key points",
+    "excerpt": "Surgery & anaesthesia Key points Use autologous transfusion, where appropriate, to reduce or eliminate the need for transfusion. However, it should only be considered where the surgery is expected to result in sufficient blood loss to require allogeneic transfusion. 6 Blood loss and hypovolaemia can still develop in th..."
+   }
+  ]
+ }
+}
