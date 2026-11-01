@@ -1,0 +1,197 @@
+{
+ "description": "Frozen retrieval test set for WHO/ISBT 'Educational modules on clinical use of blood' (2021), data/external/who_clinical_use_modules_2021.pdf. Created 2026-11-01 before any 2021 index or variant was built (evaluation/rag_2021_experiment.py).",
+ "source": "who2021",
+ "pages": "1-based PDF page numbers (printed page + 14)",
+ "labelling": "Pages chosen by reading the extracted module text, not by running a retriever. One labeller (the coding agent).",
+ "split": {
+  "seed": 42,
+  "method": "random.Random(42).shuffle(ids); first 6 = dev",
+  "dev": 6,
+  "test": 12
+ },
+ "items": [
+  {
+   "id": "m01",
+   "topic": "rbc",
+   "question": "What haemoglobin threshold should be used to transfuse a haemodynamically stable hospitalized adult?",
+   "source": "who2021",
+   "pages": [
+    44
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m02",
+   "topic": "rbc",
+   "question": "What haemoglobin transfusion threshold is recommended for patients undergoing cardiac surgery?",
+   "source": "who2021",
+   "pages": [
+    44
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m03",
+   "topic": "rbc",
+   "question": "What haemoglobin threshold is recommended for orthopaedic surgery patients or those with stable cardiovascular disease?",
+   "source": "who2021",
+   "pages": [
+    44
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m04",
+   "topic": "rbc",
+   "question": "What transfusion threshold should be used for an adult with an acute upper gastrointestinal bleed?",
+   "source": "who2021",
+   "pages": [
+    44
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m05",
+   "topic": "anaemia",
+   "question": "What haemoglobin level defines anaemia in each trimester of pregnancy?",
+   "source": "who2021",
+   "pages": [
+    132
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "m06",
+   "topic": "anaemia",
+   "question": "What haemoglobin values does WHO use to define anaemia in adult men and non-pregnant women?",
+   "source": "who2021",
+   "pages": [
+    29
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "m07",
+   "topic": "plasma",
+   "question": "How should the INR be corrected before surgery in a patient taking warfarin?",
+   "source": "who2021",
+   "pages": [
+    174
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m08",
+   "topic": "platelets",
+   "question": "At what platelet count should a child with stable hypoproliferative thrombocytopenia receive prophylactic platelets?",
+   "source": "who2021",
+   "pages": [
+    165
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "m09",
+   "topic": "platelets",
+   "question": "At what platelet count should a thrombocytopenic neonate receive a prophylactic platelet transfusion?",
+   "source": "who2021",
+   "pages": [
+    165
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m10",
+   "topic": "platelets",
+   "question": "How much should one adult dose of platelets raise the platelet count?",
+   "source": "who2021",
+   "pages": [
+    101,
+    60
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "m11",
+   "topic": "surgery",
+   "question": "How much does tranexamic acid reduce surgical blood loss and transfusion?",
+   "source": "who2021",
+   "pages": [
+    176
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m12",
+   "topic": "surgery",
+   "question": "What is a maximum surgical blood ordering schedule?",
+   "source": "who2021",
+   "pages": [
+    81,
+    82
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m13",
+   "topic": "safety",
+   "question": "What are pathogen reduction technologies for blood components?",
+   "source": "who2021",
+   "pages": [
+    73
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "m14",
+   "topic": "pbm",
+   "question": "What is patient blood management?",
+   "source": "who2021",
+   "pages": [
+    171
+   ],
+   "split": "dev"
+  },
+  {
+   "id": "m15",
+   "topic": "obstetrics",
+   "question": "Which blood should be given when a massive transfusion protocol is activated for obstetric haemorrhage before the ABO type is known?",
+   "source": "who2021",
+   "pages": [
+    140
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m16",
+   "topic": "components",
+   "question": "Why are cellular blood components irradiated?",
+   "source": "who2021",
+   "pages": [
+    104
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m17",
+   "topic": "surgery",
+   "question": "What is cell salvage and when can it be used?",
+   "source": "who2021",
+   "pages": [
+    181,
+    180
+   ],
+   "split": "test"
+  },
+  {
+   "id": "m18",
+   "topic": "procedures",
+   "question": "At what rate should a unit of red cells be transfused in an adult?",
+   "source": "who2021",
+   "pages": [
+    100
+   ],
+   "split": "test"
+  }
+ ]
+}

@@ -307,7 +307,7 @@ export default function Overview({ canRun = false }) {
             ) : !alerts.data ? <SkeletonLines lines={4} /> : alerts.data.length === 0 ? (
               <EmptyState title="No donor alerts yet">Alerts sent by you or the agents appear here.</EmptyState>
             ) : (
-              <ul className="plain-list">
+              <ul className="plain-list alert-columns">
                 {alerts.data.map((a) => (
                   <li key={a.id}>
                     <span><strong>{a.blood_type}</strong> {a.component || ""} · {a.donor_id}</span>

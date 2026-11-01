@@ -36,7 +36,7 @@ Each entry: **Decision** · **Why** · **Alternatives considered** ·
 - [P3 — Report alignment](#p3--report-alignment) (D55–D63) · frontend design system (D64)
 - [Role-aware assistant (FR-08)](#role-aware-assistant-fr-08) (D65–D70)
 - [Agent monitor](#agent-monitor) (D71–D75)
-- [Pre-submission review](#pre-submission-review) (D76–D91)
+- [Pre-submission review](#pre-submission-review) (D76–D93)
 - [LLM call budget](#llm-call-budget)
 - [Known limitations](#known-limitations)
 
@@ -1002,6 +1002,31 @@ Owner decisions (2026-10-24, all the plan's recommended defaults): a new `agents
 - **Decision:** `rag/who_guidelines.pdf` and `rag/faiss_index/` are removed from git and ignored; each install supplies its own copy and builds the index with `python rag/setup_rag.py` (the Docker image runs it at build time). The README's "Data sources and licences" section lists every external source and its terms.
 - **Why:** the 2001 handbook predates WHO's CC BY-NC-SA licensing and carries no open licence; WHO's copyright policy requires permission for reprinting complete works outside that licence. Retrieving from it and quoting short cited excerpts is ordinary academic use; republishing the whole book (and the index, which contains its full text in chunks) in a public repository is not. Earlier commits still contain the files; rewriting history was not done (owner decision).
 - **Next:** the openly licensed WHO 2021 educational modules are being evaluated as an addition or replacement (owner decides on results).
+
+#### D92. Split-screen login; app screens reviewed against the taste skill
+- **Login:** a split screen. On the left, an ink brand panel with a small logo and wordmark at the top left, a centred "Welcome to HemoSmart" and "Blood management, done right." over one warm glow (kept at the owner's choice). On the right, the form on the page ground, with no card. The intro line and the role-based audit note were removed (owner). There is one h1; the form title is an h2 in a labelled section.
+- **App screens** (review with the design-taste-frontend skill, app-screen rules, before and after screenshots in `.taste-skill/`, not committed):
+  - colour only where action is needed: stock at par is plain, and table urgency is an icon and word instead of a filled chip;
+  - rows end level: overview outcomes and donor alerts each get a full row, Receive units opens from the inventory card's foot, and the agent task list runs to the floor's height;
+  - the HemoBuddy launcher is a 48px round button that names itself on hover or focus;
+  - the agent office dot grid is removed;
+  - cards keep a border and lose the shadow.
+
+  Lint (app rules): 2 FAIL → 0. Self-scored 7.3 → 7.6 on the skill's rubric.
+- **Owner decision:** the login page's earlier look (with the glow) was preferred over the review's flat version; the signed-in fixes were kept.
+
+#### D93. OPEN: add the WHO 2021 educational modules to retrieval? (owner to decide)
+- **Status:** open, logged at the owner's request (2026-11-01). Production stays on the 2001 handbook until the owner decides.
+- **Evidence** ([evaluation/results/rag_2021_experiment.md](../evaluation/results/rag_2021_experiment.md)):
+  - On the 2001 question set (test, n = 30), MRR@5 is 0.861 for the 2001 handbook alone and 0.719 for the combined corpus. Of the 7 lost first hits, the 2021 page answered the question in 4 and partly in 2; one was a real miss.
+  - On a new frozen 2021 set (test, n = 12), MRR@5 is 0 for the 2001 handbook, 0.806 for the combined corpus and 0.917 for 2021 alone.
+  - The combined corpus adds 10–30 ms per query.
+  - The 2021 modules state the restrictive Hb thresholds (7 general, 7.5 cardiac, 8 orthopaedic) and a platelet table. They have no INR 1.5 trigger.
+- **Before switching:**
+  1. run the faithfulness comparison (it was blocked by Groq's 200k tokens per day; the harness caches and resumes);
+  2. re-label the 2001 set to credit 2021 pages that answer each question, by reading, before rescoring;
+  3. have explanations name the document and year where the editions differ.
+- **Licence:** CC BY-NC-SA 3.0 IGO. Attribution is already in the citation labels; non-commercial use only; the index is an adaptation, so it is kept untracked (`rag/faiss_index_2021exp/` is gitignored), as D91 does for the 2001 handbook.
 
 ## LLM call budget
 
