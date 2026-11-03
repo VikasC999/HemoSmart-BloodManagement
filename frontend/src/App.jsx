@@ -104,7 +104,7 @@ export default function App() {
     );
   } else {
     content = (
-      <div className={`page layout-${active.layout}`} key={active.id}>
+      <div className={`page layout-${active.layout} page-${active.id}`} key={active.id}>
         {active.ownHeader ? <SectionBoundary>{active.render(active.props)}</SectionBoundary> : (
           <>
             <PageHeader title={active.title} description={active.description} />

@@ -100,7 +100,6 @@ function Desk({ name, status, note, selected, onClick, kind }) {
       <button className={`desk s-${status} ${selected ? "selected" : ""} ${kind === "llm" ? "llm" : ""}`}
               onClick={onClick} aria-pressed={selected}
               aria-label={`${name} agent: ${s.label}${note ? `, ${note}` : ""}`}>
-        <span className="desk-top" aria-hidden="true"><span className="desk-screen" /></span>
         <span className="desk-avatar" aria-hidden="true">
           <AgentIcon size={14} />
         </span>
@@ -127,7 +126,10 @@ function Room({ id, title, tone, count, unit = "agents", stats = [], counts, act
         )}
         {counts && (
           <p className="room-flow">
-            <span>Doing <b>{counts.doing}</b></span><span>Next <b>{counts.next}</b></span><span>Done <b>{counts.done}</b></span>
+            {/* only the states that have something in them */}
+            {[["Doing", counts.doing], ["Next", counts.next], ["Done", counts.done]].filter(([, n]) => n > 0)
+              .map(([label, n]) => <span key={label}>{label} <b>{n}</b></span>)}
+            {!counts.doing && !counts.next && !counts.done && <span>Nothing queued</span>}
           </p>
         )}
       </div>
@@ -278,7 +280,7 @@ function TaskRow({ run, state, currentStep, onOpen }) {
   return (
     <li>
       <button className={`task ${state}`} onClick={() => onOpen(run.run_id)}>
-        <span className="task-pct">{progress}%</span>
+        {state !== "done" && <span className="task-pct">{progress}%</span>}
         <span className="task-body">
           <span className="task-title">{run.label}</span>
           <span className="task-sub">
@@ -286,7 +288,7 @@ function TaskRow({ run, state, currentStep, onOpen }) {
               : <>{state === "waiting" ? "Waiting on the LLM rate limit" : currentStep || "Starting"}</>}
             {" · "}{run.layer === "case_pipeline" ? "Case pipeline" : `Supply loop${run.trigger ? `, ${TRIGGER_LABEL[run.trigger] || run.trigger}` : ""}`}
           </span>
-          <span className="task-bar" aria-hidden="true"><span style={{ width: `${progress}%` }} /></span>
+          {state !== "done" && <span className="task-bar" aria-hidden="true"><span style={{ width: `${progress}%` }} /></span>}
         </span>
         <span className="task-time">{formatAgo(run.started_at)}</span>
       </button>

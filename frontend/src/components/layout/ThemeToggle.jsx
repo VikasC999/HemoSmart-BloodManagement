@@ -4,13 +4,11 @@ import { Monitor, Moon, Sun } from "lucide-react";
 // System by default; an explicit choice is stored per viewer. Dark mode
 // matters here: clinical staff often work night shifts in dim wards.
 const KEY = "hemosmart_theme";
-const ORDER = ["system", "light", "dark"];
-const NAME = { system: "System", light: "Light", dark: "Dark" };
-const META = {
-  system: { icon: Monitor, label: "Theme: system" },
-  light: { icon: Sun, label: "Theme: light" },
-  dark: { icon: Moon, label: "Theme: dark" },
-};
+const OPTIONS = [
+  { id: "system", label: "System", icon: Monitor },
+  { id: "light", label: "Light", icon: Sun },
+  { id: "dark", label: "Dark", icon: Moon },
+];
 
 export function readTheme() {
   try {
@@ -26,7 +24,7 @@ export function applyTheme(theme) {
   else root.dataset.theme = theme;
 }
 
-export default function ThemeToggle({ compact = false }) {
+export default function ThemeChoice() {
   const [theme, setTheme] = useState(readTheme);
 
   useEffect(() => {
@@ -38,13 +36,14 @@ export default function ThemeToggle({ compact = false }) {
     }
   }, [theme]);
 
-  const next = ORDER[(ORDER.indexOf(theme) + 1) % ORDER.length];
-  const { icon: Icon, label } = META[theme];
   return (
-    <button className="ghost nav-tool" onClick={() => setTheme(next)}
-            aria-label={`${label}. Switch to ${next}.`} title={`${label} — switch to ${next}`}>
-      <Icon size={18} aria-hidden="true" />
-      {!compact && <span className="nav-label">{NAME[theme]} theme</span>}
-    </button>
+    <div className="theme-choice" role="group" aria-label="Theme">
+      {OPTIONS.map(({ id, label, icon: Icon }) => (
+        <button key={id} type="button" className={`theme-option ${theme === id ? "active" : ""}`}
+                aria-pressed={theme === id} onClick={() => setTheme(id)}>
+          <Icon size={15} aria-hidden="true" />{label}
+        </button>
+      ))}
+    </div>
   );
 }

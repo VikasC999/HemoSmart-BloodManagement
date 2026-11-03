@@ -198,6 +198,18 @@ def test_brief_drops_sentences_that_speak_for_the_guidelines():
         "Six near-expiry units were transferred [1]. Monitor AB+ platelets."
 
 
+def test_brief_facts_name_which_units_expired_and_moved():
+    from types import SimpleNamespace
+    from datetime import datetime
+    from agents.autonomy.agents import ExplanationAgent
+    bb = SimpleNamespace(now=datetime(2026, 11, 1, 18, 1), horizon_days=7, donor_feedback=[], shortages=[], alerts=[],
+                         escalations=[], wastage_risks=[], expired_units=[{"blood_group": "O+", "component": "PRBC"}],
+                         transfers=[{"blood_group": "B+", "component": "Platelets"}] * 2)
+    facts = ExplanationAgent._facts(bb)
+    assert "1 unit(s) expired this cycle (recorded as wastage): 1 O+ PRBC." in facts
+    assert "2 near-expiry unit(s) transferred to a partner hospital: 2 B+ Platelets." in facts
+
+
 def test_quiet_when_nothing_to_do():
     now = utcnow()
     _add("O+", "PRBC", 10, age_days=1, now=now)

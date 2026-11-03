@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Hourglass, OctagonAlert, PackagePlus, RotateCw, TriangleAlert } from "lucide-react";
+import { Hourglass, OctagonAlert, PackagePlus, RotateCw } from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES, COMPONENTS } from "../constants";
-import { ErrorState, SkeletonTable, STOCK_LABEL, UpdatedAt } from "./ui";
+import { BloodGroup, ErrorState, SkeletonTable, STOCK_LABEL, UpdatedAt } from "./ui";
+import { groupLabel } from "./ui/format";
 
-const STATUS_ICON = { Critical: OctagonAlert, Low: TriangleAlert };
 
-// Unit-level stock: every cell is units available for one group x
-// component, coloured by status against its par level, with how many of
-// them are near expiry. `editable` (Blood Bank Manager) adds receiving
+// Unit-level stock, read like a fridge shelf: every cell is units available
+// for one group x component, with a bar showing how full it is against par
+// (amber below par, red under half) and how many are near expiry. `editable` (Blood Bank Manager) adds receiving
 // stock -- the backend 403s anyone else, this just hides the control.
 export default function InventoryCard({ editable = false }) {
   const [inventory, setInventory] = useState(null);
@@ -61,9 +61,16 @@ export default function InventoryCard({ editable = false }) {
             </p>
           )}
         </div>
-        <button className="tool" onClick={load} disabled={loading}>
-          <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
-        </button>
+        <div className="card-actions">
+          {editable && !receiving && (
+            <button type="button" className="tool" onClick={() => setReceiving(true)}>
+              <PackagePlus size={15} aria-hidden="true" /> Receive units
+            </button>
+          )}
+          <button className="tool" onClick={load} disabled={loading}>
+            <RotateCw size={15} className={loading ? "spin" : ""} aria-hidden="true" /> Refresh
+          </button>
+        </div>
       </div>
       {error && <ErrorState what={error.what} error={error.error} onRetry={load} />}
       {loading && !inventory ? <SkeletonTable rows={8} cols={4} label="Loading inventory" /> : inventory && (
@@ -78,22 +85,25 @@ export default function InventoryCard({ editable = false }) {
             <tbody>
               {BLOOD_TYPES.map((g) => (
                 <tr key={g}>
-                  <th scope="row">{g}</th>
+                  <th scope="row"><BloodGroup g={g} /></th>
                   {COMPONENTS.map((c) => {
                     const cell = inventory.inventory[g][c];
-                    const Icon = STATUS_ICON[cell.status];
-                    const label = `${g} ${c}: ${cell.available} units, ${STOCK_LABEL[cell.status] || cell.status} (par ${Math.round(cell.par)})`
+                    const label = `${groupLabel(g)} ${c}: ${cell.available} units, ${STOCK_LABEL[cell.status] || cell.status} (par ${Math.round(cell.par)})`
                       + (cell.near_expiry ? `, ${cell.near_expiry} near expiry` : "");
                     return (
                       <td key={c}>
-                        <span className={`stock-cell ${cell.status.toLowerCase()}`} title={label} aria-label={label}>
-                          {Icon && <Icon size={13} aria-hidden="true" />}
-                          <span className="stock-count">{cell.available}</span>
-                          {cell.near_expiry > 0 && (
-                            <span className="near-count" aria-hidden="true">
-                              <Hourglass size={11} />{cell.near_expiry}
-                            </span>
-                          )}
+                        <span className={`stock-cell ${cell.status.toLowerCase()}`} title={label} aria-label={label}
+                              style={{ "--fill": `${Math.min(100, (cell.available / cell.par) * 100)}%` }}>
+                          <span className="stock-line">
+                            {cell.status === "Critical" && <OctagonAlert size={13} aria-hidden="true" />}
+                            <span className="stock-count">{cell.available}</span>
+                            {cell.near_expiry > 0 && (
+                              <span className="near-count" aria-hidden="true">
+                                <Hourglass size={11} />{cell.near_expiry}
+                              </span>
+                            )}
+                          </span>
+                          <span className="stock-bar" aria-hidden="true" />
                         </span>
                       </td>
                     );
@@ -105,20 +115,13 @@ export default function InventoryCard({ editable = false }) {
         </div>
       )}
       <ul className="legend" aria-label="Legend">
-        <li className="muted">Against par:</li>
-        <li><span className="stock-cell sufficient legend-key">Sufficient</span></li>
-        <li><span className="stock-cell low legend-key"><TriangleAlert size={13} aria-hidden="true" /> Low stock</span></li>
-        <li><span className="stock-cell critical legend-key"><OctagonAlert size={13} aria-hidden="true" /> Critical</span></li>
-        <li className="muted legend-near"><Hourglass size={12} aria-hidden="true" /> = units near expiry</li>
+        <li className="muted">Bar = stock against par:</li>
+        <li><span className="legend-bar sufficient" aria-hidden="true" /> At par</li>
+        <li><span className="legend-bar low" aria-hidden="true" /> Below par</li>
+        <li><span className="legend-bar critical" aria-hidden="true" /> Under half</li>
+        <li className="muted legend-near"><Hourglass size={12} aria-hidden="true" /> near expiry</li>
       </ul>
 
-      {editable && !receiving && (
-        <div className="receive-toggle">
-          <button type="button" className="secondary" onClick={() => setReceiving(true)}>
-            <PackagePlus size={16} aria-hidden="true" /> Receive units
-          </button>
-        </div>
-      )}
       {editable && receiving && (
         <form className="receive" onSubmit={(e) => { e.preventDefault(); submitReceive(); }}>
           <h3 className="section-title">Receive units</h3>
@@ -127,7 +130,7 @@ export default function InventoryCard({ editable = false }) {
             <label>
               Blood group
               <select value={receive.group} onChange={(e) => setReceive({ ...receive, group: e.target.value })}>
-                {BLOOD_TYPES.map((t) => <option key={t}>{t}</option>)}
+                {BLOOD_TYPES.map((t) => <option key={t} value={t}>{groupLabel(t)}</option>)}
               </select>
             </label>
             <label>

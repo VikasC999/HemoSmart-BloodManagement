@@ -101,3 +101,32 @@ def test_update_donor_response_records_outcome():
     assert (donors[0]["alerts_sent"], donors[0]["alerts_responded"]) == (3, 2)
     update_donor_response(donors, "a", responded=False)
     assert (donors[0]["alerts_sent"], donors[0]["alerts_responded"]) == (4, 2)
+
+
+@pytest.mark.parametrize("donations, eligible", [(23, True), (24, False)])
+def test_platelet_donors_stop_at_24_apheresis_donations_a_year(donations, eligible):
+    """NBTC caps platelet apheresis at 24 a year; whole blood is unaffected."""
+    from datetime import date
+    from agents.donor_module import eligible_candidates
+    from db.database import SessionLocal
+    from db.models import Donor, DonorAlert
+
+    now = datetime(2026, 10, 30, 9, 0)
+    with SessionLocal() as db:
+        db.query(DonorAlert).filter(DonorAlert.donor_id == "D9003").delete()
+        db.query(Donor).filter(Donor.donor_id == "D9003").delete()
+        db.add(Donor(donor_id="D9003", name="Cap Test", phone="+919876500003", blood_type="AB-", sex="M",
+                     last_donation_date=date(2026, 9, 1), last_donation_type="apheresis",
+                     alerts_sent=donations, alerts_responded=donations))
+        db.flush()
+        for i in range(donations):  # one donation every ~2 weeks over the past year, none in the cooldown
+            t = now - timedelta(days=14 + 14 * i)
+            db.add(DonorAlert(donor_id="D9003", blood_type="AB-", component="Platelets",
+                              sent_at=t, responded=True, responded_at=t))
+        db.flush()
+        try:
+            ids = lambda comp: {d["donor_id"] for d in eligible_candidates(db, "AB-", comp, now)}
+            assert ("D9003" in ids("Platelets")) is eligible
+            assert "D9003" in ids("PRBC")
+        finally:
+            db.rollback()

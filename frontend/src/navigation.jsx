@@ -17,6 +17,8 @@ import ForecastChart from "./components/ForecastChart";
 import InventoryCard from "./components/InventoryCard";
 import PatientListCard from "./components/PatientListCard";
 import PredictionCard from "./components/PredictionCard";
+import RecentDonorAlerts from "./components/RecentDonorAlerts";
+import RecentUploads from "./components/RecentUploads";
 import UploadCard from "./components/UploadCard";
 
 // layout: "stack" = full-width blocks in order; "split" = two columns on
@@ -40,10 +42,10 @@ const SECTIONS = {
     render: ({ canAlertDonors }) => <PredictionCard canAlertDonors={canAlertDonors} />,
   },
   upload: {
-    label: "CBC upload", icon: FileUp, layout: "focus",
+    label: "CBC upload", icon: FileUp, layout: "split",
     title: "CBC report upload",
     description: "Upload a CBC report or a batch export. You check the extracted values before anything is predicted.",
-    render: () => <UploadCard />,
+    render: () => <><UploadCard /><RecentUploads /></>,
   },
   stock: {
     label: "Inventory", icon: Droplets, layout: "stack",
@@ -64,10 +66,10 @@ const SECTIONS = {
     render: () => <DonorResponsesCard />,
   },
   donorOutreach: {
-    label: "Donor outreach", icon: Send, layout: "focus",
+    label: "Donor outreach", icon: Send, layout: "split",
     title: "Donor outreach",
     description: "Alert the donors most likely to respond for a blood group and component.",
-    render: () => <DonorAlertCard />,
+    render: () => <><DonorAlertCard /><RecentDonorAlerts /></>,
   },
   donors: {
     label: "Donors", icon: HeartHandshake, layout: "stack",

@@ -36,7 +36,7 @@ Each entry: **Decision** · **Why** · **Alternatives considered** ·
 - [P3 — Report alignment](#p3--report-alignment) (D55–D63) · frontend design system (D64)
 - [Role-aware assistant (FR-08)](#role-aware-assistant-fr-08) (D65–D70)
 - [Agent monitor](#agent-monitor) (D71–D75)
-- [Pre-submission review](#pre-submission-review) (D76–D93)
+- [Pre-submission review](#pre-submission-review) (D76–D97)
 - [LLM call budget](#llm-call-budget)
 - [Known limitations](#known-limitations)
 
@@ -1027,6 +1027,57 @@ Owner decisions (2026-10-24, all the plan's recommended defaults): a new `agents
   2. re-label the 2001 set to credit 2021 pages that answer each question, by reading, before rescoring;
   3. have explanations name the document and year where the editions differ.
 - **Licence:** CC BY-NC-SA 3.0 IGO. Attribution is already in the citation labels; non-commercial use only; the index is an adaptation, so it is kept untracked (`rag/faiss_index_2021exp/` is gitignored), as D91 does for the 2001 handbook.
+
+#### D94. Floating dock and account menu replace the sidebar; the Overview reads as a story
+- **Owner's choice (2026-11-02):** option A from the supply-overview layout canvas.
+- **Navigation:**
+  - The sidebar is gone. Pages are in a floating dock at the bottom centre: see-through while idle, solid with a shadow under the cursor. Icons near the cursor magnify, as in the macOS dock. Each item shows its name on hover or keyboard focus, and the current page has a yellow tile and a dot.
+  - The magnification is off for reduced motion and on touch screens, where the dock also stays solid because there is no hover.
+- **Header:** a 64px bar with a hairline under it.
+  - Left: the brand lockup, a 32px tile and an 18px wordmark.
+  - Right: the role's initials and the role, at the same height, which open a menu with the signed-in email, a System/Light/Dark theme choice and Sign out.
+  - The owner chose this layout over keeping the tile as the menu button.
+  - Page titles are 36px, twice the wordmark, so the page title never reads as the brand. The tile carries the brand colour; the title stays ink.
+- **Width:** with no sidebar, the content runs to 1480px with a 16–48px gutter that the bar and the page share.
+- **Overview order:**
+  1. One opening sentence that states the whole position in words. It is built from the data, never from the LLM.
+  2. Now: the status strip, with three cells. Predicted demand moved into the week-ahead card, so the figure isn't shown twice.
+  3. Needs attention, beside what the agents did.
+  4. The week ahead: forecast units per day, by component, from the existing `/api/forecast`.
+  5. The last 30 days.
+- **Not taken from the canvas:** the shelf-life runway (option A) needs expiries per day, which no endpoint returns. Rather than mock the numbers, it is left out.
+
+#### D95. Unslop pass across every page (polish, not redesign)
+- **Owner's request (2026-11-02):** run unslop (Damir Sokolovsky, CC BY 4.0) on every page for every role. The audit found light slop, so the Ivory & Ink look was kept and only what the audit found was fixed.
+- **Every page:**
+  - Page titles at weight 650.
+  - The HemoSmart drop tile replaces the ✨ on AI labels.
+  - One blood-group chip with a real minus sign ("O−"). It is display only, so API and form values stay "O-".
+  - One date style ("7 Nov", or "7 Nov 2026" in tables).
+  - A single empty-cell dash.
+  - Links in the brand's strong yellow.
+- **Charts:** one accent leads. Platelets, the 5-day component behind most shortages and expiries, take the yellow; PRBC and FFP are quiet neutrals. Coral is left to mean risk.
+- **Inventory:** each cell is a "fridge shelf": the count, plus a bar for stock against par (amber below par, red under half). It replaces the badge, icon and tint in every cell. "Receive units" moved to the card header.
+- **Agent activity and monitor:**
+  - Only non-zero counts are shown.
+  - The 30-day outcomes are one strip, the same as on the Overview.
+  - The monitor's rooms are outlines, with no decorative desk bars.
+  - Finished tasks drop the 100% ring and bar.
+- **Half-empty pages:** Donor outreach shows recent donor alerts beside the form, and CBC upload shows recent uploads (patients from PDF, CSV or full-case jobs). Both use existing endpoints.
+- **Donors:** the Sex column hides until some donor has it recorded. The local DB predates D86, so none do yet; a re-seed brings it back.
+- **LLM text** (the brief and the agent log) is tidied on display: non-breaking hyphens are normalised, "O-" becomes "O−", and ISO dates become "7 Nov". The stored text is unchanged.
+
+#### D96. NBTC's limit of 24 platelet apheresis donations a year is enforced
+- **Decision:** `eligible_candidates` ([donor_module.py](../agents/donor_module.py)) leaves out, for platelet requests only, any donor with `APHERESIS_MAX_PER_YEAR` (24) platelet donations recorded in the last 365 days. A donation is an alert for platelets that the donor answered. Whole-blood eligibility is unaffected. This closes the gap D83 noted ("the 24-a-year apheresis cap isn't enforced").
+- **Unchanged:** the 7-day contact cooldown (D85) is about not pestering donors, not a medical interval. The medical intervals stay on NBTC 2017 (D83): whole blood 90 days for men and 120 for women, apheresis 4 days. The US figures (56 days whole blood, 7 days platelets, 28 days plasma) were considered and not adopted, because the system follows Indian rules.
+- **Limit:** only donations recorded through alerts count. Donations made outside the system (walk-ins) aren't linked to a donor yet.
+- **Test:** `test_platelet_donors_stop_at_24_apheresis_donations_a_year`: a donor with 23 donations stays eligible and one with 24 is left out of platelet requests, but stays eligible for whole blood.
+
+#### D97. Donor sex is filled in for the local database; the 10% women share is now sourced
+- **Backfill:** the local demo database was created before the `sex` column (D86), so all 400 donors had sex unknown and got the men's 90-day interval. A one-time backfill set sex with the generator's own rule (`FEMALE_DONOR_SHARE`, `random.Random(42)`, donors in ID order): 361 men and 39 women. Nothing else was changed (stock, patients, alerts, cycles and the audit log were kept). To revert, set `sex` back to NULL.
+- **Source for 10%:** Indian studies report women as 0.5–11% of blood donors: a Bangalore transfusion centre 11.3% (16,706 donors), Mumbai about 11% over 5 years, western India 8.4%, Tamil Nadu camps 7%, Kerala 2.6% and a north Indian centre 0.5%. Deferral for low haemoglobin is the main reason. 10% stays. A 60/40 split was considered and rejected as unrepresentative of Indian donors. This supersedes D83's "not sourced" note.
+- **Reports unaffected:** `evaluation/simulate.py` and `bandit_regret.py` build their own throwaway databases with generated donors, which already had sex, so no reported number changes.
+- **Real deployment (future work):** sex should be captured when a donor registers, and an unknown sex should default to the stricter 120 days.
 
 ## LLM call budget
 

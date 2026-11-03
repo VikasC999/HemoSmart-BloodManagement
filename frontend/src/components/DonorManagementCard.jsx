@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { HeartHandshake, RotateCw } from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES } from "../constants";
-import { EmptyState, ErrorState, SkeletonTable } from "./ui";
+import { BloodGroup, EmptyState, ErrorState, SkeletonTable } from "./ui";
+import { formatDay, groupLabel } from "./ui/format";
 
 export default function DonorManagementCard() {
   const [bloodType, setBloodType] = useState("");
@@ -41,7 +42,7 @@ export default function DonorManagementCard() {
             <span className="visually-hidden">Blood type</span>
             <select value={bloodType} onChange={(e) => filter(e.target.value)}>
               <option value="">All blood types</option>
-              {BLOOD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {BLOOD_TYPES.map((t) => <option key={t} value={t}>{groupLabel(t)}</option>)}
             </select>
           </label>
           <button className="tool" onClick={() => load()} disabled={loading}>
@@ -57,18 +58,21 @@ export default function DonorManagementCard() {
       {loading && !donors && <SkeletonTable rows={8} cols={6} label="Loading donors" />}
       {donors && donors.length === 0 && (
         bloodType ? (
-          <EmptyState icon={HeartHandshake} title={`No ${bloodType} donors`}
+          <EmptyState icon={HeartHandshake} title={`No ${groupLabel(bloodType)} donors`}
                       action={<button className="secondary" onClick={() => filter("")}>Clear filter</button>}>
             Try another blood type.
           </EmptyState>
         ) : <EmptyState icon={HeartHandshake} title="No donors registered yet" />
       )}
-      {donors && donors.length > 0 && (
+      {donors && donors.length > 0 && (() => {
+        // A column of dashes says nothing: show sex only once some donor has it recorded.
+        const showSex = donors.some((d) => d.sex);
+        return (
         <div className="table-scroll table-tall">
           <table>
             <thead>
               <tr>
-                <th>Donor</th><th>Name</th><th>Group</th><th>Sex</th><th>Last donation</th>
+                <th>Donor</th><th>Name</th><th>Group</th>{showSex && <th>Sex</th>}<th>Last donation</th>
                 <th className="num">Replies</th><th className="num">Learned reply rate</th>
               </tr>
             </thead>
@@ -77,11 +81,13 @@ export default function DonorManagementCard() {
                 <tr key={d.donor_id}>
                   <td className="nowrap">{d.donor_id}</td>
                   <td>{d.name}</td>
-                  <td>{d.blood_type}</td>
-                  <td title="Donation gap: 90 days for men, 120 for women (NBTC)">
-                    {d.sex === "F" ? "Female" : d.sex === "M" ? "Male" : <span className="muted" aria-label="Not recorded">—</span>}
-                  </td>
-                  <td className="nowrap tabular">{d.last_donation_date}</td>
+                  <td><BloodGroup g={d.blood_type} /></td>
+                  {showSex && (
+                    <td title="Donation gap: 90 days for men, 120 for women (NBTC)">
+                      {d.sex === "F" ? "Female" : d.sex === "M" ? "Male" : <span className="muted" aria-label="Not recorded">—</span>}
+                    </td>
+                  )}
+                  <td className="nowrap tabular">{formatDay(d.last_donation_date, true)}</td>
                   <td className="num">{d.alerts_responded} of {d.alerts_sent}</td>
                   <td className="num">
                     <span className="rate">
@@ -96,7 +102,8 @@ export default function DonorManagementCard() {
             </tbody>
           </table>
         </div>
-      )}
+        );
+      })()}
     </section>
   );
 }
