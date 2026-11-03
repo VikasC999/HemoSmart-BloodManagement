@@ -58,6 +58,8 @@ import sys
 from datetime import date, datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from sqlalchemy import func
+
 from bloodbank import catalog
 from bloodbank.catalog import DONATION_YIELD
 from data.demand_process import GROUP_SHARE
@@ -74,13 +76,15 @@ APHERESIS_INTERVAL_DAYS = 4             # apheresis after apheresis: NBTC says 4
                                         # 4 whole days is the shortest gap that keeps both
 APHERESIS_TO_WHOLE_BLOOD_DAYS = 28      # whole blood after platelet apheresis (NBTC)
 WHOLE_BLOOD_TO_APHERESIS_DAYS = 28      # apheresis after whole blood: not in the sources, kept from D47
+APHERESIS_MAX_PER_YEAR = 24             # platelet apheresis donations per donor per 365 days (NBTC)
 RESPONSE_WINDOW_HOURS = 48              # no reply by then counts as "didn't respond"
 
 # Simulated donors only. Hidden reply rates ~ Beta(1.5, 5), mean 0.23: an assumption anchored to the
 # UCI donors' 23.8% monthly donation rate (evaluation/results/donor_real_data.md), bracketed by 8%
 # re-donation after recalling lapsed donors (Ou-Yang et al. 2020). Was Beta(2, 2), mean 0.5.
 RESPONSE_RATE_PRIOR = (1.5, 5.0)
-# Not sourced: the research found no Indian donor sex mix. An assumption, stated as one.
+# Indian studies report women as 0.5-11% of blood donors (Bangalore centre 11.3%, Mumbai ~11%,
+# western India 8.4%); low haemoglobin deferral is the main reason. 10% sits in that range (D97).
 FEMALE_DONOR_SHARE = 0.10
 
 # Simulated donors only: contact fatigue (docs/DESIGN_DECISIONS.md D85). Each earlier alert multiplies
@@ -300,12 +304,21 @@ def pending_alerts(db, blood_type: str = None, component: str = None) -> list:
 def eligible_candidates(db, blood_type: str, component: str, now: datetime) -> list:
     """Eligible donors of this type with no alert already awaiting a reply
     -- nobody gets a second message while the first is unanswered -- and
-    none alerted within catalog.CONTACT_COOLDOWN_DAYS (D85)."""
+    none alerted within catalog.CONTACT_COOLDOWN_DAYS (D85). For platelets,
+    donors at NBTC's yearly apheresis limit are left out too.
+    shortcut: counts only donations recorded through alerts, so donations made
+    outside the system don't count towards the limit."""
     ensure_donor_pool(db)
     busy = {a.donor_id for a in pending_alerts(db)}
     if catalog.CONTACT_COOLDOWN_DAYS:
         cutoff = now - timedelta(days=catalog.CONTACT_COOLDOWN_DAYS)
         busy |= {d for (d,) in db.query(DonorAlert.donor_id).filter(DonorAlert.sent_at > cutoff)}
+    if component == "Platelets":
+        busy |= {d for (d,) in db.query(DonorAlert.donor_id)
+                 .filter(DonorAlert.component == "Platelets", DonorAlert.responded.is_(True),
+                         DonorAlert.responded_at > now - timedelta(days=365))
+                 .group_by(DonorAlert.donor_id)
+                 .having(func.count(DonorAlert.id) >= APHERESIS_MAX_PER_YEAR)}
     rows = db.query(DonorRow).filter(DonorRow.blood_type == blood_type).all()
     donors = [_row_to_dict(r) for r in rows if r.donor_id not in busy]
     return filter_eligible_donors(donors, blood_type, now, component)

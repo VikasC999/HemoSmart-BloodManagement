@@ -6,6 +6,7 @@ import {
 import { api } from "../api";
 import { BLOOD_TYPES, SURGERY_TYPES } from "../constants";
 import { AIPanel, EmptyState, ErrorState, SeverityBadge, urgencySeverity } from "./ui";
+import { groupLabel } from "./ui/format";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -93,7 +94,7 @@ function ResultSummary({ r, label }) {
       <span className="muted">
         {needed.length ? needed.map((c) => `${c.units} ${c.component}`).join(", ") : "No components"}
         {" · "}model probability {(r.confidence * 100).toFixed(0)}%
-        {r.blood_group ? ` · ${r.blood_group}` : ""}
+        {r.blood_group ? ` · ${groupLabel(r.blood_group)}` : ""}
       </span>
     </div>
   );
@@ -202,7 +203,7 @@ function ConfirmExtracted({ fileName, values, onChange, onConfirm, onCancel, bus
                 <select id="x-group" value={values.blood_group || ""}
                         onChange={(e) => onChange({ ...values, blood_group: e.target.value || null })}>
                   <option value="">Unknown</option>
-                  {BLOOD_TYPES.map((g) => <option key={g}>{g}</option>)}
+                  {BLOOD_TYPES.map((g) => <option key={g} value={g}>{groupLabel(g)}</option>)}
                 </select>
               </td>
               <td />

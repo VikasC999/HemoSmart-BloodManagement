@@ -39,6 +39,13 @@ from bloodbank.projection import project
 from bloodbank.stock import available_units, stock_summary, sweep_expired, transfer_units
 
 
+def _by_group(units) -> str:
+    """'1 O+ PRBC, 2 B+ Platelets': which units, not just how many."""
+    from collections import Counter
+    counts = Counter(f"{u['blood_group']} {u['component']}" for u in units)
+    return ", ".join(f"{n} {k}" for k, n in counts.most_common())
+
+
 def _need_kind(need: dict) -> str:
     """Why outreach fired, in words: unmet demand, a safety-stock top-up, or both."""
     unmet, safety = need.get("unmet", 0), need.get("safety_gap", 0)
@@ -331,7 +338,9 @@ class ExplanationAgent:
         "Platelets": "platelet concentrate storage up to 72 hours at 20 C to 24 C with agitation",
         "FFP": "fresh frozen plasma storage at -25 C or colder for up to 1 year",
     }
-    SUPPLY_QUERY = "blood bank should ensure that blood can be provided quickly when needed"
+    # Ranks the handbook's "supply ... adequate to meet national needs" (p.5) first; the
+    # earlier wording found the cross-match sample-hold procedure (p.49).
+    SUPPLY_QUERY = "maintaining an adequate supply of safe blood to meet demand"
 
     BRIEF_PROMPT = """You are briefing a hospital Blood Bank Manager on one cycle of an automated
 blood supply system. Write 3-4 plain sentences summarizing what happened and
@@ -354,7 +363,7 @@ Guideline sources you may cite with their bracketed numbers:
         for c in sorted({u["component"] for u in bb.expired_units} | {t["component"] for t in bb.transfers}):
             topics.append((f"{c} shelf life (expiry sweep / redistribution)", self.STORAGE_QUERY[c]))
         if bb.shortages:
-            topics.append(("supply continuity (shortage response)", self.SUPPLY_QUERY))
+            topics.append(("adequate blood supply (shortage response)", self.SUPPLY_QUERY))
         return topics
 
     def run(self, bb, db) -> None:
@@ -394,7 +403,8 @@ Guideline sources you may cite with their bracketed numbers:
         if bb.donor_feedback:
             r = sum(o["responded"] for o in bb.donor_feedback)
             facts.append(f"{r} of {len(bb.donor_feedback)} pending donor alerts were answered with a donation.")
-        facts.append(f"{len(bb.expired_units)} unit(s) expired this cycle (recorded as wastage).")
+        facts.append(f"{len(bb.expired_units)} unit(s) expired this cycle (recorded as wastage)"
+                     + (": " + _by_group(bb.expired_units) if bb.expired_units else "") + ".")
         if bb.shortages:
             facts.append(f"{len(bb.shortages)} projected shortage(s): " + "; ".join(
                 f"{s['blood_group']} {s['component']} {s['projected_shortage']} unit(s) from {s['first_shortage_date']}"
@@ -411,7 +421,8 @@ Guideline sources you may cite with their bracketed numbers:
                          + ", ".join(f"{e['blood_group']} {'/'.join(e['covers'])} ~{e['uncovered']}"
                                      for e in bb.escalations) + " unit(s).")
         if bb.transfers:
-            facts.append(f"{len(bb.transfers)} near-expiry unit(s) transferred to a partner hospital.")
+            facts.append(f"{len(bb.transfers)} near-expiry unit(s) transferred to a partner hospital: "
+                         f"{_by_group(bb.transfers)}.")
         if not bb.shortages and not bb.wastage_risks:
             facts.append("No shortages or wastage risks projected.")
         return facts

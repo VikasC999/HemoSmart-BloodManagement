@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, CircleCheck, Play, RotateCw } from "lucide-react";
+import { ArrowRight, CircleCheck, Play, RotateCw, TriangleAlert } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../../api";
 import { COMPONENTS } from "../../constants";
 import { PageHeader } from "../layout/AppShell";
+import { AlertList } from "../RecentDonorAlerts";
 import {
-  AIPanel, EmptyState, ErrorState, SeverityBadge, Skeleton, SkeletonLines, UpdatedAt, stockSeverity,
+  AIPanel, BloodGroup, EmptyState, ErrorState, SeverityBadge, Skeleton, SkeletonLines, UpdatedAt, stockSeverity,
 } from "../ui";
-import { TRIGGER_LABEL, formatAgo } from "../ui/format";
+import { TRIGGER_LABEL, formatAgo, formatDay, groupLabel, tidyText } from "../ui/format";
 
 // One loader per block, so a failed forecast doesn't blank the inventory.
 function useLoad(fn) {
@@ -30,19 +32,54 @@ const loadAlerts = () => api.recentDonorAlerts(6);
 
 const SEVERITY_ORDER = { critical: 0, high: 1, moderate: 2 };
 
+const shortDate = (iso) => formatDay(iso);
+
+// What the latest cycle actually did, step by step: only steps with an
+// outcome, or that had to fall back. The full log lives on Agent activity.
+const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const STEPS = [
+  ["Donor replies", "Donor", (s) => s.donor_replies && `${plural(s.donor_replies, "reply", "replies")} · ${s.donations} donated`],
+  ["Inventory", "Inventory", (s, ev) => s.expired_units && `${expiredLabel(ev) || s.expired_units} expired`],
+  ["Forecast", "Forecast", () => null],
+  ["Planner", "Planner", (s) => (s.shortages || s.wastage_risk_units)
+    && [s.shortages && plural(s.shortages, "shortage"), s.wastage_risk_units && `${s.wastage_risk_units} at risk of expiry`].filter(Boolean).join(" · ")],
+  ["Donor outreach", "Donor", (s) => (s.donors_alerted || s.escalations)
+    && [s.donors_alerted && `${s.donors_alerted} alerted`, s.escalations && `${s.escalations} escalated to the regional bank`].filter(Boolean).join(" · ")],
+  ["Logistics", "Logistics", (s) => s.transferred_units && `${s.transferred_units} sent to partner`],
+  ["Explanation", "Explanation", () => null],
+];
+// "1 O+ PRBC": which units expired, from the Inventory agent's own record.
+function expiredLabel(events) {
+  const by = events.find((e) => e.agent === "Inventory" && e.kind === "act" && e.data?.by_group_component)?.data.by_group_component;
+  return by && Object.entries(by).map(([k, n]) => `${n} ${k}`).join(", ");
+}
+function agentSteps(cycle) {
+  const s = cycle.summary || {};
+  const troubled = new Set((cycle.events || []).filter((e) => e.kind === "fallback" || e.kind === "error").map((e) => e.agent));
+  return STEPS
+    .map(([name, agent, result]) => ({ name, result: result(s, cycle.events || []) || null, ok: !troubled.has(agent) }))
+    .map((st) => (st.ok ? st : { ...st, result: st.result || "fell back" }))
+    .filter((st) => st.result);
+}
+
+// The handbook pages behind the brief's [n] markers, so they point somewhere.
+function cycleSources(events = []) {
+  return events.filter((e) => e.agent === "Explanation" && e.data?.citations?.length).flatMap((e) => {
+    const topic = (e.message.match(/^Grounded (.+?) in the WHO handbook/) || [])[1]?.replace(/\s*\(.*\)$/, "");
+    return e.data.citations.map((c) => ({ ref: c.ref, page: c.page, topic }));
+  });
+}
+
 // What needs attention, worst first. Every item says what is wrong and
 // where to act (HemoSmart §12: icon + label + sentence).
-// Worst items first; the rest stay one click away so the overview fits a screen.
-const ATTENTION_PREVIEW = 6;
-
 function attentionItems(inventory, outlook) {
   const items = [];
   for (const s of inventory?.low_stock || []) {
     if (s.status === "Critical") {
       items.push({
         level: "critical", key: `crit-${s.blood_group}-${s.component}`,
-        subject: `${s.blood_group} ${s.component}`,
-        text: `${s.available} unit${s.available === 1 ? "" : "s"} left against a par of ${Math.round(s.par)}.`,
+        subject: `${groupLabel(s.blood_group)} ${s.component}`, group: s.blood_group, component: s.component,
+        text: `${s.available} unit${s.available === 1 ? "" : "s"} left against a par of ${Math.ceil(s.par)}.`,
         action: { href: "#donorOutreach", label: "Alert donors" },
       });
     }
@@ -50,8 +87,8 @@ function attentionItems(inventory, outlook) {
   for (const s of outlook?.shortages || []) {
     items.push({
       level: "high", key: `short-${s.blood_group}-${s.component}`,
-      subject: `${s.blood_group} ${s.component}`,
-      text: `Forecast to run ${s.projected_shortage} unit${s.projected_shortage === 1 ? "" : "s"} short from ${s.first_shortage_date}.`,
+      subject: `${groupLabel(s.blood_group)} ${s.component}`, group: s.blood_group, component: s.component,
+      text: `Forecast to run ${s.projected_shortage} unit${s.projected_shortage === 1 ? "" : "s"} short from ${shortDate(s.first_shortage_date)}.`,
       action: { href: "#donorOutreach", label: "Alert donors" },
     });
   }
@@ -59,8 +96,8 @@ function attentionItems(inventory, outlook) {
     if (s.status === "Low") {
       items.push({
         level: "moderate", key: `low-${s.blood_group}-${s.component}`,
-        subject: `${s.blood_group} ${s.component}`,
-        text: `Below par: ${s.available} of ${Math.round(s.par)} units.`,
+        subject: `${groupLabel(s.blood_group)} ${s.component}`, group: s.blood_group, component: s.component,
+        text: `Below par: ${s.available} of ${Math.ceil(s.par)} units.`,
         action: { href: "#inventory", label: "Inventory" },
       });
     }
@@ -68,7 +105,7 @@ function attentionItems(inventory, outlook) {
   for (const w of outlook?.wastage_risks || []) {
     items.push({
       level: "moderate", key: `waste-${w.blood_group}-${w.component}`,
-      subject: `${w.blood_group} ${w.component}`,
+      subject: `${groupLabel(w.blood_group)} ${w.component}`, group: w.blood_group, component: w.component,
       text: `${w.projected_wastage} unit${w.projected_wastage === 1 ? "" : "s"} may expire unused within 7 days.`,
       action: { href: "#inventory", label: "Inventory" },
     });
@@ -100,15 +137,38 @@ function sumForecast(outlook, key = "units") {
   );
 }
 
-// [summary key, singular, plural, tone]
-const CYCLE_FACTS = [
-  ["shortages", "projected shortage", "projected shortages", "risk"],
-  ["donors_alerted", "donor alerted", "donors alerted", "neutral"],
-  ["donations", "donation", "donations", "good"],
-  ["transferred_units", "unit redistributed", "units redistributed", "good"],
-  ["expired_units", "unit expired", "units expired", "risk"],
-  ["escalations", "escalation", "escalations", "risk"],
-];
+// The page's opening sentence: the whole state in words, before any number.
+function lede(inv, out, cycle) {
+  const parts = [];
+  if (inv) {
+    const crit = inv.low_stock.filter((s) => s.status === "Critical").map((s) => `${groupLabel(s.blood_group)} ${s.component}`);
+    parts.push(crit.length === 0 ? "Every group is above half of par"
+      : crit.length === 1 ? `${crit[0]} is critical` : `${crit.length} groups are critical`);
+  }
+  if (out) {
+    const n = out.shortages.length;
+    const first = out.shortages[0];
+    parts.push(n === 0 ? "nothing is forecast to run short this week"
+      : n === 1 ? `${groupLabel(first.blood_group)} ${first.component} is forecast to run short from ${shortDate(first.first_shortage_date)}`
+        : `${n} groups are forecast to run short this week`);
+  }
+  let text = parts.length ? `${parts.join(", and ")}.` : "";
+  const s = cycle?.summary;
+  if (s) {
+    const did = [s.donors_alerted && `alerted ${plural(s.donors_alerted, "donor")}`,
+      s.transferred_units && `sent ${plural(s.transferred_units, "near-expiry unit")} to a partner hospital`].filter(Boolean);
+    text += did.length ? ` On their last cycle the agents ${did.join(" and ")}.` : " The agents' last cycle alerted no donors and moved no units.";
+  }
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const SERIES = { PRBC: "var(--chart-prbc)", Platelets: "var(--chart-platelets)", FFP: "var(--chart-ffp)" };
+const TOOLTIP_STYLE = {
+  background: "var(--color-raised)", border: "1px solid var(--color-border)",
+  borderRadius: 8, color: "var(--color-text)", fontSize: 13,
+};
+const dayLabel = (iso) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" });
+
 
 export default function Overview({ canRun = false }) {
   const inventory = useLoad(loadInventory);
@@ -117,7 +177,6 @@ export default function Overview({ canRun = false }) {
   const alerts = useLoad(loadAlerts);
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState(null);
-  const [showAll, setShowAll] = useState(false);
 
   const runCycle = async () => {
     setRunning(true);
@@ -144,7 +203,7 @@ export default function Overview({ canRun = false }) {
     <>
       <PageHeader
         title="Supply overview"
-        description="Today's stock, the week ahead, and what the agents have already handled."
+        description={lede(inv, out, cycle) || "Today's stock, the week ahead, and what the agents have already handled."}
         actions={canRun && (
           <button onClick={runCycle} disabled={running}>
             {running ? <RotateCw size={16} className="spin" aria-hidden="true" /> : <Play size={16} aria-hidden="true" />}
@@ -170,7 +229,7 @@ export default function Overview({ canRun = false }) {
               <StatusCell label="Critical stock" loading={!inv} value={critical.length}
                           unit={critical.length === 1 ? "group" : "groups"}
                           context={inv && (critical.length
-                            ? critical.map((s) => `${s.blood_group} ${s.component}`).join(", ")
+                            ? critical.map((s) => `${groupLabel(s.blood_group)} ${s.component}`).join(", ")
                             : "None below half of par")}>
                 {inv && critical.length > 0 && <SeverityBadge level="critical" className="status-badge" />}
               </StatusCell>
@@ -184,23 +243,20 @@ export default function Overview({ canRun = false }) {
           ) : (
             <>
               <StatusCell label="Projected shortages · 7 days" loading={!out} value={out?.shortages.length}
+                          updated={<UpdatedAt iso={out?.as_of} prefix="Forecast" />}
                           unit={out?.shortages.length === 1 ? "group" : "groups"}
                           context={out && (out.shortages.length
                             ? ((n) => `${n} ${n === 1 ? "unit" : "units"} short in total`)(out.shortages.reduce((s, x) => s + x.projected_shortage, 0))
                             : "None projected")}>
                 {out && out.shortages.length > 0 && <SeverityBadge level="high" className="status-badge" />}
               </StatusCell>
-              <StatusCell label="Predicted demand · 7 days" loading={!out}
-                          value={out && Math.round(sumForecast(out))} unit="units"
-                          context={out && `80% range ${Math.round(sumForecast(out, "lower"))}–${Math.round(sumForecast(out, "upper"))} · model forecast`}
-                          updated={<UpdatedAt iso={out?.as_of} prefix="Forecast" />} />
             </>
           )}
         </section>
 
         <div className="overview-main">
           {/* 2. What needs attention */}
-          <section className="card" aria-labelledby="attention-title">
+          <section className="card attention-card" aria-labelledby="attention-title">
             <div className="card-head">
               <h2 id="attention-title">Needs attention</h2>
               {!attentionLoading && items.length > 0 && (
@@ -226,11 +282,12 @@ export default function Overview({ canRun = false }) {
                     : "Inventory unavailable: stock alerts aren't included in this list."}
                 </p>
               )}
-              <ul className="attention-list">
-                {(showAll ? items : items.slice(0, ATTENTION_PREVIEW)).map((it) => (
+              {/* Worst first; the card is as tall as the AI panel beside it and the rest scroll. */}
+              <ul className="attention-list attention-scroll" tabIndex={0} aria-label="Items needing attention">
+                {items.map((it) => (
                   <li key={it.key} className={`attention-item level-${it.level}`}>
                     <SeverityBadge level={it.level} className="attention-badge" />
-                    <p><strong className="attention-subject">{it.subject}</strong> {it.text}</p>
+                    <p><span className="attention-subject"><BloodGroup g={it.group} /> {it.component}</span> {it.text}</p>
                     <a className="text-link quiet" href={it.action.href}
                        aria-label={`${it.action.label}: ${it.subject}`}>
                       {it.action.label} <ArrowRight size={14} aria-hidden="true" />
@@ -238,11 +295,6 @@ export default function Overview({ canRun = false }) {
                   </li>
                 ))}
               </ul>
-              {items.length > ATTENTION_PREVIEW && (
-                <button className="ghost attention-more" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
-                  {showAll ? "Show fewer" : `Show all ${items.length}`}
-                </button>
-              )}
               </>
             )}
           </section>
@@ -259,27 +311,70 @@ export default function Overview({ canRun = false }) {
               </EmptyState>
             ) : (
               <AIPanel label="HemoSmart AI · latest cycle">
+                <a className="text-link ai-log-link" href="#agents">Full agent log <ArrowRight size={14} aria-hidden="true" /></a>
                 <p className="cycle-meta">
                   <UpdatedAt iso={cycle.started_at} prefix="Ran" />
                   <span className="muted"> · {TRIGGER_LABEL[cycle.trigger] || cycle.trigger}</span>
                   {cycle.status !== "ok" && <SeverityBadge level="moderate" label={`Cycle ${cycle.status}`} />}
                 </p>
-                {cycle.brief && <p className="cycle-brief">{cycle.brief}</p>}
-                <ul className="cycle-facts">
-                  {CYCLE_FACTS.filter(([k]) => cycle.summary[k] > 0).map(([k, one, many, tone]) => (
-                    <li key={k} className={`fact ${tone}`}>
-                      <span className="tabular">{cycle.summary[k]}</span> {cycle.summary[k] === 1 ? one : many}
+                {cycle.brief && <p className="cycle-brief">{tidyText(cycle.brief)}</p>}
+                <ol className="agent-steps" aria-label="Steps of the latest cycle">
+                  {agentSteps(cycle).map((st) => (
+                    <li key={st.name} className={st.ok ? "" : "problem"}>
+                      {st.ok ? <CircleCheck size={14} aria-label="Done" /> : <TriangleAlert size={14} aria-label="Fell back" />}
+                      <span className="agent-step-name">{st.name}</span>
+                      <span className="agent-step-text">{st.result}</span>
                     </li>
                   ))}
-                </ul>
-                <a className="text-link" href="#agents">See what each agent did <ArrowRight size={14} aria-hidden="true" /></a>
+                </ol>
+                {cycleSources(cycle.events).length > 0 && (
+                  <ol className="cycle-sources" aria-label="Sources">
+                    {cycleSources(cycle.events).map((src) => (
+                      <li key={src.ref}><span>[{src.ref}]</span> WHO handbook, p.{src.page}{src.topic ? ` · ${src.topic}` : ""}</li>
+                    ))}
+                  </ol>
+                )}
               </AIPanel>
             )}
           </section>
         </div>
 
+        {/* 4. The week ahead */}
+        {out && (
+          <section className="card week-card" aria-labelledby="week-title">
+            <div className="card-head">
+              <div>
+                <h2 id="week-title">The week ahead</h2>
+                <p className="card-sub">
+                  {Math.round(sumForecast(out))} units forecast to be needed over 7 days
+                  · 80% range {Math.round(sumForecast(out, "lower"))}–{Math.round(sumForecast(out, "upper"))}
+                </p>
+              </div>
+              <a className="text-link" href="#inventory">Inventory &amp; demand <ArrowRight size={14} aria-hidden="true" /></a>
+            </div>
+            <div className="week-chart" role="img"
+                 aria-label={`Forecast units needed per day for the next 7 days, by component: ${Math.round(sumForecast(out))} in total.`}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={out.component_forecast[COMPONENTS[0]].map((d, i) => ({
+                  day: dayLabel(d.date),
+                  ...Object.fromEntries(COMPONENTS.map((c) => [c, Math.round(out.component_forecast[c][i].units)])),
+                }))} margin={{ top: 4, right: 4, bottom: 0, left: -20 }} barCategoryGap="28%">
+                  <CartesianGrid vertical={false} stroke="var(--color-gridline)" />
+                  <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: "var(--color-text-secondary)", fontSize: 12 }} />
+                  <YAxis tickLine={false} axisLine={false} allowDecimals={false} tick={{ fill: "var(--color-text-secondary)", fontSize: 12 }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--color-beige)", opacity: 0.5 }} formatter={(v) => `${v} units`} />
+                  <Legend iconType="square" iconSize={10} wrapperStyle={{ fontSize: 13, color: "var(--color-text-secondary)" }} />
+                  {COMPONENTS.map((c, i) => (
+                    <Bar key={c} dataKey={c} stackId="d" fill={SERIES[c]} radius={i === COMPONENTS.length - 1 ? [4, 4, 0, 0] : 0} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        )}
+
+        {/* 5. The last 30 days */}
         <div className="overview-lower">
-          {/* 4. Outcomes */}
           <section className="card" aria-labelledby="outcomes-title">
             <div className="card-head">
               <h2 id="outcomes-title">Unit outcomes · last 30 days</h2>
@@ -304,23 +399,7 @@ export default function Overview({ canRun = false }) {
             </div>
             {alerts.error && !alerts.data ? (
               <ErrorState what="Couldn't load donor alerts." error={alerts.error} onRetry={alerts.reload} />
-            ) : !alerts.data ? <SkeletonLines lines={4} /> : alerts.data.length === 0 ? (
-              <EmptyState title="No donor alerts yet">Alerts sent by you or the agents appear here.</EmptyState>
-            ) : (
-              <ul className="plain-list alert-columns">
-                {alerts.data.map((a) => (
-                  <li key={a.id}>
-                    <span><strong>{a.blood_type}</strong> {a.component || ""} · {a.donor_id}</span>
-                    <span className="list-meta">
-                      {a.responded == null ? <SeverityBadge level="info" label="Pending" />
-                        : a.responded ? <SeverityBadge level="low" label="Donated" />
-                          : <span className="muted">No reply</span>}
-                      <span className="muted">{a.cycle_id ? "auto · " : ""}{formatAgo(a.sent_at)}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            ) : !alerts.data ? <SkeletonLines lines={4} /> : <AlertList alerts={alerts.data} columns />}
           </section>
         </div>
       </div>

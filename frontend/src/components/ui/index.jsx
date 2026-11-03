@@ -2,9 +2,10 @@
 // AI content and loading/error/stale/empty states look the same
 // everywhere (HemoSmart design skill §10, §12, §13).
 import {
-  CircleAlert, CircleCheck, Clock, Inbox, OctagonAlert, RotateCw, Sparkles, TriangleAlert, Info,
+  CircleAlert, CircleCheck, Clock, Inbox, OctagonAlert, RotateCw, TriangleAlert, Info,
 } from "lucide-react";
-import { describeError, formatAgo, parseTime } from "./format";
+import { LogoMark } from "../layout/Logo";
+import { describeError, formatAgo, groupLabel, parseTime } from "./format";
 
 // ---------------------------------------------------------------------
 // Severity: colour + icon + word, never colour alone
@@ -144,10 +145,15 @@ export function UpdatedAt({ iso, staleAfterMinutes, prefix = "Updated" }) {
 // ---------------------------------------------------------------------
 // AI content: one consistent treatment, plus the decision-support line
 // ---------------------------------------------------------------------
+// The blood-group chip: the same small token wherever a group appears.
+export function BloodGroup({ g }) {
+  return <span className="blood-group">{groupLabel(g)}</span>;
+}
+
 export function AIPanel({ label = "HemoSmart AI", children, decisionSupport = true, className = "" }) {
   return (
     <div className={`ai-panel ${className}`}>
-      <p className="ai-label"><Sparkles size={14} aria-hidden="true" /> {label}</p>
+      <p className="ai-label"><LogoMark size={16} /> {label}</p>
       <div className="ai-body">{children}</div>
       {decisionSupport && <p className="decision-support">Decision support. Review before acting.</p>}
     </div>

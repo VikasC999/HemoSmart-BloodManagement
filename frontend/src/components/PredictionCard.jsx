@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { BarChart3, BookOpen, ClipboardList, PackageCheck, Sparkles, Stethoscope } from "lucide-react";
+import { BarChart3, BookOpen, ClipboardList, PackageCheck, Stethoscope } from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES, SURGERY_TYPES } from "../constants";
-import { formatPercent } from "./ui/format";
+import { formatPercent, groupLabel } from "./ui/format";
+import { BloodGroup } from "./ui";
+import { LogoMark } from "./layout/Logo";
 import {
   AIPanel, ErrorState, SeverityBadge, SkeletonLines, urgencySeverity,
 } from "./ui";
@@ -168,7 +170,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
           <label>
             Blood group
             <select value={form.blood_group} onChange={(e) => update("blood_group", e.target.value)}>
-              {BLOOD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              {BLOOD_TYPES.map((t) => <option key={t} value={t}>{groupLabel(t)}</option>)}
             </select>
           </label>
         </div>
@@ -260,7 +262,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
               <section className="ai-panel explain-cta" aria-labelledby="explain-title">
                 <div className="explain-copy">
                   <h2 id="explain-title" className="ai-label">
-                    <Sparkles size={14} aria-hidden="true" /> HemoSmart AI explanation
+                    <LogoMark size={16} /> HemoSmart AI explanation
                   </h2>
                   <p className="muted">
                     A plain-language reading of this result, checked against protocol thresholds and cited to the
@@ -268,7 +270,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                   </p>
                 </div>
                 <button className="secondary" onClick={runExplain} disabled={loading}>
-                  <Sparkles size={16} aria-hidden="true" /> Explain this prediction
+                  <BookOpen size={16} aria-hidden="true" /> Explain this prediction
                 </button>
               </section>
             )}
@@ -305,7 +307,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                   <span className="muted">Optional</span>
                 </div>
                 <p className="hint">
-                  Reserve {needed.map((c) => `${c.units} ${c.component}`).join(", ")} for a {form.blood_group} patient.
+                  Reserve {needed.map((c) => `${c.units} ${c.component}`).join(", ")} for a {groupLabel(form.blood_group)} patient.
                   Units closest to expiry are allocated first (FEFO), so less stock expires unused.
                 </p>
                 <div className="actions">
@@ -334,7 +336,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                         {transfusion.units.map((u) => (
                           <tr key={u.unit_id}>
                             <td className="nowrap">{u.unit_id}</td>
-                            <td>{u.blood_group}</td>
+                            <td><BloodGroup g={u.blood_group} /></td>
                             <td>{u.component}</td>
                             <td className="nowrap tabular">{u.expires_at.slice(0, 16).replace("T", " ")}</td>
                             <td>
@@ -355,7 +357,7 @@ export default function PredictionCard({ canAlertDonors = false }) {
                         <p>Short {n} {component} for this {transfusion.recipient_group} patient.</p>
                         {canAlertDonors ? (
                           <button className="secondary" onClick={() => alertFor(component)} disabled={loading}>
-                            Alert {form.blood_group} donors
+                            Alert {groupLabel(form.blood_group)} donors
                           </button>
                         ) : <span className="muted">Ask a Blood Bank Manager to source more.</span>}
                       </li>

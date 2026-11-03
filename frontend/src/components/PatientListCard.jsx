@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, RotateCw, Sparkles, Users } from "lucide-react";
+import { ChevronDown, ChevronRight, RotateCw, Users } from "lucide-react";
 import { api } from "../api";
-import { EmptyState, ErrorState, SeverityBadge, SkeletonLines, SkeletonTable, urgencySeverity } from "./ui";
+import { BloodGroup, EmptyState, ErrorState, SeverityBadge, SkeletonLines, SkeletonTable, urgencySeverity } from "./ui";
 import { formatAgo } from "./ui/format";
+import { LogoMark } from "./layout/Logo";
 
 function ResultSummary({ prediction }) {
   if (!prediction.transfusion_needed) return <span className="muted">Not indicated</span>;
@@ -93,7 +94,7 @@ export default function PatientListCard() {
                       <strong>#{p.id}</strong>
                       <span className="muted cell-sub">{SOURCE_LABEL[p.source_format] || p.source_format} · {formatAgo(p.created_at)}</span>
                     </td>
-                    <td>{p.blood_group || <span className="muted">Unknown</span>}</td>
+                    <td>{p.blood_group ? <BloodGroup g={p.blood_group} /> : <span className="muted">Unknown</span>}</td>
                     <td>{p.surgery_type}</td>
                     <td className="num">{p.hemoglobin}</td>
                     <td className="num">{p.platelets.toLocaleString()}</td>
@@ -124,7 +125,7 @@ export default function PatientListCard() {
                                 <ResultSummary prediction={h} />
                                 {h.explanation && (
                                   <p className="history-ai">
-                                    <span className="ai-label"><Sparkles size={13} aria-hidden="true" /> HemoSmart AI</span>
+                                    <span className="ai-label"><LogoMark size={14} /> HemoSmart AI</span>
                                     {h.explanation}
                                   </p>
                                 )}

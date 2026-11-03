@@ -1,5 +1,28 @@
 // Formatting helpers for the UI layer (no API or data-shape changes).
 
+// "O-" -> "O−": a real minus sign, so a blood group never reads like a typo.
+// Display only; the API and form values keep "O-".
+export const groupLabel = (g) => (g ? g.replace(/-$/, "\u2212") : g);
+
+// LLM-written text (the cycle brief) in the app's own style: "O-" -> "O−",
+// "2026-11-07" -> "7 Nov". Display only; the stored brief is unchanged.
+export function tidyText(text) {
+  if (!text) return text;
+  return text
+    .replace(/\u2011/g, "-") // LLMs often write non-breaking hyphens
+    .replace(/\b(AB|A|B|O)-(?=[\s,.;:)]|$)/g, "$1\u2212")
+    .replace(/\b(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::\d{2})?)?(\s?UTC)?/g,
+      (_, d, t, utc) => `${formatDay(d)}${t ? `, ${t}${utc ? " UTC" : ""}` : ""}`);
+}
+
+// One date style across the app: "7 Nov", or "7 Nov 2026" in tables.
+export function formatDay(iso, withYear = false) {
+  if (!iso) return iso;
+  return new Date(`${String(iso).slice(0, 10)}T00:00:00`).toLocaleDateString("en-GB", {
+    day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}),
+  });
+}
+
 // The API helper throws `${status} ${statusText}: ${body}`; turn that
 // into plain words for the user, keeping the status as a support ref.
 export function describeError(error) {

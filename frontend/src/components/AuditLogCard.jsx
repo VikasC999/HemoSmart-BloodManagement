@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { RotateCw, ShieldCheck } from "lucide-react";
 import { api } from "../api";
 import { EmptyState, ErrorState, SkeletonTable } from "./ui";
+import { formatDay } from "./ui/format";
 
 // Details are stored as JSON; show them as readable key: value pairs.
 function Details({ details }) {
@@ -9,6 +10,7 @@ function Details({ details }) {
   // false/null/empty fields ("injection suspected: false") are noise; only what happened is shown.
   const entries = Object.entries(details).filter(([, v]) => v !== false && v !== null && v !== "" &&
                                                          !(Array.isArray(v) && v.length === 0));
+  if (entries.length === 0) return <span className="muted" aria-label="None">—</span>;
   return (
     <dl className="details-list">
       {entries.map(([k, v]) => (
@@ -79,7 +81,7 @@ export default function AuditLogCard() {
             <tbody>
               {shown.map((e) => (
                 <tr key={e.id}>
-                  <td className="nowrap tabular">{String(e.timestamp).slice(0, 19).replace("T", " ")}</td>
+                  <td className="nowrap tabular">{formatDay(e.timestamp, true)}, {String(e.timestamp).slice(11, 19)}</td>
                   <td className="nowrap">{e.user_email || (e.user_id != null ? `#${e.user_id}` : <span className="muted">System</span>)}</td>
                   <td className="nowrap">{e.action.replace(/_/g, " ")}</td>
                   <td className="nowrap">{e.resource_type ? `${e.resource_type}${e.resource_id ? ` #${String(e.resource_id).slice(0, 8)}` : ""}` : <span className="muted" aria-label="None">—</span>}</td>

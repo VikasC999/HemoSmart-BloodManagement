@@ -3,6 +3,7 @@ import { Send } from "lucide-react";
 import { api } from "../api";
 import { BLOOD_TYPES, COMPONENTS } from "../constants";
 import { ErrorState } from "./ui";
+import { groupLabel } from "./ui/format";
 
 // Manual outreach. The autonomous loop already alerts donors for
 // projected shortages; this is for situations it can't see coming.
@@ -37,7 +38,7 @@ export default function DonorAlertCard() {
         <label>
           Blood group
           <select value={bloodType} onChange={(e) => setBloodType(e.target.value)}>
-            {BLOOD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            {BLOOD_TYPES.map((t) => <option key={t} value={t}>{groupLabel(t)}</option>)}
           </select>
         </label>
         <label>

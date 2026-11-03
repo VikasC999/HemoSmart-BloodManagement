@@ -68,10 +68,12 @@
   --color-on-primary: #292621;
   --color-on-critical: #FFFFFF;
 
-  /* Chart series identity (blood components). Coral is allowed here as
-     the blood accent; risk on charts is marked separately. */
-  --chart-prbc: var(--color-primary-chart);
-  --chart-platelets: var(--color-coral-chart);
+  /* Chart series identity (blood components). One accent leads: platelets,
+     the 5-day component behind most shortages and expiries. PRBC and FFP
+     sit in quiet neutrals; coral stays free to mean risk. */
+  --chart-neutral: #8C8478;
+  --chart-prbc: var(--chart-neutral);
+  --chart-platelets: var(--color-primary-chart);
   --chart-ffp: var(--color-info-chart);
 
   /* Shape and depth */
@@ -134,6 +136,7 @@
   --color-primary-soft: #36301A;
   --color-primary-strong: #F4C542;
   --color-primary-chart: #F4C542;
+  --chart-neutral: #7D766B;
 
   --color-amber: #F5B556;
   --color-amber-soft: #3F2E14;
@@ -184,6 +187,7 @@
     --color-primary-soft: #36301A;
     --color-primary-strong: #F4C542;
     --color-primary-chart: #F4C542;
+  --chart-neutral: #7D766B;
 
     --color-amber: #F5B556;
     --color-amber-soft: #3F2E14;

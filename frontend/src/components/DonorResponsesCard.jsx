@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Check, Inbox, RotateCw, X } from "lucide-react";
 import { api } from "../api";
-import { EmptyState, ErrorState, SkeletonTable } from "./ui";
+import { BloodGroup, EmptyState, ErrorState, SkeletonTable } from "./ui";
 import { formatAgo } from "./ui/format";
 
 // The bandit's learning signal: a coordinator records each donor's real
@@ -73,7 +73,7 @@ export default function DonorResponsesCard() {
                 <tr key={a.id}>
                   <td className="nowrap">{a.donor_id}</td>
                   <td className="nowrap">
-                    {a.blood_type} {a.component || "PRBC"}
+                    <BloodGroup g={a.blood_type} /> {a.component || "PRBC"}
                     {a.cycle_id && <span className="badge info">Agent</span>}
                   </td>
                   <td className="nowrap muted">{formatAgo(a.sent_at)}</td>

@@ -3,7 +3,7 @@ import { Play, RotateCw } from "lucide-react";
 import { api } from "../api";
 import { COMPONENTS } from "../constants";
 import { AIPanel, EmptyState, ErrorState, SeverityBadge, SkeletonLines, UpdatedAt } from "./ui";
-import { TRIGGER_LABEL } from "./ui/format";
+import { TRIGGER_LABEL, tidyText } from "./ui/format";
 
 // Tone by meaning, not by "non-zero": risk counts use risk colours,
 // good outcomes use success, activity stays neutral. Yellow is brand/AI.
@@ -24,7 +24,7 @@ function EventRow({ event }) {
       <span className="event-agent">{event.agent}</span>
       <span className="event-kind">{event.kind}</span>
       <span className="event-msg">
-        {event.message}
+        {tidyText(event.message)}
         {citations && (
           <details>
             <summary>WHO handbook</summary>
@@ -106,18 +106,17 @@ export default function AutonomyCard({ canRun = false }) {
       )}
 
       {loading && !metrics ? <SkeletonLines lines={3} label="Loading outcomes" /> : metrics && (
-        <div className="metrics">
-          <div className="metric"><span>{metrics.totals.issued}</span>issued</div>
-          <div className={`metric ${metrics.totals.expired > 0 ? "bad" : ""}`}><span>{metrics.totals.expired}</span>expired</div>
-          <div className="metric"><span>{metrics.totals.transferred}</span>redistributed</div>
-          <div className="metric">
-            <span>{metrics.wastage_rate == null ? "None used" : `${(metrics.wastage_rate * 100).toFixed(1)}%`}</span>
-            wastage rate
-          </div>
-          <div className="metric-note muted">
+        <>
+          <dl className="outcomes autonomy-outcomes">
+            <div><dt>Issued</dt><dd>{metrics.totals.issued}</dd></div>
+            <div><dt>Expired</dt><dd className={metrics.totals.expired > 0 ? "risk" : ""}>{metrics.totals.expired}</dd></div>
+            <div><dt>Redistributed</dt><dd>{metrics.totals.transferred}</dd></div>
+            <div><dt>Wastage rate</dt><dd>{metrics.wastage_rate == null ? "None used" : `${(metrics.wastage_rate * 100).toFixed(1)}%`}</dd></div>
+          </dl>
+          <p className="metric-note muted">
             Last 30 days. Expired by component: {COMPONENTS.map((c) => `${c} ${metrics.by_status.expired[c]}`).join(", ")}
-          </div>
-        </div>
+          </p>
+        </>
       )}
 
       {!loading && !error && !cycle && (
@@ -135,16 +134,16 @@ export default function AutonomyCard({ canRun = false }) {
               ? <SeverityBadge level="low" label="Completed" />
               : <SeverityBadge level="moderate" label={`Completed with fallbacks (${cycle.status})`} />}
           </p>
+          {/* only what happened: a row of zeros is noise */}
           <div className="chips">
-            {SUMMARY_LABELS.filter(([key]) => key in cycle.summary).map(([key, label, tone]) => (
-              <span key={key} className={`chip ${cycle.summary[key] ? tone : ""}`}>
-                {cycle.summary[key]} {label}
-              </span>
+            {SUMMARY_LABELS.filter(([key]) => cycle.summary[key]).map(([key, label, tone]) => (
+              <span key={key} className={`chip ${tone}`}>{cycle.summary[key]} {label}</span>
             ))}
+            {!SUMMARY_LABELS.some(([key]) => cycle.summary[key]) && <span className="muted">Nothing needed action this cycle.</span>}
           </div>
           {cycle.brief && (
             <AIPanel label="HemoSmart AI · cycle brief">
-              <p className="cycle-brief">{cycle.brief}</p>
+              <p className="cycle-brief">{tidyText(cycle.brief)}</p>
             </AIPanel>
           )}
           <details className="agent-log" open>

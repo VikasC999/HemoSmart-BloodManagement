@@ -5,7 +5,8 @@ import {
 } from "recharts";
 import { api } from "../api";
 import { COMPONENTS } from "../constants";
-import { EmptyState, ErrorState, SeverityBadge, Skeleton, UpdatedAt } from "./ui";
+import { BloodGroup, EmptyState, ErrorState, SeverityBadge, Skeleton, UpdatedAt } from "./ui";
+import { formatDay } from "./ui/format";
 
 const HORIZONS = [7, 14, 30];
 
@@ -50,7 +51,7 @@ export default function ForecastChart() {
 
   const chartData = outlook
     ? outlook.component_forecast[COMPONENTS[0]].map((d, i) => ({
-        date: d.date.slice(5),
+        date: formatDay(d.date),
         ...Object.fromEntries(COMPONENTS.flatMap((c) => {
           const f = outlook.component_forecast[c][i];
           // Prophet's 80% interval; evaluation/forecast_backtest.py measures how often
@@ -127,9 +128,9 @@ export default function ForecastChart() {
               </ResponsiveContainer>
             </div>
             <figcaption className="hint">
-              Dashed lines are model forecasts ({outlook.model_used}); the shaded band is its 80% range. In backtests,
-              actual demand fell inside it on 77–79% of days, but on only 68% for platelets during the dengue
-              spike, when the range runs too narrow.
+              Dashed lines are the forecast; the shaded band is where demand should land on 8 days in 10. Tested on
+              past data it held on 77–79% of days, but on only 68% for platelets during the dengue spike, when the
+              band runs too narrow.
             </figcaption>
           </figure>
 
@@ -147,10 +148,10 @@ export default function ForecastChart() {
               <tbody>
                 {outlook.shortages.map((s) => (
                   <tr key={s.blood_group + s.component}>
-                    <td className="nowrap"><strong>{s.blood_group}</strong> {s.component}</td>
+                    <td className="nowrap"><BloodGroup g={s.blood_group} /> {s.component}</td>
                     <td><SeverityBadge level="high" /></td>
                     <td className="num"><strong>{s.projected_shortage}</strong></td>
-                    <td className="nowrap tabular">{s.first_shortage_date}</td>
+                    <td className="nowrap tabular">{formatDay(s.first_shortage_date)}</td>
                     <td className="num">{s.supply_now}</td><td className="num">{s.forecast_demand}</td>
                   </tr>
                 ))}
@@ -172,7 +173,7 @@ export default function ForecastChart() {
               <tbody>
                 {outlook.wastage_risks.map((w) => (
                   <tr key={w.blood_group + w.component}>
-                    <td className="nowrap"><strong>{w.blood_group}</strong> {w.component}</td>
+                    <td className="nowrap"><BloodGroup g={w.blood_group} /> {w.component}</td>
                     <td><SeverityBadge level="moderate" label="Wastage" /></td>
                     <td className="num"><strong>{w.projected_wastage}</strong></td>
                     <td className="num">{w.supply_now}</td><td className="num">{w.forecast_demand}</td>
